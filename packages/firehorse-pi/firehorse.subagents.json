@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "description": "Firehorse default builtin pi-subagents overrides. These keep upstream roles but add Firehorse-bundled pi-lens code-intelligence tools where useful.",
+  "agentOverrides": {
+    "context-builder": {
+      "tools": [
+        "read",
+        "grep",
+        "find",
+        "ls",
+        "bash",
+        "write",
+        "web_search",
+        "intercom",
+        "ast_grep_search",
+        "lsp_diagnostics",
+        "lsp_navigation"
+      ]
+    },
+    "delegate": {
+      "tools": [
+        "read",
+        "grep",
+        "find",
+        "ls",
+        "bash",
+        "edit",
+        "write",
+        "contact_supervisor",
+        "ast_grep_search",
+        "ast_grep_replace",
+        "lsp_diagnostics",
+        "lsp_navigation"
+      ]
+    },
+    "oracle": {
+      "tools": [
+        "read",
+        "grep",
+        "find",
+        "ls",
+        "bash",
+        "intercom",
+        "ast_grep_search",
+        "lsp_diagnostics",
+        "lsp_navigation"
+      ]
+    },
+    "planner": {
+      "tools": [
+        "read",
+        "grep",
+        "find",
+        "ls",
+        "write",
+        "intercom",
+        "ast_grep_search",
+        "lsp_diagnostics",
+        "lsp_navigation"
+      ]
+    },
+    "reviewer": {
+      "tools": [
+        "read",
+        "grep",
+        "find",
+        "ls",
+        "bash",
+        "edit",
+        "write",
+        "intercom",
+        "ast_grep_search",
+        "ast_grep_replace",
+        "lsp_diagnostics",
+        "lsp_navigation"
+      ]
+    },
+    "scout": {
+      "tools": [
+        "read",
+        "grep",
+        "find",
+        "ls",
+        "bash",
+        "write",
+        "intercom",
+        "ast_grep_search",
+        "lsp_diagnostics",
+        "lsp_navigation"
+      ]
+    },
+    "worker": {
+      "tools": [
+        "read",
+        "grep",
+        "find",
+        "ls",
+        "bash",
+        "edit",
+        "write",
+        "contact_supervisor",
+        "ast_grep_search",
+        "ast_grep_replace",
+        "lsp_diagnostics",
+        "lsp_navigation"
+      ]
+    }
+  }
+}
