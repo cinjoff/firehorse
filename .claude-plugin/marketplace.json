@@ -1,0 +1,28 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "firehorse",
+  "description": "Firehorse Claude Code plugins — Claude-adapted distribution of the firehorse agentic skills framework.",
+  "version": "0.1.0",
+  "owner": {
+    "name": "cinjoff",
+    "url": "https://github.com/cinjoff"
+  },
+  "plugins": [
+    {
+      "name": "firehorse",
+      "source": "./packages/firehorse-claude",
+      "description": "Firehorse — lightweight cross-provider agentic skills framework, Claude-adapted distribution.",
+      "version": "0.1.0",
+      "author": {
+        "name": "cinjoff",
+        "url": "https://github.com/cinjoff"
+      },
+      "homepage": "https://github.com/cinjoff/firehorse/tree/main/packages/firehorse-claude#readme",
+      "repository": "https://github.com/cinjoff/firehorse",
+      "license": "MIT",
+      "keywords": ["firehorse", "agentic", "skills", "claude-code", "claude-plugin"],
+      "category": "agent-frameworks",
+      "tags": ["agent-framework", "skills", "cross-provider"]
+    }
+  ]
+}

@@ -1,0 +1,195 @@
+{
+  "name": "firehorse-pi",
+  "version": "0.1.0",
+  "description": "Pi.dev distribution of firehorse — bundles selected pi packages and exposes them as a single install.",
+  "license": "MIT",
+  "author": {
+    "name": "cinjoff",
+    "url": "https://github.com/cinjoff"
+  },
+  "homepage": "https://github.com/cinjoff/firehorse/tree/main/packages/firehorse-pi#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cinjoff/firehorse.git",
+    "directory": "packages/firehorse-pi"
+  },
+  "bugs": {
+    "url": "https://github.com/cinjoff/firehorse/issues"
+  },
+  "keywords": [
+    "pi-package",
+    "pi",
+    "pi-coding-agent",
+    "firehorse",
+    "agentic",
+    "skills"
+  ],
+  "type": "module",
+  "files": [
+    "extensions",
+    "skills",
+    "prompts",
+    "themes",
+    "firehorse.update.json",
+    "firehorse.subagents.json",
+    "README.md",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "echo 'no-op: pi package is consumed as files'",
+    "test": "echo 'no-op: no tests yet'"
+  },
+  "dependencies": {
+    "@ast-grep/napi": "0.42.2",
+    "@modelcontextprotocol/ext-apps": "1.7.1",
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "beautiful-mermaid": "1.1.3",
+    "context-mode": "1.0.133",
+    "jiti": "2.7.0",
+    "mermaid": "11.15.0",
+    "minimatch": "10.2.5",
+    "open": "10.2.0",
+    "pi-lens": "3.8.44",
+    "pi-mcp-adapter": "2.6.1",
+    "pi-mermaid": "0.3.0",
+    "pi-subagents": "0.24.2",
+    "pi-web-access": "0.10.7",
+    "typescript": "6.0.3",
+    "vscode-jsonrpc": "8.2.1",
+    "web-tree-sitter": "0.25.10",
+    "zod": "4.4.3"
+  },
+  "bundledDependencies": [
+    "context-mode",
+    "pi-lens",
+    "pi-mcp-adapter",
+    "pi-mermaid",
+    "pi-subagents",
+    "pi-web-access"
+  ],
+  "devDependencies": {
+    "@types/node": "^22.7.0"
+  },
+  "pi": {
+    "extensions": [
+      "./extensions",
+      "./node_modules/context-mode/build/adapters/pi/extension.js",
+      "./node_modules/pi-lens/index.ts",
+      "./node_modules/pi-mcp-adapter/index.ts",
+      "./node_modules/pi-mermaid/index.ts",
+      "./node_modules/pi-subagents/src/extension/index.ts",
+      "./node_modules/pi-web-access/index.ts"
+    ],
+    "skills": [
+      "./node_modules/context-mode/skills/context-mode",
+      "./node_modules/context-mode/skills/ctx-doctor",
+      "./node_modules/context-mode/skills/ctx-insight",
+      "./node_modules/context-mode/skills/ctx-stats",
+      "./node_modules/pi-lens/skills/ast-grep",
+      "./node_modules/pi-lens/skills/lsp-navigation",
+      "./node_modules/pi-web-access/skills/librarian",
+      "./node_modules/pi-subagents/skills/pi-subagents",
+      "./skills/firehorse-setup",
+      "./skills/mattpocock/engineering/diagnose",
+      "./skills/mattpocock/engineering/grill-with-docs",
+      "./skills/mattpocock/engineering/triage",
+      "./skills/mattpocock/engineering/improve-codebase-architecture",
+      "./skills/mattpocock/engineering/setup-matt-pocock-skills",
+      "./skills/mattpocock/engineering/tdd",
+      "./skills/mattpocock/engineering/to-issues",
+      "./skills/mattpocock/engineering/to-prd",
+      "./skills/mattpocock/engineering/zoom-out",
+      "./skills/mattpocock/engineering/prototype",
+      "./skills/mattpocock/productivity/caveman",
+      "./skills/mattpocock/productivity/grill-me",
+      "./skills/mattpocock/productivity/handoff",
+      "./skills/mattpocock/productivity/write-a-skill",
+      "./skills/pbakaus/impeccable"
+    ],
+    "prompts": [
+      "./prompts",
+      "./node_modules/pi-subagents/prompts"
+    ],
+    "themes": [
+      "./themes"
+    ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-agent-core": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*",
+    "typebox": "*"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-ai": {
+      "optional": true
+    },
+    "@earendil-works/pi-agent-core": {
+      "optional": true
+    },
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    },
+    "@earendil-works/pi-tui": {
+      "optional": true
+    },
+    "typebox": {
+      "optional": true
+    }
+  },
+  "firehorse": {
+    "updateManifest": {
+      "schemaVersion": 1,
+      "adapter": "pi",
+      "packageName": "firehorse-pi",
+      "version": "0.1.0",
+      "updateCommand": "pi update npm:firehorse-pi",
+      "upstreams": [
+        {
+          "name": "impeccable",
+          "source": "https://github.com/pbakaus/impeccable",
+          "git": "https://github.com/pbakaus/impeccable.git",
+          "ref": "main",
+          "commit": "1e8356fa259153b56213fa434a822bbf4a885f39",
+          "upstreamPackageVersion": "2.1.9",
+          "upstreamPluginVersion": "3.1.0",
+          "license": "Apache-2.0",
+          "selectionPolicy": "Expose the skill directories exported by the upstream Claude plugin manifest, using upstream's generated Claude and Pi variants for adapter mirrors and the canonical skill/ source for core provenance when available.",
+          "updateCommand": "pnpm upstreams:update:impeccable",
+          "skillCount": 1
+        },
+        {
+          "name": "mattpocock-skills",
+          "source": "https://github.com/mattpocock/skills",
+          "git": "https://github.com/mattpocock/skills.git",
+          "ref": "main",
+          "commit": "e74f0061bb67222181640effa98c675bdb2fdaa7",
+          "license": "MIT",
+          "selectionPolicy": "Expose the skills listed by the upstream Claude plugin manifest; do not expose deprecated, in-progress, personal, or misc skills unless upstream promotes them into that manifest or Firehorse explicitly allow-lists them later.",
+          "updateCommand": "pnpm upstreams:update:mattpocock-skills",
+          "skillCount": 14
+        },
+        {
+          "name": "pi-subagents",
+          "source": "https://github.com/nicobailon/pi-subagents",
+          "git": "https://github.com/nicobailon/pi-subagents.git",
+          "npmPackage": "pi-subagents",
+          "version": "0.24.2",
+          "license": "MIT",
+          "selectionPolicy": "Expose the upstream built-in pi-subagents agent set as Firehorse shared subagent definitions. Pi consumes these through the bundled pi-subagents package built-ins; Claude receives Claude-compatible mirrors generated from the same pinned source files.",
+          "agentCount": 8
+        }
+      ],
+      "bundledPiPackages": {
+        "context-mode": "1.0.133",
+        "pi-lens": "3.8.44",
+        "pi-mcp-adapter": "2.6.1",
+        "pi-mermaid": "0.3.0",
+        "pi-subagents": "0.24.2",
+        "pi-web-access": "0.10.7"
+      }
+    }
+  }
+}

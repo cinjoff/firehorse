@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "adapter": "claude",
+  "pluginName": "firehorse",
+  "version": "0.1.0",
+  "updateCommand": "/plugin update firehorse@firehorse",
+  "upstreams": [
+    {
+      "name": "impeccable",
+      "source": "https://github.com/pbakaus/impeccable",
+      "git": "https://github.com/pbakaus/impeccable.git",
+      "ref": "main",
+      "commit": "1e8356fa259153b56213fa434a822bbf4a885f39",
+      "upstreamPackageVersion": "2.1.9",
+      "upstreamPluginVersion": "3.1.0",
+      "license": "Apache-2.0",
+      "selectionPolicy": "Expose the skill directories exported by the upstream Claude plugin manifest, using upstream's generated Claude and Pi variants for adapter mirrors and the canonical skill/ source for core provenance when available.",
+      "updateCommand": "pnpm upstreams:update:impeccable",
+      "skillCount": 1
+    },
+    {
+      "name": "mattpocock-skills",
+      "source": "https://github.com/mattpocock/skills",
+      "git": "https://github.com/mattpocock/skills.git",
+      "ref": "main",
+      "commit": "e74f0061bb67222181640effa98c675bdb2fdaa7",
+      "license": "MIT",
+      "selectionPolicy": "Expose the skills listed by the upstream Claude plugin manifest; do not expose deprecated, in-progress, personal, or misc skills unless upstream promotes them into that manifest or Firehorse explicitly allow-lists them later.",
+      "updateCommand": "pnpm upstreams:update:mattpocock-skills",
+      "skillCount": 14
+    },
+    {
+      "name": "pi-subagents",
+      "source": "https://github.com/nicobailon/pi-subagents",
+      "git": "https://github.com/nicobailon/pi-subagents.git",
+      "npmPackage": "pi-subagents",
+      "version": "0.24.2",
+      "license": "MIT",
+      "selectionPolicy": "Expose the upstream built-in pi-subagents agent set as Firehorse shared subagent definitions. Pi consumes these through the bundled pi-subagents package built-ins; Claude receives Claude-compatible mirrors generated from the same pinned source files.",
+      "agentCount": 8
+    }
+  ]
+}

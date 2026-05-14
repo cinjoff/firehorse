@@ -1,0 +1,112 @@
+{
+  "name": "mattpocock-skills",
+  "source": "https://github.com/mattpocock/skills",
+  "git": "https://github.com/mattpocock/skills.git",
+  "ref": "main",
+  "commit": "e74f0061bb67222181640effa98c675bdb2fdaa7",
+  "license": "MIT",
+  "upstreamPluginName": "mattpocock-skills",
+  "adapterNamespace": "mattpocock",
+  "updateCommand": "pnpm upstreams:update:mattpocock-skills",
+  "selectionPolicy": "Expose the skills listed by the upstream Claude plugin manifest; do not expose deprecated, in-progress, personal, or misc skills unless upstream promotes them into that manifest or Firehorse explicitly allow-lists them later.",
+  "skills": [
+    {
+      "name": "diagnose",
+      "sourcePath": "skills/engineering/diagnose",
+      "corePath": "skills/engineering/diagnose",
+      "claudePath": "skills/mattpocock/engineering/diagnose",
+      "piPath": "skills/mattpocock/engineering/diagnose"
+    },
+    {
+      "name": "grill-with-docs",
+      "sourcePath": "skills/engineering/grill-with-docs",
+      "corePath": "skills/engineering/grill-with-docs",
+      "claudePath": "skills/mattpocock/engineering/grill-with-docs",
+      "piPath": "skills/mattpocock/engineering/grill-with-docs"
+    },
+    {
+      "name": "triage",
+      "sourcePath": "skills/engineering/triage",
+      "corePath": "skills/engineering/triage",
+      "claudePath": "skills/mattpocock/engineering/triage",
+      "piPath": "skills/mattpocock/engineering/triage"
+    },
+    {
+      "name": "improve-codebase-architecture",
+      "sourcePath": "skills/engineering/improve-codebase-architecture",
+      "corePath": "skills/engineering/improve-codebase-architecture",
+      "claudePath": "skills/mattpocock/engineering/improve-codebase-architecture",
+      "piPath": "skills/mattpocock/engineering/improve-codebase-architecture"
+    },
+    {
+      "name": "setup-matt-pocock-skills",
+      "sourcePath": "skills/engineering/setup-matt-pocock-skills",
+      "corePath": "skills/engineering/setup-matt-pocock-skills",
+      "claudePath": "skills/mattpocock/engineering/setup-matt-pocock-skills",
+      "piPath": "skills/mattpocock/engineering/setup-matt-pocock-skills"
+    },
+    {
+      "name": "tdd",
+      "sourcePath": "skills/engineering/tdd",
+      "corePath": "skills/engineering/tdd",
+      "claudePath": "skills/mattpocock/engineering/tdd",
+      "piPath": "skills/mattpocock/engineering/tdd"
+    },
+    {
+      "name": "to-issues",
+      "sourcePath": "skills/engineering/to-issues",
+      "corePath": "skills/engineering/to-issues",
+      "claudePath": "skills/mattpocock/engineering/to-issues",
+      "piPath": "skills/mattpocock/engineering/to-issues"
+    },
+    {
+      "name": "to-prd",
+      "sourcePath": "skills/engineering/to-prd",
+      "corePath": "skills/engineering/to-prd",
+      "claudePath": "skills/mattpocock/engineering/to-prd",
+      "piPath": "skills/mattpocock/engineering/to-prd"
+    },
+    {
+      "name": "zoom-out",
+      "sourcePath": "skills/engineering/zoom-out",
+      "corePath": "skills/engineering/zoom-out",
+      "claudePath": "skills/mattpocock/engineering/zoom-out",
+      "piPath": "skills/mattpocock/engineering/zoom-out"
+    },
+    {
+      "name": "prototype",
+      "sourcePath": "skills/engineering/prototype",
+      "corePath": "skills/engineering/prototype",
+      "claudePath": "skills/mattpocock/engineering/prototype",
+      "piPath": "skills/mattpocock/engineering/prototype"
+    },
+    {
+      "name": "caveman",
+      "sourcePath": "skills/productivity/caveman",
+      "corePath": "skills/productivity/caveman",
+      "claudePath": "skills/mattpocock/productivity/caveman",
+      "piPath": "skills/mattpocock/productivity/caveman"
+    },
+    {
+      "name": "grill-me",
+      "sourcePath": "skills/productivity/grill-me",
+      "corePath": "skills/productivity/grill-me",
+      "claudePath": "skills/mattpocock/productivity/grill-me",
+      "piPath": "skills/mattpocock/productivity/grill-me"
+    },
+    {
+      "name": "handoff",
+      "sourcePath": "skills/productivity/handoff",
+      "corePath": "skills/productivity/handoff",
+      "claudePath": "skills/mattpocock/productivity/handoff",
+      "piPath": "skills/mattpocock/productivity/handoff"
+    },
+    {
+      "name": "write-a-skill",
+      "sourcePath": "skills/productivity/write-a-skill",
+      "corePath": "skills/productivity/write-a-skill",
+      "claudePath": "skills/mattpocock/productivity/write-a-skill",
+      "piPath": "skills/mattpocock/productivity/write-a-skill"
+    }
+  ]
+}

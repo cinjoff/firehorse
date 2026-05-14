@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "firehorse",
+  "version": "0.1.0",
+  "description": "Firehorse — lightweight cross-provider agentic skills framework, Claude-adapted distribution.",
+  "author": {
+    "name": "cinjoff"
+  },
+  "homepage": "https://github.com/cinjoff/firehorse",
+  "repository": "https://github.com/cinjoff/firehorse",
+  "license": "MIT",
+  "keywords": ["firehorse", "agentic", "skills", "claude-code", "claude-plugin"],
+  "hooks": "./hooks/hooks.json",
+  "agents": [
+    "./agents/context-builder.md",
+    "./agents/delegate.md",
+    "./agents/oracle.md",
+    "./agents/planner.md",
+    "./agents/researcher.md",
+    "./agents/reviewer.md",
+    "./agents/scout.md",
+    "./agents/worker.md"
+  ],
+  "skills": [
+    "./skills/firehorse-setup",
+    "./skills/mattpocock/engineering/diagnose",
+    "./skills/mattpocock/engineering/grill-with-docs",
+    "./skills/mattpocock/engineering/triage",
+    "./skills/mattpocock/engineering/improve-codebase-architecture",
+    "./skills/mattpocock/engineering/setup-matt-pocock-skills",
+    "./skills/mattpocock/engineering/tdd",
+    "./skills/mattpocock/engineering/to-issues",
+    "./skills/mattpocock/engineering/to-prd",
+    "./skills/mattpocock/engineering/zoom-out",
+    "./skills/mattpocock/engineering/prototype",
+    "./skills/mattpocock/productivity/caveman",
+    "./skills/mattpocock/productivity/grill-me",
+    "./skills/mattpocock/productivity/handoff",
+    "./skills/mattpocock/productivity/write-a-skill",
+    "./skills/pbakaus/impeccable"
+  ]
+}
