@@ -1,62 +1,62 @@
 # firehorse
 
-> Lightweight, cross-provider agentic skills framework and curated skills distribution.
+Firehorse is a **one-install agent skills distribution** plus a small
+cross-provider foundation library.
 
-Firehorse is a small TypeScript-first framework for building agentic skill
-systems that can run across different **providers** (Claude, Codex, Pi.dev, ...)
-and different **orchestrators** (Superset, Conductor, tmux, or a plain
-terminal). It is also a curated distribution of high-value upstream skills and
-Pi packages so users can install one Firehorse package and get a coherent,
-reviewed agent surface.
+In plain language: it collects the agent skills, subagents, web tools, code
+navigation tools, and setup glue that I want available in every serious coding
+agent session, then packages them so they work in both **Pi.dev** and
+**Claude Code**.
 
-Firehorse is the cross-provider successor to
-[`cinjoff/fhhs-skills`](https://github.com/cinjoff/fhhs-skills). The old project
-was Claude-first; this repo keeps the same product idea but makes provider and
-orchestrator adapters first-class, swappable concerns.
+It exists because useful agent workflows are currently fragmented: some skills
+live in Claude plugin format, some tools are Pi extensions, some capabilities
+come from MCP, and some projects need orchestration context from Superset or
+other shells. Users should not have to install, wire, and audit each piece
+manually.
 
-## Release status
+Firehorse gives that surface a reviewed, versioned home.
 
-Current release target: **v0.1.0**.
+## Recommended way to use it
 
-This first version is foundation + curated distribution content:
+Firehorse is designed to support **Pi.dev and Claude Code equally well**. The
+recommended daily driver is:
 
-- A strict TypeScript core library with provider and orchestrator adapter
-  contracts.
-- A Pi.dev package (`firehorse-pi`) that bundles selected upstream Pi packages
-  and exposes only Firehorse-approved extensions, skills, prompts, and themes.
-- A Claude Code plugin (`firehorse-claude`) with Claude-compatible mirrors of
-  the selected skill and subagent surface.
-- Pinned provenance for vendored upstream skill repositories and shared agent
-  definitions.
-- Non-blocking update checks that point users to Firehorse releases rather than
-  checking every upstream at runtime.
+```text
+Pi.dev + Codex model + firehorse-pi
+```
 
-What is intentionally **not** in v0.1.0: a Firehorse-authored skill runtime,
-prompt loader, slash-command runtime, or provider transport implementation.
-Those come after the cross-provider skill format is settled.
+Why this is the recommended path:
+
+- Pi packages can bundle extensions, skills, prompts, themes, and direct tools
+  in one install.
+- Codex is a strong default coding model for the Pi workflow.
+- Pi gives Firehorse the richest runtime surface today: subagents, MCP adapter,
+  web access, LSP/code intelligence, context-saving tools, and TUI diagram
+  rendering.
+
+Claude Code remains first-class: the same selected upstream skills and shared
+subagent roles are mirrored into a Claude plugin. Claude just cannot consume Pi
+extensions directly, so the Pi distribution is the more complete driver today.
 
 ## Install
 
 ### Pi.dev
 
 ```sh
-# Published npm package
 pi install npm:firehorse-pi
-
-# Install this repository directly from GitHub
-pi install git:github.com/cinjoff/firehorse
-
-# Local development checkout
-pi install ./packages/firehorse-pi
 ```
 
-Then run first-time setup:
+Or install this repository directly:
+
+```sh
+pi install git:github.com/cinjoff/firehorse
+```
+
+Then run:
 
 ```text
 /skill:firehorse-setup
 ```
-
-Use `/skill:firehorse-setup --check` for a read-only setup report.
 
 ### Claude Code
 
@@ -65,242 +65,307 @@ Use `/skill:firehorse-setup --check` for a read-only setup report.
 /plugin install firehorse@firehorse
 ```
 
-The repo-level `.claude-plugin/marketplace.json` points Claude Code at
-`packages/firehorse-claude`.
-
-### Core library
+### TypeScript core library
 
 ```sh
 pnpm add firehorse
 ```
 
-The core library is for future integrations and TypeScript consumers that want
-adapter contracts directly.
+The core library is for adapter contracts and future integrations. It is not a
+skill runtime yet.
 
-## How Firehorse is wired
+## What ships in v0.1.0
 
-```text
-                                      ┌──────────────────────────────┐
-                                      │        GitHub releases        │
-                                      │  tag vX.Y.Z + release notes  │
-                                      └───────────────┬──────────────┘
-                                                      │
-                         runtime update checks read Firehorse version only
-                                                      │
-┌─────────────────────────────────────────────────────▼────────────────────────────────────────────────────┐
-│                                           firehorse monorepo                                               │
-│                                                                                                            │
-│  ┌─────────────────────────────┐        provenance + contracts        ┌───────────────────────────────┐   │
-│  │ packages/firehorse-core     │──────────────────────────────────────▶│ packages/firehorse-pi         │   │
-│  │ npm: firehorse              │                                      │ npm: firehorse-pi             │   │
-│  │                             │                                      │                               │   │
-│  │ Providers:                  │                                      │ Pi manifest allow-list:        │   │
-│  │  - Claude                   │                                      │  - Firehorse extensions        │   │
-│  │  - Codex                    │                                      │  - bundled Pi extensions       │   │
-│  │  - Pi.dev                   │                                      │  - selected skills             │   │
-│  │                             │                                      │  - pi-subagents prompts        │   │
-│  │ Orchestrators:              │                                      │  - Firehorse theme(s)          │   │
-│  │  - Superset                 │                                      │                               │   │
-│  │  - Conductor                │                                      │ Bundled deps:                  │   │
-│  │  - tmux                     │                                      │  context-mode, pi-lens,        │   │
-│  │  - terminal fallback        │                                      │  pi-mcp-adapter, pi-mermaid,   │   │
-│  │                             │                                      │  pi-subagents, pi-web-access   │   │
-│  │ Upstream sources:           │                                      └───────────────┬───────────────┘   │
-│  │  mattpocock/skills          │                                                      │                   │
-│  │  pbakaus/impeccable         │                                      installed by Pi │                   │
-│  │  pi-subagents agents        │                                                      ▼                   │
-│  └──────────────┬──────────────┘                                      ┌───────────────────────────────┐   │
-│                 │                                                     │ User's Pi agent session        │   │
-│                 │ adapter mirrors                                     │  - skills load on demand       │   │
-│                 │                                                     │  - MCP adapter available       │   │
-│                 │                                                     │  - subagent defaults applied   │   │
-│  ┌──────────────▼──────────────┐                                      └───────────────────────────────┘   │
-│  │ packages/firehorse-claude   │                                                                  ▲       │
-│  │ Claude Code plugin          │                                                                  │       │
-│  │                             │        plugin marketplace install                                  │       │
-│  │  - Claude skills mirrors    │──────────────────────────────────────────────────────────────────┘       │
-│  │  - shared agents mirrors    │                                                                          │
-│  │  - SessionStart hook        │                                                                          │
-│  └─────────────────────────────┘                                                                          │
-└────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-```
+- **`firehorse`** — TypeScript core library for provider/orchestrator contracts
+  and pinned upstream provenance.
+- **`firehorse-pi`** — Pi.dev package that bundles selected upstream Pi packages
+  and Firehorse skills. This is the recommended user install.
+- **`firehorse-claude`** — Claude Code plugin with mirrored skills and agents.
 
-The key design principle: **bundling and surfacing are separate decisions**.
-`firehorse-pi` may depend on and bundle an upstream package, but the Pi manifest
-is still an explicit allow-list. Users see the curated Firehorse surface, not
-every file in every bundled package.
+Firehorse v0.1.0 is intentionally a foundation release. It does **not** include
+a Firehorse-authored skill runtime, prompt loader, slash-command runtime, or
+provider API transport yet.
 
-## Package layout
+## How it is wired
 
 ```text
-firehorse/
-├── packages/
-│   ├── firehorse-core/      TypeScript core library (npm: firehorse)
-│   ├── firehorse-pi/        Pi.dev package (npm: firehorse-pi)
-│   └── firehorse-claude/    Claude Code plugin distribution
-├── .claude-plugin/          Repo-level Claude marketplace
-├── .agents/skills/          Repo-local maintainer skills
-├── docs/                    Architecture and upstream provenance docs
-└── scripts/                 Maintainer upstream-check/update utilities
+                                 ┌───────────────────────┐
+                                 │   upstream sources    │
+                                 │ skills, agents, tools │
+                                 └───────────┬───────────┘
+                                             │ reviewed + pinned
+                                             ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                              firehorse                                  │
+│                                                                         │
+│  ┌───────────────────────┐       mirrors / manifests       ┌─────────┐ │
+│  │ firehorse-core        │────────────────────────────────▶│ Claude  │ │
+│  │                       │                                  │ plugin  │ │
+│  │ provider contracts:   │                                  └─────────┘ │
+│  │  Claude / Codex / Pi  │                                      ▲       │
+│  │                       │                                      │       │
+│  │ orchestrators:        │                                  install     │
+│  │  Superset / tmux /    │                                      │       │
+│  │  Conductor / terminal │                                      │       │
+│  └───────────┬───────────┘                                      │       │
+│              │                                                   │       │
+│              │ curated Pi allow-list                             │       │
+│              ▼                                                   │       │
+│  ┌───────────────────────┐       recommended driver              │       │
+│  │ firehorse-pi          │───────────────────────────────────────┘       │
+│  │                       │                                               │
+│  │ Pi extensions         │  context-mode, pi-lens, pi-mcp-adapter,       │
+│  │ Pi skills             │  pi-mermaid, pi-subagents, pi-web-access,     │
+│  │ prompts + themes      │  mattpocock/skills, impeccable                │
+│  └───────────────────────┘                                               │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-### `packages/firehorse-core` (`firehorse`)
+The important design choice: **bundling is not the same as exposing**.
+`firehorse-pi` may bundle an upstream package for runtime support, but the Pi
+manifest explicitly allow-lists what users see.
 
-The core package defines the stable contracts:
+## Upstream packages and skills
 
-| Area | Included adapters | Role |
-| --- | --- | --- |
-| Providers | Claude, Codex, Pi.dev | Declare provider identity and capability shape. Current implementations are side-effect-free availability scaffolds; actual transport wiring is future work. |
-| Orchestrators | Superset, Conductor, tmux, terminal | Detect the shell/workspace owner from environment variables only and expose capabilities such as worktrees, parallel agents, shared filesystem, and port assignment. |
-| Upstream provenance | `mattpocock/skills`, `pbakaus/impeccable`, `pi-subagents` agents | Stores pinned upstream files, licenses, and `UPSTREAM.json` manifests that distribution packages mirror or consume. |
+Each section below summarizes the upstream's own documentation, explains why it
+is included in Firehorse, and lists the specific skills/resources Firehorse
+exposes.
 
-Detection is intentionally env-driven and side-effect-free: no spawning
-processes, writing files, or network calls in `detect()` / `readEnvironment()`.
+<details>
+<summary><strong>context-mode 1.0.133</strong> — keep huge outputs out of the model context</summary>
 
-### `packages/firehorse-pi` (`firehorse-pi`)
+**Official docs:** [mksglu/context-mode](https://github.com/mksglu/context-mode)
 
-The Pi package exposes Firehorse through Pi conventions:
+The upstream docs describe context-mode as “the other half of the context
+problem”: instead of dumping logs, test output, API responses, or large files
+into the chat, it runs processing in a sandbox, stores searchable context, and
+returns only targeted results.
 
-- `extensions/` — Firehorse-authored session-start extensions.
-- `skills/` — Firehorse setup plus mirrored upstream skills.
-- `prompts/` — Firehorse prompts plus bundled `pi-subagents` prompts.
-- `themes/` — Firehorse Pi TUI theme(s).
-- `package.json#pi` — the explicit Pi resource allow-list.
-- `bundledDependencies` — upstream Pi packages included in the npm tarball.
+**Role in Firehorse:** protect the context window during coding sessions and
+make large-output work reliable.
 
-Pi core packages (`@earendil-works/pi-ai`, `@earendil-works/pi-agent-core`,
-`@earendil-works/pi-coding-agent`, `@earendil-works/pi-tui`, `typebox`) stay as
-optional peer dependencies with `"*"` versions and are **not** bundled.
+**Firehorse exposes:**
 
-### `packages/firehorse-claude`
+- Pi extension — adds context-mode tools to Pi.
+- `context-mode` skill — tells the agent to use `ctx_batch_execute`,
+  `ctx_execute`, `ctx_execute_file`, indexing, and search for large outputs.
+- `ctx-doctor` skill — diagnoses context-mode installation/runtime issues.
+- `ctx-insight` skill — opens the context-mode analytics dashboard.
+- `ctx-stats` skill — shows context savings for the current session.
 
-The Claude package exposes Firehorse through Claude Code plugin conventions:
+Firehorse intentionally does **not** expose destructive/upgrade-oriented
+context-mode skills by default.
 
-- `.claude-plugin/plugin.json` lists skills, agents, and hooks explicitly.
-- `skills/` mirrors the selected upstream skill set in Claude-compatible paths.
-- `agents/` mirrors the shared `pi-subagents` built-in roles as Claude agents.
-- `hooks/check-update.mjs` checks the latest `cinjoff/firehorse` GitHub release
-  on `SessionStart` and suggests `/plugin update firehorse@firehorse`.
+</details>
 
-The Pi and Claude distributions are siblings. Neither is derived from the other
-because each ecosystem has different install, manifest, hook, and agent idioms.
+<details>
+<summary><strong>pi-lens 3.8.44</strong> — code intelligence for Pi agents</summary>
 
-## Upstream packages and skill sources
+**Official docs:** [apmantza/pi-lens](https://github.com/apmantza/pi-lens)
 
-### Pinned upstream skill/agent repositories
+The upstream docs describe pi-lens as real-time code feedback for Pi, with hooks
+around write/edit, session start, turn end, and agent completion. Its feature set
+centers on LSP support, formatters, diagnostics, review graphs, and read-before-
+edit safeguards.
 
-| Upstream | Pinned in | Exposed in | Role |
-| --- | --- | --- | --- |
-| [`mattpocock/skills`](https://github.com/mattpocock/skills) | `packages/firehorse-core/upstreams/mattpocock-skills/UPSTREAM.json` | Pi and Claude skill mirrors | Engineering/productivity skills selected from the upstream Claude plugin manifest. Deprecated, personal, in-progress, and misc skills are not exposed unless Firehorse explicitly allow-lists them later. |
-| [`pbakaus/impeccable`](https://github.com/pbakaus/impeccable) | `packages/firehorse-core/upstreams/impeccable/UPSTREAM.json` | Pi and Claude `impeccable` mirrors | Frontend design and UX craft skill. Firehorse keeps canonical source/provenance in core and mirrors upstream-generated adapter variants. |
-| [`pi-subagents`](https://github.com/nicobailon/pi-subagents) built-in agents | `packages/firehorse-core/upstreams/pi-subagents/UPSTREAM.json` | Pi bundled runtime + Claude agent mirrors | Shared subagent role vocabulary (`planner`, `reviewer`, `worker`, etc.). Pi consumes bundled built-ins; Claude gets markdown mirrors. |
+**Role in Firehorse:** give the agent IDE-like code awareness instead of relying
+on plain text search.
 
-### Bundled Pi packages
+**Firehorse exposes:**
 
-| Package | Version | Exposed resources | Role in Firehorse |
-| --- | ---: | --- | --- |
-| `context-mode` | `1.0.133` | Pi extension; `context-mode`, `ctx-doctor`, `ctx-insight`, `ctx-stats` skills | Keeps large command/file/MCP output out of the model context by sandboxing processing, indexing content, and enabling targeted search. Destructive/upgrade skills are intentionally not exposed by default. |
-| `pi-lens` | `3.8.44` | Pi extension; `ast-grep`, `lsp-navigation` skills; direct tools | Adds structural code search/rewrite, LSP diagnostics, definitions, references, hover, and call hierarchy. Firehorse grants these tools to code-oriented subagents by default. |
-| `pi-mcp-adapter` | `2.6.1` | Pi extension | Bridges MCP servers into Pi. Firehorse setup uses it for Superset's hosted MCP endpoint. |
-| `pi-mermaid` | `0.3.0` | Pi extension | Renders Mermaid diagrams as ASCII in the Pi TUI. |
-| `pi-subagents` | `0.24.2` | Pi extension; `pi-subagents` skill; prompt templates; built-in agents | Enables delegated agents, chains, parallel fan-out, async/background work, and clarification flows. |
-| `pi-web-access` | `0.10.7` | Pi extension; `librarian` skill | Provides web search/fetch, GitHub repository reading, PDF/content extraction, video analysis, and evidence-backed library research. |
+- Pi extension — enables pi-lens feedback and direct code-intelligence tools.
+- `ast-grep` skill — prefers structural AST search/rewrite over text grep for
+  code patterns.
+- `lsp-navigation` skill — uses definitions, references, hover, diagnostics,
+  signatures, implementations, and call hierarchy.
+- Direct tools — `ast_grep_search`, `ast_grep_replace`, `lsp_diagnostics`, and
+  `lsp_navigation`.
 
-Runtime dependencies such as `@ast-grep/napi`, MCP SDK packages, `jiti`,
-`beautiful-mermaid`, `mermaid`, `typescript`, `vscode-jsonrpc`,
-`web-tree-sitter`, `open`, `zod`, and `minimatch` are pinned normally in
-`firehorse-pi` so bundled packages have the platform/runtime pieces they need.
+Firehorse also grants these direct tools to code-oriented `pi-subagents` roles by
+default.
 
-## Exposed skills
+</details>
 
-### Firehorse-authored skills
+<details>
+<summary><strong>pi-mcp-adapter 2.6.1</strong> — MCP access without context bloat</summary>
 
-| Skill | Distribution | Role |
-| --- | --- | --- |
-| `firehorse-setup` | Pi + Claude | First-time setup and read-only checks. Detects Firehorse install state, detects Superset, configures user-global Superset MCP safely, and keeps API keys out of project files. |
-| `firehorse-release` | Repo-local `.agents/skills` | Maintainer workflow for future Firehorse releases: update README/release notes, check upstreams, run quality gates, tag, push, create GitHub release, and watch GitHub Actions. Not shipped in `firehorse-pi`. |
+**Official docs:** [nicobailon/pi-mcp-adapter](https://github.com/nicobailon/pi-mcp-adapter)
 
-### Bundled Pi package skills
+The upstream docs frame the package around a specific MCP problem: tool
+definitions are verbose, and loading several MCP servers can burn a large part
+of the context window before the conversation starts. The adapter exposes a
+small proxy and discovers/starts servers on demand.
 
-| Skill | Source | Role |
-| --- | --- | --- |
-| `context-mode` | `context-mode` | Prefer `ctx_batch_execute`, `ctx_execute`, `ctx_execute_file`, and searchable indexing for large output, logs, data processing, API responses, and test/build output. |
-| `ctx-doctor` | `context-mode` | Diagnose context-mode runtime, hooks, FTS5 database, plugin registration, and package versions. |
-| `ctx-insight` | `context-mode` | Open the context-mode analytics dashboard for session/tool usage and savings. |
-| `ctx-stats` | `context-mode` | Show how much context-mode saved this session. |
-| `ast-grep` | `pi-lens` | Use AST-aware search/rewrite instead of text grep for semantic code patterns. |
-| `lsp-navigation` | `pi-lens` | Use IDE-like code intelligence: definitions, references, hover, diagnostics, signatures, implementations, and call hierarchy. |
-| `librarian` | `pi-web-access` | Research open-source libraries with evidence-backed answers and source-code citations. |
-| `pi-subagents` | `pi-subagents` | Delegate work to built-in/custom subagents in single, chain, parallel, async, forked-context, and intercom workflows. |
+**Role in Firehorse:** make MCP servers practical inside Pi sessions.
 
-### Vendored `mattpocock/skills`
+**Firehorse exposes:**
 
-| Skill | Role |
-| --- | --- |
-| `diagnose` | Disciplined bug/performance diagnosis loop: reproduce, minimise, hypothesise, instrument, fix, regression-test. |
-| `grill-with-docs` | Stress-test a plan against project domain docs and ADRs, updating docs as decisions crystallise. |
-| `triage` | Triage issues through a role/state-machine workflow for bug reports and feature requests. |
-| `improve-codebase-architecture` | Find deeper architecture/refactoring opportunities informed by `CONTEXT.md` and ADRs. |
-| `setup-matt-pocock-skills` | Configure repo-local issue tracker, triage labels, and domain-doc layout expected by the engineering skills. Hidden from automatic model invocation. |
-| `tdd` | Test-driven development with a red/green/refactor workflow. |
-| `to-issues` | Break a plan/spec/PRD into independently grabbable tracker issues. |
-| `to-prd` | Turn conversation context into a PRD and publish it to the project issue tracker. |
-| `zoom-out` | Ask the agent for a higher-level map of unfamiliar code and how it fits the domain model. Hidden from automatic model invocation. |
-| `prototype` | Build a throwaway prototype: terminal app for state/business logic or multiple UI variations for design exploration. |
-| `caveman` | Ultra-compressed communication mode for lower token usage while preserving technical accuracy. |
-| `grill-me` | Interview the user relentlessly about a plan/design until shared understanding is reached. |
-| `handoff` | Compact the current conversation into a handoff document for another agent. |
-| `write-a-skill` | Create new Agent Skills with proper structure, progressive disclosure, references, and optional helper scripts. |
+- Pi extension — adds MCP proxy support to Pi.
+- Superset MCP setup — `firehorse-setup` configures Superset's hosted MCP
+  endpoint through this adapter when Superset is detected or requested.
+- Lazy server lifecycle — MCP servers can stay unloaded until the agent actually
+  needs them.
 
-### Vendored `pbakaus/impeccable`
+There is no separate Firehorse skill for this package; it is infrastructure used
+by setup and by Pi's tool layer.
 
-| Skill | Role |
-| --- | --- |
-| `impeccable` | Frontend interface design, critique, polish, accessibility, visual hierarchy, design systems, motion, copy, and ambitious UI craft. Based on Anthropic's frontend-design skill with upstream Impeccable customizations. |
+</details>
 
-## Shared subagent roles
+<details>
+<summary><strong>pi-mermaid 0.3.0</strong> — render diagrams in the Pi TUI</summary>
 
-Firehorse tracks the built-in `pi-subagents` role vocabulary in core and mirrors
-it into Claude. Pi uses the bundled `pi-subagents` runtime definitions.
+**Official docs:** [Gurpartap/pi-mermaid](https://github.com/Gurpartap/pi-mermaid)
 
-| Agent | Role |
-| --- | --- |
-| `context-builder` | Analyze requirements/codebase and produce compact context plus meta-prompts. |
-| `delegate` | Lightweight direct delegation for bounded tasks. |
-| `oracle` | High-context decision-consistency reviewer that protects inherited state and prevents drift. |
-| `planner` | Produce implementation plans from requirements and context. |
-| `researcher` | Search, evaluate, and synthesize focused research briefs. |
-| `reviewer` | Review code diffs, plans, proposed solutions, codebase health, PRs, and issues. |
-| `scout` | Fast codebase reconnaissance that returns compressed handoff context. |
-| `worker` | Implementation agent for normal tasks and approved oracle handoffs. |
+The upstream docs describe pi-mermaid as a Pi extension that renders Mermaid
+blocks as ASCII diagrams inside Pi's TUI. It validates syntax with Mermaid and
+renders through `beautiful-mermaid`.
 
-## Firehorse-specific overrides and customizations
+**Role in Firehorse:** make architectural diagrams readable directly in agent
+sessions and README/planning workflows.
 
-Firehorse does not blindly re-export upstream packages. The first release adds
-several package-owned customizations:
+**Firehorse exposes:**
 
-1. **Explicit Pi allow-list** — `package.json#pi` exposes selected resources
-   only. For example, Firehorse exposes safe/read-only context-mode skills but
-   not destructive or upgrade-oriented context-mode skills by default.
-2. **Subagent tool defaults** — `packages/firehorse-pi/firehorse.subagents.json`
-   gives code-oriented `pi-subagents` roles access to bundled `pi-lens` tools:
-   `ast_grep_search`, `ast_grep_replace`, `lsp_diagnostics`, and
-   `lsp_navigation`.
-3. **Respect user settings** — `firehorse-subagent-defaults.ts` only fills in
-   missing/defaulted tool allow-lists. User-authored overrides are left alone
-   unless Firehorse previously created them. Opt out with
-   `FIREHORSE_SKIP_SUBAGENT_DEFAULTS=1`.
-4. **Safe Superset setup** — `firehorse-setup` configures Superset MCP in the
-   user-global Pi/Claude MCP config, never in the project repo. Optional secret
-   loading reads only `SUPERSET_API_KEY` and `SUPERSET_ORGANIZATION_ID` from
-   `~/.config/firehorse/superset.env` and rejects group/world-readable files.
-5. **Firehorse-version update checks** — Pi and Claude check Firehorse package
-   or GitHub release versions, not every upstream repository. Users update one
-   Firehorse package/plugin and read one Firehorse changelog.
-6. **Adapter-native mirrors** — upstream skills are stored for provenance in
-   core, then mirrored into Pi and Claude in each ecosystem's native layout.
+- Pi extension — renders Mermaid code blocks as ASCII in the Pi TUI.
 
-## Maintainer workflow
+There are no user-facing skills from this package; it is a display enhancement.
+
+</details>
+
+<details>
+<summary><strong>pi-subagents 0.24.2</strong> — delegate work to focused child agents</summary>
+
+**Official docs:** [nicobailon/pi-subagents](https://github.com/nicobailon/pi-subagents)
+
+The upstream docs describe pi-subagents as a way for Pi to delegate work to
+focused child agents for code review, scouting, implementation, parallel audits,
+saved workflows, background jobs, and other tasks that benefit from additional
+model perspectives.
+
+**Role in Firehorse:** provide the orchestration layer for multi-agent coding
+workflows.
+
+**Firehorse exposes:**
+
+- Pi extension — runtime support for subagents, chains, parallel fan-out,
+  async/background runs, and TUI clarification.
+- `pi-subagents` skill — instructions for single-agent, chain, parallel, async,
+  forked-context, and intercom-coordinated delegation.
+- Prompt templates — bundled from upstream because the extension uses them for
+  workflows.
+- Built-in agents — shared role vocabulary mirrored into Claude.
+
+**Shared agent roles:**
+
+- `context-builder` — builds compact context and meta-prompts.
+- `delegate` — handles direct bounded delegated tasks.
+- `oracle` — preserves decision consistency and prevents drift.
+- `planner` — produces implementation plans.
+- `researcher` — searches and synthesizes focused research briefs.
+- `reviewer` — reviews code, plans, PRs, issues, and architecture.
+- `scout` — quickly maps a codebase area for handoff.
+- `worker` — implements approved tasks.
+
+</details>
+
+<details>
+<summary><strong>pi-web-access 0.10.7</strong> — web search, content extraction, and video understanding</summary>
+
+**Official docs:** [nicobailon/pi-web-access](https://github.com/nicobailon/pi-web-access)
+
+The upstream docs describe Pi Web Access as web search, content extraction, and
+video understanding for Pi, with zero-config Exa search and optional Exa,
+Perplexity, Gemini API, or Gemini Web configuration.
+
+**Role in Firehorse:** give agents a reviewed way to fetch current docs,
+research libraries, inspect GitHub repos, read PDFs, and understand YouTube or
+local video content.
+
+**Firehorse exposes:**
+
+- Pi extension — adds web/search/fetch/content tools to Pi.
+- `librarian` skill — researches open-source libraries with evidence-backed
+  answers and source links.
+- Direct tools — web search, code search, URL/content extraction, stored-content
+  retrieval, and video-aware fetching where configured.
+
+</details>
+
+<details>
+<summary><strong>mattpocock/skills</strong> — small, composable engineering skills</summary>
+
+**Official docs:** [mattpocock/skills](https://github.com/mattpocock/skills)
+
+The upstream docs call these “Skills For Real Engineers”: small, adaptable,
+composable skills for real application work rather than a process that takes
+over the whole project.
+
+**Role in Firehorse:** provide disciplined engineering workflows without adding a
+Firehorse runtime.
+
+Firehorse exposes the skills selected by the upstream Claude plugin manifest.
+Deprecated, personal, in-progress, and misc skills are not exposed unless
+Firehorse explicitly allow-lists them later.
+
+**Firehorse exposes:**
+
+- `diagnose` — reproduce, minimize, hypothesize, instrument, fix, and
+  regression-test bugs/performance regressions.
+- `grill-with-docs` — stress-test a plan against domain docs and ADRs.
+- `triage` — triage issues through a role/state-machine workflow.
+- `improve-codebase-architecture` — find deeper refactoring and architecture
+  opportunities.
+- `setup-matt-pocock-skills` — configure issue tracker, triage labels, and
+  domain-doc layout for the skill set.
+- `tdd` — work test-first using red/green/refactor.
+- `to-issues` — break a plan/spec into independently grabbable issues.
+- `to-prd` — turn conversation context into a PRD.
+- `zoom-out` — ask for a higher-level map of unfamiliar code.
+- `prototype` — build a throwaway terminal or UI prototype.
+- `caveman` — use ultra-compressed communication.
+- `grill-me` — interview the user until a plan/design is understood.
+- `handoff` — compact the conversation for another agent.
+- `write-a-skill` — create new Agent Skills with good structure and progressive
+  disclosure.
+
+</details>
+
+<details>
+<summary><strong>pbakaus/impeccable</strong> — frontend design vocabulary and critique</summary>
+
+**Official docs:** [pbakaus/impeccable](https://github.com/pbakaus/impeccable)
+
+The upstream docs describe Impeccable as “the vocabulary you didn't know you
+needed”: one skill, many design commands, curated anti-patterns, and references
+for typography, color, motion, spatial design, interaction, responsive behavior,
+and UX writing. It started from Anthropic's frontend-design skill and expands it
+with stronger product/brand design guidance.
+
+**Role in Firehorse:** give frontend work a stronger design-review and design-
+implementation loop than generic “make it look better” prompting.
+
+**Firehorse exposes:**
+
+- `impeccable` — design, redesign, critique, audit, polish, clarify, harden,
+  optimize, adapt, animate, colorize, document, and improve frontend interfaces.
+
+</details>
+
+## Firehorse-specific customization
+
+Firehorse adds a small amount of glue around the upstreams:
+
+- **Curated allow-list:** bundled packages do not automatically expose every
+  upstream file.
+- **Subagent defaults:** code-oriented `pi-subagents` roles get `pi-lens` tools
+  by default while respecting user-authored overrides.
+- **Safe Superset setup:** `firehorse-setup` configures Superset MCP in user-
+  global config and keeps API keys out of project repos.
+- **Firehorse release checks:** Pi and Claude check Firehorse versions and point
+  to Firehorse release notes instead of polling every upstream at startup.
+- **Adapter-native mirrors:** selected skills are mirrored into Pi and Claude in
+  each ecosystem's native format.
+
+## Development
 
 ```sh
 pnpm install
@@ -318,29 +383,22 @@ pnpm upstreams:update:impeccable
 pnpm upstreams:write-update-manifests
 ```
 
-For future releases, load the repo-local skill:
+For future releases, use the repo-local release skill:
 
 ```text
 /skill:firehorse-release
 ```
 
-That skill lives at `.agents/skills/firehorse-release/` and covers upstream
-update checks, README/release-note refresh, version bumps, quality gates, git
-tagging, GitHub release creation, and GitHub Actions verification.
+## Further reading
 
-## Documentation
+- [Architecture](./docs/ARCHITECTURE.md)
+- [Upstream skills and agents](./docs/UPSTREAM-SKILLS.md)
+- [Pi distribution README](./packages/firehorse-pi/README.md)
+- [Claude plugin README](./packages/firehorse-claude/README.md)
+- [v0.1.0 changelog](./CHANGELOG.md)
 
-- [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — framework architecture and
-  distribution rationale.
-- [`docs/UPSTREAM-SKILLS.md`](./docs/UPSTREAM-SKILLS.md) — upstream provenance,
-  update model, and selection policies.
-- [`packages/firehorse-pi/README.md`](./packages/firehorse-pi/README.md) — Pi
-  package install/setup details and bundling model.
-- [`packages/firehorse-claude/README.md`](./packages/firehorse-claude/README.md)
-  — Claude plugin install/setup details.
+## License
 
-## License and notices
-
-Firehorse is MIT licensed. Vendored and bundled upstream resources keep their
-own licenses and provenance; see the package-level `THIRD_PARTY_NOTICES.md`
-files and each upstream `UPSTREAM.json` manifest.
+Firehorse is MIT licensed. Bundled and mirrored upstreams keep their own
+licenses and provenance; see package-level `THIRD_PARTY_NOTICES.md` files and
+upstream `UPSTREAM.json` manifests.
