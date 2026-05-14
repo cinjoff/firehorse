@@ -392,6 +392,7 @@ For future releases, use the repo-local release skill:
 ## Further reading
 
 - [Architecture](./docs/ARCHITECTURE.md)
+- [Workflow map](./docs/WORKFLOW-MAP.md)
 - [Upstream skills and agents](./docs/UPSTREAM-SKILLS.md)
 - [Pi distribution README](./packages/firehorse-pi/README.md)
 - [Claude plugin README](./packages/firehorse-claude/README.md)
