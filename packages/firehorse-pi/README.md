@@ -13,7 +13,7 @@ but this package now exposes curated upstream content:
 - `pbakaus/impeccable` — vendored frontend design skill mirrored into Pi paths.
 - `shadcn/ui` — official shadcn agent skill mirrored into Pi paths for reliable
   component, registry, and preset work.
-- `context-mode` (`1.0.133`) — Pi extension plus selected skills.
+- `context-mode` (`1.0.134`) — Pi extension plus selected skills.
 - `pi-lens` (`3.8.44`) — Pi extension plus selected skills.
 - `pi-mcp-adapter` (`2.6.1`) — Pi MCP adapter extension.
 - `pi-mermaid` (`0.3.0`) — Mermaid diagram rendering extension for the Pi TUI.

@@ -19,18 +19,18 @@ The `id`, `kind`, and path must agree. IDs are globally unique across all three 
 
 All v1 definitions use this common field set:
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `schemaVersion` | integer | Required, currently `1`. |
-| `id` | slug | Lowercase letters, numbers, single hyphens; globally unique. |
-| `kind` | enum | `workflow`, `skill`, or `agent-role`. |
-| `title` | string | Human-readable title. |
-| `description` | string | Provider-facing summary. |
-| `requires` | object | Provider-neutral required capabilities. |
-| `optional` | object | Provider-neutral optional capabilities. |
-| `aliases` | string[] | Optional historical IDs. |
-| `deprecated` | boolean | Optional deprecation marker. |
-| `replacedBy` | string | Optional replacement ID; requires `deprecated: true`. |
+| Field           | Type     | Notes                                                        |
+| --------------- | -------- | ------------------------------------------------------------ |
+| `schemaVersion` | integer  | Required, currently `1`.                                     |
+| `id`            | slug     | Lowercase letters, numbers, single hyphens; globally unique. |
+| `kind`          | enum     | `workflow`, `skill`, or `agent-role`.                        |
+| `title`         | string   | Human-readable title.                                        |
+| `description`   | string   | Provider-facing summary.                                     |
+| `requires`      | object   | Provider-neutral required capabilities.                      |
+| `optional`      | object   | Provider-neutral optional capabilities.                      |
+| `aliases`       | string[] | Optional historical IDs.                                     |
+| `deprecated`    | boolean  | Optional deprecation marker.                                 |
+| `replacedBy`    | string   | Optional replacement ID; requires `deprecated: true`.        |
 
 Capability objects may contain `tools`, `orchestration`, `modalities`, and `environment` arrays. Common values include tools such as `read`, `bash`, `edit`, `write`; orchestration values such as `subagents`, `parallel-agents`, `review-gates`; modalities such as `text`, `vision`; and environment values such as `filesystem`, `git`, `github`, `node`, and `pnpm`. Extension-prefixed values such as `mcp:github` are valid.
 
@@ -38,12 +38,12 @@ Capability objects may contain `tools`, `orchestration`, `modalities`, and `envi
 
 Additional workflow frontmatter:
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `argumentHint` | string | Projected to Pi prompt-template and Claude command UX. |
-| `supportingSkills` | `{ id }[]` | Firehorse-authored skill references. |
-| `agentRoles` | `{ id }[]` | Firehorse-authored agent role references. |
-| `upstreamSkills` | `{ upstream, id }[]` | Structured upstream skill references. |
+| Field              | Type                 | Notes                                                  |
+| ------------------ | -------------------- | ------------------------------------------------------ |
+| `argumentHint`     | string               | Projected to Pi prompt-template and Claude command UX. |
+| `supportingSkills` | `{ id }[]`           | Firehorse-authored skill references.                   |
+| `agentRoles`       | `{ id }[]`           | Firehorse-authored agent role references.              |
+| `upstreamSkills`   | `{ upstream, id }[]` | Structured upstream skill references.                  |
 
 Required body sections:
 
@@ -63,9 +63,9 @@ Workflow projections generate Pi prompt templates and Claude commands named `hor
 
 Additional skill frontmatter:
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `license` | string | Optional Agent Skills metadata. |
+| Field           | Type   | Notes                           |
+| --------------- | ------ | ------------------------------- |
+| `license`       | string | Optional Agent Skills metadata. |
 | `compatibility` | string | Optional Agent Skills metadata. |
 
 Required body sections:

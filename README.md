@@ -150,7 +150,7 @@ is included in Firehorse, and lists the specific skills/resources Firehorse
 exposes.
 
 <details>
-<summary><strong>context-mode 1.0.133</strong> — keep huge outputs out of the model context</summary>
+<summary><strong>context-mode 1.0.134</strong> — keep huge outputs out of the model context</summary>
 
 **Official docs:** [mksglu/context-mode](https://github.com/mksglu/context-mode)
 

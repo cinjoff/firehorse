@@ -47,11 +47,12 @@
     "./skills/mattpocock/productivity/grill-me",
     "./skills/mattpocock/productivity/handoff",
     "./skills/mattpocock/productivity/write-a-skill",
-    "./skills/pbakaus/impeccable",
     "./skills/shadcn-ui/shadcn",
+    "./skills/pbakaus/impeccable",
     "./skills/firehorse/feedback-loop"
   ],
   "commands": [
-    "./commands/firehorse/horse-diagnose-fix.md"
+    "./commands/firehorse/horse-diagnose-fix.md",
+    "./commands/firehorse/horse-update-upstreams.md"
   ]
 }

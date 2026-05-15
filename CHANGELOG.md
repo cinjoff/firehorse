@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+- Updated `context-mode` from 1.0.133 to 1.0.134.
+- Updated `pbakaus/impeccable` from `1e8356fa259153b56213fa434a822bbf4a885f39` to `4af581e23f17d112d8f9d6b7a5b7ff37823494e1` and refreshed its Pi/Claude mirrors.
+
 ### Added
 
 - Added pinned `claude-mem` upstream metadata, exposed the upstream Claude
