@@ -45,6 +45,16 @@ License: Apache-2.0
 The Apache license text and upstream NOTICE are bundled at
 `skills/pbakaus/LICENSE` and `skills/pbakaus/NOTICE.md`.
 
+## shadcn/ui
+
+Firehorse-claude includes the official `shadcn` agent skill from
+<https://github.com/shadcn-ui/ui/tree/main/skills/shadcn>, pinned in
+`../firehorse-core/upstreams/shadcn-ui/UPSTREAM.json` in the source repository.
+
+License: MIT
+
+The MIT license text is bundled at `skills/shadcn-ui/LICENSE.md`.
+
 ## pi-subagents
 
 Firehorse-claude includes Claude-adapted mirrors of the built-in agents from
@@ -53,3 +63,12 @@ Firehorse-claude includes Claude-adapted mirrors of the built-in agents from
 repository.
 
 License: MIT
+
+## claude-mem
+
+Firehorse-claude declares a plugin dependency on `claude-mem` from
+<https://github.com/thedotmack/claude-mem>, pinned in
+`../firehorse-core/upstreams/claude-mem/UPSTREAM.json` in the source repository
+and exposed through the Firehorse marketplace as an upstream plugin entry.
+
+License: Apache-2.0

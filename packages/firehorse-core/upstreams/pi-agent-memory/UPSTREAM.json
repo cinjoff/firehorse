@@ -1,0 +1,28 @@
+{
+  "name": "pi-agent-memory",
+  "source": "https://github.com/ArtemisAI/pi-mem",
+  "git": "https://github.com/ArtemisAI/pi-mem.git",
+  "ref": "main",
+  "commit": "6b0c958379c3e922a3ab25d156ab2530e878036b",
+  "license": "AGPL-3.0",
+  "npmPackage": "pi-agent-memory",
+  "version": "0.3.4",
+  "upstreamPackageName": "pi-agent-memory",
+  "upstreamPackageVersion": "0.3.4",
+  "adapterNamespace": "claude-mem",
+  "selectionPolicy": "Bundle the upstream Pi package and expose only its pi-mem extension plus mem-search skill through explicit node_modules/pi-agent-memory manifest paths. The package connects Pi sessions to the claude-mem worker; Firehorse-pi bundles claude-mem and starts/checks that worker for Pi-only harness use without forking the upstream runtime.",
+  "extensions": [
+    {
+      "name": "pi-mem",
+      "sourcePath": "pi-agent/extensions/pi-mem.ts",
+      "piPath": "node_modules/pi-agent-memory/extensions/pi-mem.ts"
+    }
+  ],
+  "skills": [
+    {
+      "name": "mem-search",
+      "sourcePath": "pi-agent/skills/mem-search",
+      "piPath": "node_modules/pi-agent-memory/skills/mem-search"
+    }
+  ]
+}

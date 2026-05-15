@@ -51,23 +51,47 @@ Typed contracts and registries for provider and orchestrator adapters.
 
 ## Next up
 
-### REQ-05 — Skill definition format — `todo`
+### REQ-05 — Firehorse definition format — `in-progress`
 
-Decide and document the cross-provider skill format. Inputs:
+Decide and document the cross-provider authoring format for workflows and their
+supporting skills / agent roles. Inputs:
 
 - Pi expects `SKILL.md` folders + top-level `.md` files in `skills/`.
 - Claude expects `skills/<skill>/SKILL.md` (similar).
 - Codex / `AGENTS.md` follows the AGENTS convention.
 
-Goal: a single source-of-truth format that the two distributions adapt from,
-or two adapters that share enough of the schema that the source skill author
-doesn't have to think twice.
+Goal: Firehorse-authored definitions live canonically under
+`packages/firehorse-core/definitions/` and are adapted into distribution-native
+files. Imported upstream skills remain upstream-shaped curated ingredients.
+`firehorse-core` also owns the gray-matter-parsed, Zod-backed TypeScript schema,
+parser, validator, and Pi/Claude projection generator for Firehorse Definition
+Files so format and projection drift are caught before any runtime exists.
+`gray-matter` and `zod` are normal `firehorse-core` dependencies. Every
+Definition File declares a required integer `schemaVersion` starting at `1`.
+Workflow mirrors target Pi prompt templates and Claude commands, generated native names use `horse-<id>`,
+generated files live under provider-native `firehorse/` folders, generated
+mirrors are checked in with provenance headers, projection file writes only
+overwrite valid generated files, stale generated mirrors are removed when their
+source disappears, and definition validation runs as part of typecheck/CI.
+Generated mirrors contain fully rendered instructions, preserve canonical
+headings where possible, include structured supporting-capability references,
+machine-readable and human-visible provenance, and SHA-256 source content hashes. They
+are exposed through generated package-local and repo-root manifest updates, and
+must be changed by editing canonical definitions rather than hand-editing
+mirrors. Pi Agent Role mirrors are synced by explicit setup into the user's Pi
+agent directory. Definition IDs are stable public API with frontmatter
+alias/deprecation handling for renames. Upstream skill references use object
+references with `upstream` and `id`, and generated manifest entries are sorted
+deterministically. The repo exposes `definitions:write` and `definitions:check`;
+write mode removes stale generated mirrors with valid provenance, and check mode
+fails on stale output. The initial fixture is `diagnose-fix`, with the
+Firehorse-authored `feedback-loop` skill and `diagnostic-reviewer` Agent Role.
 
 ### REQ-06 — Skill loader / runtime (core) — `todo`
 
-Once REQ-05 is settled: a loader in `firehorse-core` that discovers skills,
-validates them against the schema, and exposes them through a small runtime
-API. Still provider-agnostic; transports come later (REQ-07).
+Once REQ-05 is settled: a loader in `firehorse-core` that discovers definitions
+using the existing schema/parser/validator and exposes them through a small
+runtime API. Still provider-agnostic; transports come later (REQ-07).
 
 ### REQ-07 — Provider transports — `todo`
 
@@ -96,6 +120,16 @@ Current bundled upstreams:
   built-in agents, and Firehorse default tool overrides.
 - `pi-web-access` (`0.10.7`) — web/search/fetch extension plus the allow-listed
   `librarian` research skill.
+- `claude-mem` (`13.2.0`) — bundled upstream memory worker package for Pi-only
+  harness use; Firehorse-pi starts/checks the bundled worker without requiring
+  Claude Code to be installed.
+- `pi-agent-memory` (`0.3.4`) — Pi memory extension plus the allow-listed
+  `mem-search` skill, backed by the bundled/running `claude-mem` worker.
+  Firehorse also ships `firehorse-memory-project`, which applies setup-pinned
+  `FIREHORSE_PROJECT_NAME` / `PI_MEM_PROJECT` / `CLAUDE_MEM_PROJECT` values
+  before the memory extension starts. Setup must verify the worker and use
+  upstream `npx claude-mem install` / Claude plugin marketplace setup only as a
+  fallback or repair path.
 
 The `pi` manifest is intentionally an allow-list rather than `node_modules/*`
 whole-package exposure. `pnpm-lock.yaml` records the exact resolved versions
@@ -116,12 +150,31 @@ Current upstreams:
   `packages/firehorse-core/upstreams/impeccable/UPSTREAM.json`.
 - `pi-subagents` built-in agent definitions pinned at
   `packages/firehorse-core/upstreams/pi-subagents/UPSTREAM.json`.
+- `claude-mem` pinned at
+  `packages/firehorse-core/upstreams/claude-mem/UPSTREAM.json` and exposed to
+  Claude through a Firehorse marketplace dependency.
+- `pi-agent-memory` pinned at
+  `packages/firehorse-core/upstreams/pi-agent-memory/UPSTREAM.json` and exposed
+  to Pi through the bundled package allow-list.
+- `shadcn-ui` pinned at
+  `packages/firehorse-core/upstreams/shadcn-ui/UPSTREAM.json` and mirrored into
+  both Pi and Claude as the official `shadcn` agent skill.
 
 Selection policy: expose the skills listed by the upstream Claude plugin
 manifest, not every directory in the upstream repo; for Impeccable, mirror the
 upstream-generated Claude and Pi variants while keeping the canonical `skill/`
 source in core; expose the built-in `pi-subagents` agent set as Firehorse shared
-subagent definitions. Deprecated, in-progress, personal, and misc skills are not
+subagent definitions; keep `claude-mem` as an upstream-owned runtime by exposing
+it as a Claude plugin dependency and bundling its npm package in Firehorse-pi for
+Pi-only worker startup; expose `pi-agent-memory` through explicit Pi package
+paths that connect to the running claude-mem worker; expose the official
+`shadcn/ui` agent skill because shadcn work requires project-aware CLI,
+registry, component-composition, and preset rules.
+Firehorse setup verifies the bundled claude-mem worker is installed/reachable and
+resolves the memory project id with
+`gh repo view --json name --jq .name` rather than relying on git parent/cwd
+inference, so Superset and Conductor worktrees share the canonical GitHub repo
+memory namespace. Deprecated, in-progress, personal, and misc skills are not
 mirrored unless explicitly allow-listed.
 
 Tooling:
@@ -133,6 +186,8 @@ Tooling:
   source and both adapter mirrors.
 - `pnpm upstreams:update:impeccable` refreshes the Impeccable core source and
   both adapter mirrors.
+- `pnpm upstreams:update:shadcn-ui` refreshes the official shadcn skill core
+  source and both adapter mirrors.
 
 ### REQ-14 — Session-start update checks — `done`
 
@@ -151,13 +206,75 @@ Firehorse vendors and releases them.
 
 ### REQ-09 — Per-project setup commands — `todo`
 
-The fh:new-project counterpart for each distribution:
+The `horse-new-project` counterpart for each distribution, generated after the
+Firehorse Definition Format projection generator exists:
 
-- **firehorse-pi**: an extension or skill that scaffolds project-local
-  `.pi/settings.json` and any project-side firehorse config.
-- **firehorse-claude**: a `/firehorse:new-project` (or similar) command that
-  scaffolds `.planning/`, `CLAUDE.md`, etc., adapted to firehorse conventions
-  (not fhhs-skills'd).
+- **firehorse-pi**: a generated provider-native prompt/skill surface that creates
+  or syncs durable project anchors without GSD.
+- **firehorse-claude**: a generated provider-native command/skill surface with
+  the same interview flow and document set.
+
+Target document set:
+
+- `docs/PROJECT.md` — periodically updated high-level product picture with
+  vision, target users, problem, value proposition, success criteria,
+  constraints, and open questions. PRDs reference this anchor rather than
+  duplicating it.
+- `docs/DESIGN.md` — only when brand/design language is actually defined.
+- `docs/codebase/ARCHITECTURE.md`
+- `docs/codebase/STRUCTURE.md`
+- `docs/codebase/CONVENTIONS.md`
+- `docs/codebase/TESTING.md`
+- `docs/codebase/INTEGRATIONS.md`
+- `docs/codebase/CONCERNS.md`
+
+Only create `docs/codebase/*` after code exists or starter setup runs; do not
+write planned codebase placeholders. `horse-map-codebase` writes the split
+codebase anchors exactly, not one combined map, and includes source commit/hash
+and timestamp freshness metadata in each codebase anchor.
+
+Behavior: support both greenfield and brownfield projects, fill missing anchors,
+and never overwrite user-authored docs without asking. Do not create `.planning/`
+or GSD files. Generate/update a clearly marked Firehorse section in cross-
+provider `AGENTS.md` guidance rather than Claude-only guidance. Brownfield mode
+analyzes existing code before asking and uses reusable `horse-map-codebase`
+behavior to fill `docs/codebase/` anchors, preferring provider delegation when
+available and falling back to single-agent analysis. The interview is a
+lightweight product/business discovery grill, with optional brand definition via
+Impeccable. If the user explicitly opts in, the workflow may run starter app /
+hosting / database-auth / dependency setup automation explained in non-technical
+language, with confirmation before each external mutation command. It never
+performs Sentry/observability setup. When the selected stack uses shadcn/ui and
+`docs/DESIGN.md` is created or updated, derive a shadcn preset from the design
+direction and use the shadcn CLI (`init --preset` for new apps or
+`apply --preset` for existing apps) before adding UI components; do not decode
+preset codes manually or hand-edit theme files before the preset path is tried.
+Before issue drafting, run/use the bundled
+`setup-matt-pocock-skills` behavior so issue tracker, triage labels, and domain-
+doc expectations are recorded for `to-prd` / `to-issues`. Then draft GitHub
+issues after discovery by referencing the bundled `to-prd` / `to-issues`
+behavior rather than copying their full templates: setup / infrastructure tasks
+plus product vertical-slice issues, grouped with approved labels and an `MVP`
+milestone. Propose labels:
+`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`,
+`setup`, `product`, `design`, `frontend`, `backend`, `infra`, `docs`, and
+`blocked`; create only approved missing labels. Write local drafts first as
+zero-padded paths `docs/prds/prd-0001-{slug}.md` and
+`docs/issues/issue-0001-{slug}.md` so work can be reviewed, handed off, or
+continued if GitHub is not configured. Keep local drafts after publishing and
+update them with GitHub issue links. Ask for approval before creating labels,
+milestones, or issues, and only then call `gh issue create`; missing GitHub CLI
+auth must not block project anchor or draft creation, but issue creation is
+blocked until `gh` works. Starter repos default to private GitHub repos from
+`cinjoff/fh-starter-project`; in existing repos, clone/copy the starter to a
+temporary location, copy non-conflicting files by default, produce a conflict
+report, and ask before replacing any existing files. After starter setup creates
+code, run codebase mapping. The product discovery interview should be
+medium-depth and one-question-at-a-time, with the workflow recommending an answer
+for each question; continue until vision, target users, problem, value
+proposition, and success criteria are crisp. Technical explanations for starter
+app, hosting, database/auth, and environment variables should be fixed,
+non-technical text embedded in the workflow.
 
 ### REQ-10 — Tests — `todo`
 
@@ -193,6 +310,8 @@ once tests exist.
 ### REQ-X3 — Pi peer-dep declaration hygiene — `todo`
 
 `firehorse-pi`'s peer deps were marked optional and `auto-install-peers=false`
-prevents bloat. Revisit once we actually import Pi core modules — peers
-become non-optional then, but `auto-install-peers=false` will still need to
-stay (consumers `pi install` will provide them).
+prevents bloat. Legacy upstream peer names such as `@mariozechner/*` may remain
+optional while bundled upstream Pi packages still import them. Revisit once we
+actually import Pi core modules — peers become non-optional then, but
+`auto-install-peers=false` will still need to stay (consumers `pi install` will
+provide them).

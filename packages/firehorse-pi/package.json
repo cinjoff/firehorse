@@ -1,6 +1,6 @@
 {
   "name": "firehorse-pi",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Pi.dev distribution of firehorse — bundles selected pi packages and exposes them as a single install.",
   "license": "MIT",
   "author": {
@@ -33,7 +33,8 @@
     "firehorse.update.json",
     "firehorse.subagents.json",
     "README.md",
-    "THIRD_PARTY_NOTICES.md"
+    "THIRD_PARTY_NOTICES.md",
+    "agents"
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -45,15 +46,17 @@
     "@modelcontextprotocol/ext-apps": "1.7.1",
     "@modelcontextprotocol/sdk": "1.29.0",
     "beautiful-mermaid": "1.1.3",
-    "context-mode": "1.0.133",
+    "claude-mem": "13.2.0",
+    "context-mode": "1.0.135",
     "jiti": "2.7.0",
     "mermaid": "11.15.0",
     "minimatch": "10.2.5",
     "open": "10.2.0",
+    "pi-agent-memory": "0.3.4",
     "pi-lens": "3.8.44",
     "pi-mcp-adapter": "2.6.1",
     "pi-mermaid": "0.3.0",
-    "pi-subagents": "0.24.2",
+    "pi-subagents": "0.24.3",
     "pi-web-access": "0.10.7",
     "typescript": "6.0.3",
     "vscode-jsonrpc": "8.2.1",
@@ -61,10 +64,12 @@
     "zod": "4.4.3"
   },
   "bundledDependencies": [
+    "claude-mem",
     "context-mode",
     "pi-lens",
     "pi-mcp-adapter",
     "pi-mermaid",
+    "pi-agent-memory",
     "pi-subagents",
     "pi-web-access"
   ],
@@ -79,7 +84,8 @@
       "./node_modules/pi-mcp-adapter/index.ts",
       "./node_modules/pi-mermaid/index.ts",
       "./node_modules/pi-subagents/src/extension/index.ts",
-      "./node_modules/pi-web-access/index.ts"
+      "./node_modules/pi-web-access/index.ts",
+      "./node_modules/pi-agent-memory/extensions"
     ],
     "skills": [
       "./node_modules/context-mode/skills/context-mode",
@@ -90,6 +96,7 @@
       "./node_modules/pi-lens/skills/lsp-navigation",
       "./node_modules/pi-web-access/skills/librarian",
       "./node_modules/pi-subagents/skills/pi-subagents",
+      "./node_modules/pi-agent-memory/skills/mem-search",
       "./skills/firehorse-setup",
       "./skills/mattpocock/engineering/diagnose",
       "./skills/mattpocock/engineering/grill-with-docs",
@@ -105,21 +112,27 @@
       "./skills/mattpocock/productivity/grill-me",
       "./skills/mattpocock/productivity/handoff",
       "./skills/mattpocock/productivity/write-a-skill",
-      "./skills/pbakaus/impeccable"
+      "./skills/shadcn-ui/shadcn",
+      "./skills/pbakaus/impeccable",
+      "./skills/firehorse/feedback-loop"
     ],
     "prompts": [
       "./prompts",
-      "./node_modules/pi-subagents/prompts"
+      "./node_modules/pi-subagents/prompts",
+      "./prompts/firehorse/horse-diagnose-fix.md",
+      "./prompts/firehorse/horse-update-upstreams.md"
     ],
     "themes": [
       "./themes"
     ]
   },
   "peerDependencies": {
-    "@earendil-works/pi-ai": "*",
     "@earendil-works/pi-agent-core": "*",
+    "@earendil-works/pi-ai": "*",
     "@earendil-works/pi-coding-agent": "*",
     "@earendil-works/pi-tui": "*",
+    "@mariozechner/pi-ai": "*",
+    "@mariozechner/pi-coding-agent": "*",
     "typebox": "*"
   },
   "peerDependenciesMeta": {
@@ -135,6 +148,12 @@
     "@earendil-works/pi-tui": {
       "optional": true
     },
+    "@mariozechner/pi-ai": {
+      "optional": true
+    },
+    "@mariozechner/pi-coding-agent": {
+      "optional": true
+    },
     "typebox": {
       "optional": true
     }
@@ -144,17 +163,32 @@
       "schemaVersion": 1,
       "adapter": "pi",
       "packageName": "firehorse-pi",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "updateCommand": "pi update npm:firehorse-pi",
       "upstreams": [
+        {
+          "name": "claude-mem",
+          "source": "https://github.com/thedotmack/claude-mem",
+          "git": "https://github.com/thedotmack/claude-mem.git",
+          "ref": "main",
+          "commit": "37d24944af5f4afaa0de2b0bd0034bb432f2b714",
+          "npmPackage": "claude-mem",
+          "version": "13.2.0",
+          "upstreamPackageVersion": "13.2.0",
+          "upstreamPluginVersion": "13.2.0",
+          "license": "Apache-2.0",
+          "selectionPolicy": "Expose claude-mem to Claude users as a pinned Firehorse marketplace dependency that installs the upstream plugin from its plugin/ subdirectory. Firehorse-pi also bundles the claude-mem npm package so Pi-only users have the worker scripts available without installing Claude Code. Do not merge the memory hooks, MCP server, worker scripts, or skills into the Firehorse Claude plugin; keep the original upstream runtime as the owner.",
+          "marketplacePluginName": "claude-mem",
+          "pluginDependencyCount": 1
+        },
         {
           "name": "impeccable",
           "source": "https://github.com/pbakaus/impeccable",
           "git": "https://github.com/pbakaus/impeccable.git",
           "ref": "main",
-          "commit": "1e8356fa259153b56213fa434a822bbf4a885f39",
+          "commit": "4af581e23f17d112d8f9d6b7a5b7ff37823494e1",
           "upstreamPackageVersion": "2.1.9",
-          "upstreamPluginVersion": "3.1.0",
+          "upstreamPluginVersion": "3.1.1",
           "license": "Apache-2.0",
           "selectionPolicy": "Expose the skill directories exported by the upstream Claude plugin manifest, using upstream's generated Claude and Pi variants for adapter mirrors and the canonical skill/ source for core provenance when available.",
           "updateCommand": "pnpm upstreams:update:impeccable",
@@ -172,22 +206,49 @@
           "skillCount": 14
         },
         {
+          "name": "pi-agent-memory",
+          "source": "https://github.com/ArtemisAI/pi-mem",
+          "git": "https://github.com/ArtemisAI/pi-mem.git",
+          "ref": "main",
+          "commit": "6b0c958379c3e922a3ab25d156ab2530e878036b",
+          "npmPackage": "pi-agent-memory",
+          "version": "0.3.4",
+          "upstreamPackageVersion": "0.3.4",
+          "license": "AGPL-3.0",
+          "selectionPolicy": "Bundle the upstream Pi package and expose only its pi-mem extension plus mem-search skill through explicit node_modules/pi-agent-memory manifest paths. The package connects Pi sessions to the claude-mem worker; Firehorse-pi bundles claude-mem and starts/checks that worker for Pi-only harness use without forking the upstream runtime.",
+          "skillCount": 1,
+          "extensionCount": 1
+        },
+        {
           "name": "pi-subagents",
           "source": "https://github.com/nicobailon/pi-subagents",
           "git": "https://github.com/nicobailon/pi-subagents.git",
           "npmPackage": "pi-subagents",
-          "version": "0.24.2",
+          "version": "0.24.3",
           "license": "MIT",
           "selectionPolicy": "Expose the upstream built-in pi-subagents agent set as Firehorse shared subagent definitions. Pi consumes these through the bundled pi-subagents package built-ins; Claude receives Claude-compatible mirrors generated from the same pinned source files.",
           "agentCount": 8
+        },
+        {
+          "name": "shadcn-ui",
+          "source": "https://github.com/shadcn-ui/ui",
+          "git": "https://github.com/shadcn-ui/ui.git",
+          "ref": "refs/heads/main",
+          "commit": "36139f6200d9c2684ef7695fce5f3d9787378e26",
+          "license": "MIT",
+          "selectionPolicy": "Expose the official shadcn/ui agent skill because it provides required project-aware guidance for adding components, using registries, and applying presets reliably.",
+          "updateCommand": "pnpm upstreams:update:shadcn-ui",
+          "skillCount": 1
         }
       ],
       "bundledPiPackages": {
-        "context-mode": "1.0.133",
+        "claude-mem": "13.2.0",
+        "context-mode": "1.0.135",
         "pi-lens": "3.8.44",
         "pi-mcp-adapter": "2.6.1",
         "pi-mermaid": "0.3.0",
-        "pi-subagents": "0.24.2",
+        "pi-agent-memory": "0.3.4",
+        "pi-subagents": "0.24.3",
         "pi-web-access": "0.10.7"
       }
     }

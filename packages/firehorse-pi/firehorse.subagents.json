@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 1,
-  "description": "Firehorse default builtin pi-subagents overrides. These keep upstream roles but add Firehorse-bundled pi-lens code-intelligence tools where useful.",
+  "schemaVersion": 5,
+  "description": "Firehorse default builtin pi-subagents overrides. These keep upstream roles but add Firehorse-bundled pi-lens code-intelligence tools, pi-agent-memory's Pi-native memory_recall tool, and context-mode processing tools where useful. The shadcn skill is exposed by Firehorse but is not granted to worker by default yet.",
   "agentOverrides": {
     "context-builder": {
       "tools": [
@@ -14,7 +14,8 @@
         "intercom",
         "ast_grep_search",
         "lsp_diagnostics",
-        "lsp_navigation"
+        "lsp_navigation",
+        "memory_recall"
       ]
     },
     "delegate": {
@@ -30,7 +31,8 @@
         "ast_grep_search",
         "ast_grep_replace",
         "lsp_diagnostics",
-        "lsp_navigation"
+        "lsp_navigation",
+        "memory_recall"
       ]
     },
     "oracle": {
@@ -43,7 +45,8 @@
         "intercom",
         "ast_grep_search",
         "lsp_diagnostics",
-        "lsp_navigation"
+        "lsp_navigation",
+        "memory_recall"
       ]
     },
     "planner": {
@@ -56,7 +59,8 @@
         "intercom",
         "ast_grep_search",
         "lsp_diagnostics",
-        "lsp_navigation"
+        "lsp_navigation",
+        "memory_recall"
       ]
     },
     "reviewer": {
@@ -72,7 +76,8 @@
         "ast_grep_search",
         "ast_grep_replace",
         "lsp_diagnostics",
-        "lsp_navigation"
+        "lsp_navigation",
+        "memory_recall"
       ]
     },
     "scout": {
@@ -84,9 +89,16 @@
         "bash",
         "write",
         "intercom",
+        "ctx_batch_execute",
+        "ctx_execute",
+        "ctx_execute_file",
+        "ctx_index",
+        "ctx_search",
+        "ctx_fetch_and_index",
         "ast_grep_search",
         "lsp_diagnostics",
-        "lsp_navigation"
+        "lsp_navigation",
+        "memory_recall"
       ]
     },
     "worker": {
@@ -99,10 +111,17 @@
         "edit",
         "write",
         "contact_supervisor",
+        "ctx_batch_execute",
+        "ctx_execute",
+        "ctx_execute_file",
+        "ctx_index",
+        "ctx_search",
+        "ctx_fetch_and_index",
         "ast_grep_search",
         "ast_grep_replace",
         "lsp_diagnostics",
-        "lsp_navigation"
+        "lsp_navigation",
+        "memory_recall"
       ]
     }
   }

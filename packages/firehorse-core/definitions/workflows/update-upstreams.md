@@ -1,0 +1,98 @@
+---
+schemaVersion: 1
+id: update-upstreams
+kind: workflow
+title: Update Upstreams
+description: Update all stale Firehorse pinned upstreams and bundled Pi dependencies in one maintainer pass, then refresh generated mirrors, docs, and validation gates.
+argumentHint: "[constraints | specific upstream names | --docs-only | --skip-quality-gates]"
+requires:
+  tools:
+    - read
+    - bash
+  environment:
+    - filesystem
+    - git
+    - node
+    - pnpm
+optional:
+  tools:
+    - grep
+    - find
+    - ls
+    - edit
+    - write
+  orchestration:
+    - subagents
+    - parallel-agents
+    - review-gates
+  environment:
+    - github
+supportingSkills:
+  - id: feedback-loop
+agentRoles:
+  - id: diagnostic-reviewer
+---
+
+# Update Upstreams
+
+## Purpose
+
+Use this workflow when a maintainer wants a single Pi prompt to update Firehorse's pinned upstream skills, mirrored adapter content, bundled Pi-package dependency pins, generated manifests, and release-facing documentation in one pass instead of invoking each upstream update command manually.
+
+## Usage
+
+Invoke the generated provider command as `horse-update-upstreams` with optional constraints such as a subset of upstream names, `--docs-only`, or `--skip-quality-gates`. With no arguments, treat `$ARGUMENTS` as “update every stale upstream reported by `pnpm upstreams:check`.” In generated prompt templates and commands, the user's freeform input is available as `$ARGUMENTS`.
+
+## Inputs
+
+- `$ARGUMENTS`: optional constraints, requested upstream names, or validation exceptions supplied by the user.
+- Existing repo guidance from `AGENTS.md`, `.planning/`, `docs/ARCHITECTURE.md`, `docs/UPSTREAM-SKILLS.md`, package manifests, and the current git status.
+- `pnpm upstreams:check` output, which is the source of truth for stale pinned upstreams and bundled Pi dependencies.
+- Upstream update scripts such as `pnpm upstreams:update:mattpocock-skills`, `pnpm upstreams:update:impeccable`, and `pnpm upstreams:update:shadcn-ui`, plus package-manager updates for stale bundled npm packages.
+
+## Outputs
+
+- Refreshed upstream mirrors and provenance manifests for every stale upstream in scope.
+- Updated exact dependency pins in root/package manifests and `pnpm-lock.yaml` for stale bundled Pi packages.
+- Regenerated Firehorse update manifests and definition-generated provider mirrors.
+- Updated user-facing docs or changelog entries when pinned upstreams or exposed behavior changed.
+- A final report listing upstreams updated, commands run, validation results, files changed, skipped items, and any follow-up release steps.
+
+## Supporting Capabilities
+
+- Firehorse skill reference: `feedback-loop` for defining the validation loop before and after the update batch.
+- Agent role reference: `diagnostic-reviewer` for optional review of the resulting diff and evidence.
+- Required capabilities: local file reading, git inspection, shell validation, Node, and pnpm.
+- Optional capabilities: provider-native subagents, parallel review, GitHub context, and edit/write tools for docs and manifest adjustments.
+
+## Orchestration Intent
+
+Keep the parent agent in control of the update batch. Use one reconnaissance pass to identify all stale upstreams, then execute the required update steps sequentially when they mutate the same worktree or lockfile. Parallelize only read-only checks or review tasks. If provider-native subagents are available, use a fresh reviewer after the batch to inspect the diff; otherwise use the `diagnostic-reviewer` role as an inline checklist.
+
+## Safety Gates
+
+- Do not publish npm packages, create GitHub releases, create tags, or push branches unless the user explicitly asks for release/publish work.
+- Do not update unrelated application dependencies, dev dependencies, peer dependencies, or Pi core peer packages unless `$ARGUMENTS` explicitly expands the scope beyond Firehorse pinned upstreams and bundled Pi dependencies.
+- Do not bundle Pi core packages such as `@earendil-works/pi-ai`, `@earendil-works/pi-agent-core`, `@earendil-works/pi-coding-agent`, `@earendil-works/pi-tui`, or `typebox`; keep them as peers.
+- Do not overwrite unrelated user changes. Record the starting `git status --short`, preserve pre-existing work, and call out any files already dirty before the update.
+- Do not add a Firehorse runtime, prompt loader, provider transport, slash-command runtime, hook, autonomous execution loop, or package-manager automation beyond this static prompt workflow.
+- Stop and ask for direction when an upstream update command fails, a merge/conflict appears, an upstream license or exposed surface changes materially, or an npm package update requires hand-authored metadata that cannot be inferred safely.
+
+## Procedure
+
+1. Read `$ARGUMENTS`, repository guidance, and the starting git status. Identify pre-existing dirty or untracked files before making changes.
+2. Establish the feedback loop: run `pnpm upstreams:check` and treat its stale/up-to-date output as the baseline. Use context-preserving tooling for large command output.
+3. Build a single update plan from the baseline output. Include every stale upstream in scope, the exact pinned/current/latest values, and the matching update mechanism.
+4. For stale git-mirrored upstreams with update commands, run the applicable commands in one maintainer pass, for example `pnpm upstreams:update:mattpocock-skills`, `pnpm upstreams:update:impeccable`, and `pnpm upstreams:update:shadcn-ui`.
+5. For stale bundled npm packages reported by `pnpm upstreams:check`, update exact pins in both the workspace root and `packages/firehorse-pi` package where applicable, refresh `pnpm-lock.yaml`, and preserve `bundledDependencies` and peer dependency policy.
+6. For stale npm-backed upstream provenance such as `claude-mem` or `pi-agent-memory`, update the corresponding `UPSTREAM.json`, package/plugin pins, package manifests, and lockfile consistently; do not guess missing metadata.
+7. Run `pnpm upstreams:write-update-manifests`, then `pnpm definitions:write` so Firehorse update manifests and generated Pi/Claude mirrors are fresh.
+8. Update release-facing docs when the pinned upstream set changes: root `README.md`, package READMEs, `docs/UPSTREAM-SKILLS.md`, and `CHANGELOG.md` as appropriate. Keep docs factual and version/commit-specific.
+9. Search for stale old pins, old commits, and old plugin versions introduced by the update batch. Fix any stale references that should track the new pins.
+10. Rerun the feedback loop and quality gates unless explicitly skipped: `pnpm upstreams:check`, `pnpm definitions:check`, `pnpm typecheck`, `pnpm build`, and `pnpm test`.
+11. Review or simulate `diagnostic-reviewer` on the diff. Check provenance, generated-file freshness, lockfile consistency, docs accuracy, and that no unrelated dependency scope slipped in.
+12. Finalize with a concise report: upstreams updated, skipped items and reasons, commands run, validation evidence, changed files, pre-existing dirty files, and any release or follow-up tasks.
+
+## Projection Notes
+
+Workflow projections are static provider-native mirrors: a Pi prompt template and a Claude command named `horse-update-upstreams`. They guide a maintainer-controlled update batch but do not create a dependency-update runtime, package-manager bot, prompt loader, hook, or autonomous release system.

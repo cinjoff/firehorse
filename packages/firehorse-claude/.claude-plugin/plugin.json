@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "firehorse",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Firehorse — lightweight cross-provider agentic skills framework, Claude-adapted distribution.",
   "author": {
     "name": "cinjoff"
@@ -9,7 +9,16 @@
   "homepage": "https://github.com/cinjoff/firehorse",
   "repository": "https://github.com/cinjoff/firehorse",
   "license": "MIT",
-  "keywords": ["firehorse", "agentic", "skills", "claude-code", "claude-plugin"],
+  "keywords": [
+    "firehorse",
+    "agentic",
+    "skills",
+    "claude-code",
+    "claude-plugin"
+  ],
+  "dependencies": [
+    "claude-mem"
+  ],
   "hooks": "./hooks/hooks.json",
   "agents": [
     "./agents/context-builder.md",
@@ -19,7 +28,8 @@
     "./agents/researcher.md",
     "./agents/reviewer.md",
     "./agents/scout.md",
-    "./agents/worker.md"
+    "./agents/worker.md",
+    "./agents/firehorse/horse-diagnostic-reviewer.md"
   ],
   "skills": [
     "./skills/firehorse-setup",
@@ -37,6 +47,12 @@
     "./skills/mattpocock/productivity/grill-me",
     "./skills/mattpocock/productivity/handoff",
     "./skills/mattpocock/productivity/write-a-skill",
-    "./skills/pbakaus/impeccable"
+    "./skills/shadcn-ui/shadcn",
+    "./skills/pbakaus/impeccable",
+    "./skills/firehorse/feedback-loop"
+  ],
+  "commands": [
+    "./commands/firehorse/horse-diagnose-fix.md",
+    "./commands/firehorse/horse-update-upstreams.md"
   ]
 }

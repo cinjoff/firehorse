@@ -26,28 +26,81 @@ shipped, nothing executable — just the typed shape and distribution boundaries
 
 ---
 
-## Phase 2 — Cross-provider skill format — `next`
+## Phase 2 — Cross-provider Firehorse definition format — `active`
 
-**Goal:** Decide and document the skill / agent definition format that both
-distributions consume. Output is a written spec, not code.
+**Goal:** Decide, document, and validate the declarative authoring format for
+workflows and their supporting skills / agent roles that both distributions
+consume. Output is a written spec plus core schema/parser/validator and
+Pi/Claude projection-generator code, not a runtime or execution engine.
 
 **Covers:** REQ-05.
 
 **Acceptance:**
 
-- `docs/SKILL-FORMAT.md` describes the source-of-truth schema, the directory
-  layout authors use, and how each distribution adapts it.
-- At least one example skill defined in the format (still no runtime to
-  execute it).
+- `docs/FIREHORSE-DEFINITION-FORMAT.md` describes the source-of-truth schema,
+  the `packages/firehorse-core/definitions/{workflows,skills,agent-roles}/`
+  authoring layout, and how each distribution adapts it without defining a
+  runnable execution graph.
+- `firehorse-core` exposes gray-matter-parsed, Zod-backed TypeScript schema,
+  parser, validator, and Pi/Claude projection helpers for Firehorse Definition
+  Files; every Definition File declares a required integer `schemaVersion`
+  starting at `1`.
+- A definitions check validates canonical definitions and generated mirrors as
+  part of typecheck/CI.
+- Full Pi/Claude projection generation is implemented for all three Firehorse-
+  authored definition kinds, and generated mirrors are checked in with
+  provenance headers.
+- Workflow projections target Pi prompt templates and Claude commands; generated
+  native resource names use `horse-<id>`.
+- Generated mirrors contain fully rendered instructions, preserve canonical
+  Markdown headings where possible, include provenance in frontmatter and an HTML
+  comment, include SHA-256 source content hashes, and are edited only via
+  canonical definitions.
+- Workflow mirrors include structured references and instructions for supporting
+  capabilities without inlining every supporting body.
+- Generated files live under provider-native `firehorse/` folders, and stale
+  generated mirrors with valid provenance are removed when their source no longer
+  exists.
+- Projection generation updates package-local and repo-root install manifests so
+  generated resources are exposed by Pi and Claude packages, with generated
+  manifest entries sorted deterministically.
+- Workflow argument hints are represented in frontmatter for generated command /
+  prompt-template UX.
+- Projection functions live in `firehorse-core`; repo scripts own file writes;
+  `definitions:write` updates generated mirrors/manifests and removes stale
+  generated mirrors with valid provenance, while `definitions:check` fails when
+  generated output is stale.
+- Pi Agent Role mirrors are synced by explicit `firehorse-setup` into the user's
+  Pi agent directory because `pi-subagents` does not discover package agent dirs.
+- Definition IDs are stable public API; renames require frontmatter
+  alias/deprecation handling.
+- Upstream skill references use object references with `upstream` and `id`
+  fields, and generated manifest entries are sorted deterministically.
+- `diagnose-fix` is defined as the first example workflow; it references the
+  upstream `mattpocock-skills` `diagnose` skill, uses the Firehorse-authored
+  `feedback-loop` skill and `diagnostic-reviewer` Agent Role, accepts a freeform
+  bug description argument, and gates code mutation on clear scope plus an
+  established regression loop (still no runtime to execute it).
+- Workflow body sections are standardized around purpose, usage, inputs,
+  outputs, supporting capabilities, orchestration intent, safety gates,
+  procedure, and projection notes.
+- Firehorse-authored skill definitions use a reusable instruction contract:
+  purpose, usage, inputs, outputs, instructions, boundaries, examples, and
+  projection notes; imported upstream skills remain upstream-shaped and are not
+  normalized into Firehorse's strict skill template.
+- Agent-role frontmatter uses the documented `pi-subagents` agent frontmatter
+  field set as its basis, plus Firehorse `id` / `kind`, with distribution
+  adapters filtering unsupported fields; agent-role bodies use a role contract
+  covering mission, responsibilities, inputs, outputs, tools, authority,
+  escalation, collaboration, boundaries, and projection notes.
+- Provider capability mismatches are represented with provider-neutral
+  `requires` / `optional` capability declarations plus projection notes.
 - Decision recorded in `.planning/DECISIONS.md`.
 
-**Open questions for this phase:**
+**Resolved human-review questions for this phase:**
 
-- Single canonical format vs two parallel formats with shared schema?
-- Does the format live in `firehorse-core` (e.g. a TS schema + Zod), or
-  purely as documented Markdown frontmatter?
-- How do provider capability mismatches (e.g. no vision in Pi) surface to
-  the skill author?
+- Schema version 1 frontmatter fields are accepted by D-135 and documented in
+  `docs/FIREHORSE-DEFINITION-FORMAT.md`.
 
 ---
 
@@ -94,9 +147,10 @@ otherwise have to install separately.
 **Acceptance:**
 
 - At least one real skill / extension shipped in `firehorse-pi`.
-  - Partial: `mattpocock/skills` and `pbakaus/impeccable` mirrors +
-    `context-mode` / `pi-lens` / `pi-mcp-adapter` / `pi-mermaid` /
-    `pi-subagents` / `pi-web-access` are wired.
+  - Partial: `mattpocock/skills`, `pbakaus/impeccable`, and `shadcn/ui`
+    skill mirrors + `claude-mem` worker runtime / `context-mode` / `pi-lens` /
+    `pi-mcp-adapter` / `pi-mermaid` / `pi-subagents` / `pi-web-access` /
+    `pi-agent-memory` are wired.
   - Partial: session-start update-check extension is wired.
 - `bundledDependencies` wired to the relevant upstream pi package(s) (e.g.
   `pi-gsd`), with the `pi` manifest referencing
@@ -117,8 +171,11 @@ ships.
 **Acceptance:**
 
 - At least one real command / agent / skill shipped in `firehorse-claude`.
-  - Partial: `mattpocock/skills` and `pbakaus/impeccable` mirrors plus shared
-    `pi-subagents` agent mirrors are listed in the Claude plugin manifest.
+  - Partial: `mattpocock/skills`, `pbakaus/impeccable`, and `shadcn/ui` skill
+    mirrors plus shared `pi-subagents` agent mirrors are listed in the Claude
+    plugin manifest.
+  - Partial: Firehorse's marketplace exposes pinned upstream `claude-mem`, and
+    the Firehorse Claude plugin declares it as a dependency.
   - Partial: SessionStart update-check hook is wired.
 - `/plugin marketplace add cinjoff/firehorse` + `/plugin install firehorse@firehorse`
   works end-to-end.
@@ -141,6 +198,9 @@ scaffolds project-local config for a downstream consumer.
 - Claude: a slash command that writes `.claude/`, `CLAUDE.md`, and a
   firehorse-shaped `.planning/` layout (note: not fhhs-shaped — firehorse has
   its own conventions, which we'll have settled by then).
+- If the stack uses shadcn/ui and `docs/DESIGN.md` is defined, the workflow
+  derives a shadcn preset from the design direction and initializes/applies it
+  through the shadcn CLI before component implementation.
 
 ---
 

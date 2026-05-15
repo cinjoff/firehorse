@@ -17,7 +17,7 @@ interface ExtensionAPI {
 
 interface SubagentDefaultsManifest {
   schemaVersion: number;
-  agentOverrides?: Record<string, { tools?: string[] }>;
+  agentOverrides?: Record<string, { skills?: string[]; tools?: string[] }>;
 }
 
 interface SettingsShape {
@@ -73,7 +73,7 @@ function stringArray(value: unknown): string[] | undefined {
   return value.filter((item): item is string => typeof item === "string");
 }
 
-function defaultedTools(
+function defaultedStrings(
   existing: unknown,
   defaults: string[],
   manageExisting: boolean,
@@ -81,17 +81,17 @@ function defaultedTools(
   if (existing === false) return undefined;
   if (existing === undefined) return [...defaults];
 
-  const existingTools = stringArray(existing);
-  if (!existingTools) return undefined;
+  const existingStrings = stringArray(existing);
+  if (!existingStrings) return undefined;
 
-  const missingDefaults = defaults.filter((tool) => !existingTools.includes(tool));
-  if (missingDefaults.length === 0) return existingTools;
+  const missingDefaults = defaults.filter((item) => !existingStrings.includes(item));
+  if (missingDefaults.length === 0) return existingStrings;
 
-  // Respect user-authored tool allowlists. Firehorse only upgrades existing
+  // Respect user-authored allowlists. Firehorse only upgrades existing
   // allowlists after it has already applied defaults once before.
   if (!manageExisting) return undefined;
 
-  return [...existingTools, ...missingDefaults];
+  return [...existingStrings, ...missingDefaults];
 }
 
 function applySubagentDefaults(): boolean {
@@ -119,7 +119,7 @@ function applySubagentDefaults(): boolean {
   let changed = false;
 
   for (const [agentName, override] of Object.entries(defaults.agentOverrides)) {
-    if (!override.tools?.length) continue;
+    if (!override.skills?.length && !override.tools?.length) continue;
 
     const current =
       agentOverrides[agentName] &&
@@ -127,14 +127,27 @@ function applySubagentDefaults(): boolean {
       !Array.isArray(agentOverrides[agentName])
         ? agentOverrides[agentName]
         : {};
-    const tools = defaultedTools(current.tools, override.tools, manageExisting);
-    if (!tools) continue;
+    const next = { ...current };
+    let agentChanged = false;
 
-    if (JSON.stringify(current.tools) !== JSON.stringify(tools)) {
-      agentOverrides[agentName] = {
-        ...current,
-        tools,
-      };
+    if (override.tools?.length) {
+      const tools = defaultedStrings(current.tools, override.tools, manageExisting);
+      if (tools && JSON.stringify(current.tools) !== JSON.stringify(tools)) {
+        next.tools = tools;
+        agentChanged = true;
+      }
+    }
+
+    if (override.skills?.length) {
+      const skills = defaultedStrings(current.skills, override.skills, manageExisting);
+      if (skills && JSON.stringify(current.skills) !== JSON.stringify(skills)) {
+        next.skills = skills;
+        agentChanged = true;
+      }
+    }
+
+    if (agentChanged) {
+      agentOverrides[agentName] = next;
       changed = true;
     }
   }
@@ -158,7 +171,7 @@ export default function (pi: ExtensionAPI) {
       const changed = applySubagentDefaults();
       if (changed) {
         ctx.ui?.notify(
-          "Firehorse enabled pi-lens tools for built-in pi-subagents. Set FIREHORSE_SKIP_SUBAGENT_DEFAULTS=1 to opt out.",
+          "Firehorse enabled bundled tools and skills for built-in pi-subagents. Set FIREHORSE_SKIP_SUBAGENT_DEFAULTS=1 to opt out.",
           "info",
         );
       }

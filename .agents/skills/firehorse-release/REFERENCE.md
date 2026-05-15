@@ -54,12 +54,12 @@ Interpretation:
 
 Suggested actions:
 
-| Source | Action |
-| --- | --- |
-| `mattpocock/skills` | `pnpm upstreams:update:mattpocock-skills`, then review adapter mirrors. |
-| `pbakaus/impeccable` | `pnpm upstreams:update:impeccable`, then review adapter mirrors. |
-| `pi-subagents` npm package | Bump dependency/version, refresh shared agent mirrors if built-ins changed, review `firehorse.subagents.json`. |
-| Bundled Pi packages (`context-mode`, `pi-lens`, `pi-mcp-adapter`, `pi-mermaid`, `pi-web-access`) | Bump `firehorse-pi` dependency and lockfile, review exposed resources and docs. |
+| Source                                                                                                              | Action                                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `mattpocock/skills`                                                                                                 | `pnpm upstreams:update:mattpocock-skills`, then review adapter mirrors.                                        |
+| `pbakaus/impeccable`                                                                                                | `pnpm upstreams:update:impeccable`, then review adapter mirrors.                                               |
+| `pi-subagents` npm package                                                                                          | Bump dependency/version, refresh shared agent mirrors if built-ins changed, review `firehorse.subagents.json`. |
+| Bundled Pi packages (`context-mode`, `pi-lens`, `pi-mcp-adapter`, `pi-mermaid`, `pi-web-access`, `pi-agent-memory`) | Bump `firehorse-pi` dependency and lockfile, review exposed resources and docs.                                |
 
 If updates exist, ask whether to upgrade before release or intentionally release
 with current pinned upstreams. Record the decision in release notes when useful.
@@ -75,7 +75,7 @@ Root `README.md` should include:
 - Core provider and orchestrator adapter roles.
 - Pi package manifest/bundling model.
 - Claude plugin model.
-- Pinned upstream skill/agent repositories.
+- Pinned upstream skill/agent/plugin repositories.
 - Bundled Pi packages with versions and exposed resources.
 - All exposed skills with descriptions/roles.
 - Shared subagent role table.

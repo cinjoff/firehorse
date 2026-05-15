@@ -45,6 +45,16 @@ License: Apache-2.0
 The Apache license text and upstream NOTICE are bundled at
 `skills/pbakaus/LICENSE` and `skills/pbakaus/NOTICE.md`.
 
+## shadcn/ui
+
+Firehorse-pi includes the official `shadcn` agent skill from
+<https://github.com/shadcn-ui/ui/tree/main/skills/shadcn>, pinned in
+`../firehorse-core/upstreams/shadcn-ui/UPSTREAM.json` in the source repository.
+
+License: MIT
+
+The MIT license text is bundled at `skills/shadcn-ui/LICENSE.md`.
+
 ## pi-subagents
 
 Firehorse-pi bundles `pi-subagents` and uses its built-in agents at runtime.
@@ -60,6 +70,22 @@ Firehorse-pi bundles `pi-web-access` and exposes its extension plus the
 `librarian` skill from <https://github.com/nicobailon/pi-web-access>.
 
 License: MIT
+
+## claude-mem
+
+Firehorse-pi bundles `claude-mem` from
+<https://github.com/thedotmack/claude-mem> so Pi-only harness users have the
+upstream worker runtime required by `pi-agent-memory`.
+
+License: Apache-2.0
+
+## pi-agent-memory
+
+Firehorse-pi bundles `pi-agent-memory` from
+<https://github.com/ArtemisAI/pi-mem> and exposes its `pi-mem` extension plus
+`mem-search` skill. The upstream package is powered by `claude-mem`.
+
+License: AGPL-3.0
 
 ## pi-mermaid
 

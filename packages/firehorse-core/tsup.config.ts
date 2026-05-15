@@ -5,6 +5,7 @@ export default defineConfig({
     index: "src/index.ts",
     "providers/index": "src/providers/index.ts",
     "orchestrators/index": "src/orchestrators/index.ts",
+    "definitions/index": "src/definitions/index.ts",
   },
   format: ["esm", "cjs"],
   dts: true,

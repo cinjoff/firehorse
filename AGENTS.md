@@ -23,10 +23,13 @@ ecosystems. They are siblings, not derived from each other.
 
 ## Hard rules
 
-- **No skill runtime, agents, commands, or execution code yet.** Static,
-  pinned upstream skills may be vendored when explicitly scoped, but don't add a
-  runtime, prompt loader, slash command, subagent, or hook until that work is
-  explicitly scoped.
+- **No skill runtime or execution code yet.** Static, pinned upstream skills may
+  be vendored when explicitly scoped, and Phase 2 may add definition
+  schema/parser/validator plus build-time projection-generator code. Static
+  generated provider mirrors (Pi prompts/skills/agent sync artifacts and Claude
+  commands/skills/agents) must come from canonical definitions and checked
+  provenance. Do not add a runtime, prompt loader, provider transport,
+  autonomous execution loop, or hook until that work is explicitly scoped.
 - **Provider and orchestrator code stays adapter-shaped.** Logic that depends
   on a specific vendor goes inside that vendor's adapter file — never in
   shared modules.
@@ -40,20 +43,22 @@ ecosystems. They are siblings, not derived from each other.
 - **Each distribution owns its idioms.** Pi conventions (`extensions/`,
   `skills/`, `prompts/`, `themes/`) live in `firehorse-pi`. Claude conventions
   (`.claude-plugin/`, `commands/`, `agents/`, `skills/`, `hooks/`) live in
-  `firehorse-claude`. Shared upstream skill sources live in
-  `firehorse-core/upstreams/`; adapter copies are generated mirrors, not shared
-  runtime code.
+  `firehorse-claude`. Firehorse-authored definition sources live in
+  `firehorse-core/definitions/`; shared upstream skill sources live in
+  `firehorse-core/upstreams/`. Adapter copies are generated mirrors, not shared
+  runtime code. Projection functions belong in core; repo scripts own file
+  writes and must not overwrite non-generated files.
 
 ## Layout
 
 ```
 firehorse/
 ├── packages/
-│   ├── firehorse-core/      Core TS lib (publish target: `firehorse`)
+│   ├── firehorse-core/      Core TS lib + shared definition/upstream sources
 │   ├── firehorse-pi/        Pi package (publish target: `firehorse-pi`)
 │   └── firehorse-claude/    Claude plugin (consumed via marketplace)
 ├── .claude-plugin/
-│   └── marketplace.json     Repo-level Claude marketplace pointing at firehorse-claude
+│   └── marketplace.json     Repo-level Claude marketplace for Firehorse + pinned upstream plugins
 └── docs/ARCHITECTURE.md
 ```
 
@@ -79,7 +84,10 @@ pnpm install            # workspace install
 pnpm typecheck          # runs per-package typecheck
 pnpm build              # runs per-package build
 pnpm test               # vitest, when tests exist
+pnpm definitions:write  # regenerate Firehorse definition mirrors/manifests
+pnpm definitions:check  # validate definitions and generated mirror freshness
 pnpm upstreams:check    # compare pinned upstream skills/packages to remote refs/npm
+pnpm upstreams:update:shadcn-ui         # refresh official shadcn skill mirrors
 pnpm upstreams:write-update-manifests   # refresh package/plugin update metadata
 
 pnpm --filter firehorse build           # build a single package
@@ -111,7 +119,9 @@ pi packages (e.g. a future `pi-gsd`). Pattern:
 
 Pi core packages (`@earendil-works/pi-ai`, `@earendil-works/pi-agent-core`,
 `@earendil-works/pi-coding-agent`, `@earendil-works/pi-tui`, `typebox`) stay in
-`peerDependencies` with `"*"` and must **not** be bundled.
+`peerDependencies` with `"*"` and must **not** be bundled. Legacy upstream Pi
+peer names (for example `@mariozechner/*`) may also be optional peers when a
+bundled upstream package still imports them; do not bundle those core packages.
 
 ## When in doubt
 

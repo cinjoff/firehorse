@@ -3,7 +3,7 @@
   "source": "https://github.com/nicobailon/pi-subagents",
   "git": "https://github.com/nicobailon/pi-subagents.git",
   "npmPackage": "pi-subagents",
-  "version": "0.24.2",
+  "version": "0.24.3",
   "license": "MIT",
   "adapterNamespace": "firehorse",
   "selectionPolicy": "Expose the upstream built-in pi-subagents agent set as Firehorse shared subagent definitions. Pi consumes these through the bundled pi-subagents package built-ins; Claude receives Claude-compatible mirrors generated from the same pinned source files.",

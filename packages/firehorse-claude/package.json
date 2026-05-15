@@ -1,6 +1,6 @@
 {
   "name": "firehorse-claude",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Claude Code distribution of firehorse — a Claude plugin bundling commands, agents, skills, and hooks.",
   "license": "MIT",
   "author": {
@@ -35,6 +35,8 @@
     "agents",
     "skills",
     "hooks",
+    "scripts",
+    "guidance",
     "firehorse.update.json",
     "README.md",
     "THIRD_PARTY_NOTICES.md"

@@ -21,7 +21,8 @@ function findUpstreamManifests() {
   return readdirSync(upstreamsRoot, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => join(upstreamsRoot, entry.name, "UPSTREAM.json"))
-    .filter((path) => existsSync(path));
+    .filter((path) => existsSync(path))
+    .sort();
 }
 
 function summarizeUpstream(manifest) {
@@ -42,8 +43,15 @@ function summarizeUpstream(manifest) {
     license: manifest.license,
     selectionPolicy: manifest.selectionPolicy,
     ...(manifest.updateCommand ? { updateCommand: manifest.updateCommand } : {}),
+    ...(manifest.marketplacePluginName
+      ? { marketplacePluginName: manifest.marketplacePluginName }
+      : {}),
     ...(Array.isArray(manifest.skills) ? { skillCount: manifest.skills.length } : {}),
     ...(Array.isArray(manifest.agents) ? { agentCount: manifest.agents.length } : {}),
+    ...(Array.isArray(manifest.extensions) ? { extensionCount: manifest.extensions.length } : {}),
+    ...(Array.isArray(manifest.pluginDependencies)
+      ? { pluginDependencyCount: manifest.pluginDependencies.length }
+      : {}),
   };
 }
 
