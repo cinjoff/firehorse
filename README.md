@@ -74,7 +74,7 @@ pnpm add firehorse
 The core library is for adapter contracts and future integrations. It is not a
 skill runtime yet.
 
-## What ships in v0.1.0
+## What ships in v0.2.0
 
 - **`firehorse`** — TypeScript core library for provider/orchestrator contracts
   and pinned upstream provenance.
@@ -82,7 +82,7 @@ skill runtime yet.
   and Firehorse skills. This is the recommended user install.
 - **`firehorse-claude`** — Claude Code plugin with mirrored skills and agents.
 
-Firehorse v0.1.0 is intentionally a foundation release. It includes the
+Firehorse v0.2.0 remains a foundation release. It includes the
 Firehorse Definition Format v1 parser, validator, and build-time projection
 pipeline, but it does **not** include a Firehorse-authored skill runtime, prompt
 loader, slash-command runtime, or provider API transport yet.
@@ -150,7 +150,7 @@ is included in Firehorse, and lists the specific skills/resources Firehorse
 exposes.
 
 <details>
-<summary><strong>context-mode 1.0.134</strong> — keep huge outputs out of the model context</summary>
+<summary><strong>context-mode 1.0.135</strong> — keep huge outputs out of the model context</summary>
 
 **Official docs:** [mksglu/context-mode](https://github.com/mksglu/context-mode)
 
@@ -260,7 +260,7 @@ There are no user-facing skills from this package; it is a display enhancement.
 </details>
 
 <details>
-<summary><strong>pi-subagents 0.24.2</strong> — delegate work to focused child agents</summary>
+<summary><strong>pi-subagents 0.24.3</strong> — delegate work to focused child agents</summary>
 
 **Official docs:** [nicobailon/pi-subagents](https://github.com/nicobailon/pi-subagents)
 
@@ -493,7 +493,7 @@ For future releases, use the repo-local release skill:
 - [Upstream skills and agents](./docs/UPSTREAM-SKILLS.md)
 - [Pi distribution README](./packages/firehorse-pi/README.md)
 - [Claude plugin README](./packages/firehorse-claude/README.md)
-- [v0.1.0 changelog](./CHANGELOG.md)
+- [Changelog](./CHANGELOG.md)
 
 ## License
 

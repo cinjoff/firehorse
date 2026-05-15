@@ -127,7 +127,7 @@ for memory identity.
 Current upstream:
 
 - Source: <https://github.com/nicobailon/pi-subagents>
-- Pinned npm package: `pi-subagents@0.24.2`
+- Pinned npm package: `pi-subagents@0.24.3`
 - Selection policy: expose the upstream built-in agent set as Firehorse shared
   subagent definitions.
 

@@ -13,11 +13,11 @@ but this package now exposes curated upstream content:
 - `pbakaus/impeccable` — vendored frontend design skill mirrored into Pi paths.
 - `shadcn/ui` — official shadcn agent skill mirrored into Pi paths for reliable
   component, registry, and preset work.
-- `context-mode` (`1.0.134`) — Pi extension plus selected skills.
+- `context-mode` (`1.0.135`) — Pi extension plus selected skills.
 - `pi-lens` (`3.8.44`) — Pi extension plus selected skills.
 - `pi-mcp-adapter` (`2.6.1`) — Pi MCP adapter extension.
 - `pi-mermaid` (`0.3.0`) — Mermaid diagram rendering extension for the Pi TUI.
-- `pi-subagents` (`0.24.2`) — Pi subagent extension, skill, prompt templates,
+- `pi-subagents` (`0.24.3`) — Pi subagent extension, skill, prompt templates,
   and built-in agents shared with the Claude adapter.
 - `pi-web-access` (`0.10.7`) — Pi web/search/fetch extension plus the
   `librarian` research skill.
@@ -42,7 +42,7 @@ pi install npm:firehorse-pi
 pi install -l npm:firehorse-pi
 
 # Pinned npm version (skipped by `pi update`)
-pi install npm:firehorse-pi@0.1.0
+pi install npm:firehorse-pi@0.2.0
 
 # GitHub install from this monorepo root
 pi install git:github.com/cinjoff/firehorse

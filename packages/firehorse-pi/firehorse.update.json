@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "adapter": "pi",
   "packageName": "firehorse-pi",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "updateCommand": "pi update npm:firehorse-pi",
   "upstreams": [
     {
@@ -63,7 +63,7 @@
       "source": "https://github.com/nicobailon/pi-subagents",
       "git": "https://github.com/nicobailon/pi-subagents.git",
       "npmPackage": "pi-subagents",
-      "version": "0.24.2",
+      "version": "0.24.3",
       "license": "MIT",
       "selectionPolicy": "Expose the upstream built-in pi-subagents agent set as Firehorse shared subagent definitions. Pi consumes these through the bundled pi-subagents package built-ins; Claude receives Claude-compatible mirrors generated from the same pinned source files.",
       "agentCount": 8
@@ -82,12 +82,12 @@
   ],
   "bundledPiPackages": {
     "claude-mem": "13.2.0",
-    "context-mode": "1.0.134",
+    "context-mode": "1.0.135",
     "pi-lens": "3.8.44",
     "pi-mcp-adapter": "2.6.1",
     "pi-mermaid": "0.3.0",
     "pi-agent-memory": "0.3.4",
-    "pi-subagents": "0.24.2",
+    "pi-subagents": "0.24.3",
     "pi-web-access": "0.10.7"
   }
 }
