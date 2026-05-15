@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Added pinned `claude-mem` upstream metadata, exposed the upstream Claude
+  plugin as a Firehorse marketplace dependency, and bundled the `claude-mem` npm
+  package in Firehorse-pi so Pi-only users have the memory worker runtime.
+- Added bundled `pi-agent-memory` for Pi, exposing its memory extension and
+  `mem-search` skill through explicit manifest paths, backed by the bundled
+  claude-mem worker.
+- Added the official `shadcn/ui` `shadcn` skill as a pinned upstream mirrored
+  into both Pi and Claude.
+- Recorded that future `new-project` shadcn/ui flows should derive and apply a
+  shadcn preset from `docs/DESIGN.md` before component implementation.
+
 ## v0.1.0 — 2026-05-14
 
 First Firehorse release: foundation scaffolding plus curated upstream skill distribution.
@@ -26,6 +41,8 @@ First Firehorse release: foundation scaffolding plus curated upstream skill dist
 - `pi-mermaid` 0.3.0
 - `pi-subagents` 0.24.2
 - `pi-web-access` 0.10.7
+- `pi-agent-memory` 0.3.4
+- `claude-mem` 13.2.0
 - `mattpocock/skills` pinned at `e74f0061bb67222181640effa98c675bdb2fdaa7`
 - `pbakaus/impeccable` pinned at `1e8356fa259153b56213fa434a822bbf4a885f39`
 

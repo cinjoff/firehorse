@@ -11,7 +11,7 @@ Inputs used for this map:
 - Shared `pi-subagents` role definitions.
 - Firecrawl-indexed upstream docs for `context-mode`, `pi-lens`,
   `pi-mcp-adapter`, `pi-mermaid`, `pi-subagents`, `pi-web-access`,
-  `mattpocock/skills`, and `pbakaus/impeccable`.
+  `mattpocock/skills`, `pbakaus/impeccable`, and `shadcn/ui`.
 
 ## Inventory by capability
 
@@ -74,6 +74,9 @@ Inputs used for this map:
 
 - `impeccable` — frontend design, critique, audit, polish, accessibility,
   motion, UX writing, responsive behavior, and design-system craft.
+- `shadcn` — shadcn/ui project context, component docs, registry search,
+  component installation/update workflows, composition rules, and preset
+  handling.
 
 ### Communication, handoff, and skill authoring
 

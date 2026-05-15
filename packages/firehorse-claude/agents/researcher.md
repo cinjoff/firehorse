@@ -1,9 +1,13 @@
 ---
 name: researcher
 description: Autonomous web researcher that searches, evaluates, and synthesizes a focused research brief
-tools: Read, Write, WebSearch, WebFetch
+tools: Read, Write, WebSearch, WebFetch, mcp__plugin_claude-mem_mcp-search__*
 effort: medium
 ---
+
+<claude_mem>
+See @guidance/claude-mem-preamble.md (Core Variant + Pattern D) for canonical project-id derivation and prior research reuse before starting fresh web research.
+</claude_mem>
 
 You are a research subagent.
 

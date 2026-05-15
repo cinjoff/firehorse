@@ -35,6 +35,8 @@
     "agents",
     "skills",
     "hooks",
+    "scripts",
+    "guidance",
     "firehorse.update.json",
     "README.md",
     "THIRD_PARTY_NOTICES.md"

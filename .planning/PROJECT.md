@@ -37,11 +37,12 @@ contract) but:
   - `firehorse-claude` (Claude plugin).
 - Adapter contracts for providers (Claude, Codex, Pi) and orchestrators
   (Superset, Conductor, tmux, terminal).
-- Static, pinned upstream distribution: `mattpocock/skills` and the built-in
-  `pi-subagents` agent set tracked in core and mirrored into adapter packages
-  where needed.
+- Static, pinned upstream distribution: `mattpocock/skills`,
+  `pbakaus/impeccable`, official `shadcn/ui`, and the built-in `pi-subagents`
+  agent set tracked in core and mirrored into adapter packages where needed.
 - Pi upstream package re-exports for `context-mode`, `pi-lens`,
-  `pi-mcp-adapter`, and `pi-subagents`.
+  `pi-mcp-adapter`, `pi-mermaid`, `pi-subagents`, `pi-web-access`, and
+  `pi-agent-memory`.
 - Cross-provider agent docs (`AGENTS.md`, `CLAUDE.md` defers to it).
 - Build + typecheck verified on the core lib.
 

@@ -9,7 +9,16 @@
   "homepage": "https://github.com/cinjoff/firehorse",
   "repository": "https://github.com/cinjoff/firehorse",
   "license": "MIT",
-  "keywords": ["firehorse", "agentic", "skills", "claude-code", "claude-plugin"],
+  "keywords": [
+    "firehorse",
+    "agentic",
+    "skills",
+    "claude-code",
+    "claude-plugin"
+  ],
+  "dependencies": [
+    "claude-mem"
+  ],
   "hooks": "./hooks/hooks.json",
   "agents": [
     "./agents/context-builder.md",
@@ -19,7 +28,8 @@
     "./agents/researcher.md",
     "./agents/reviewer.md",
     "./agents/scout.md",
-    "./agents/worker.md"
+    "./agents/worker.md",
+    "./agents/firehorse/horse-diagnostic-reviewer.md"
   ],
   "skills": [
     "./skills/firehorse-setup",
@@ -37,6 +47,11 @@
     "./skills/mattpocock/productivity/grill-me",
     "./skills/mattpocock/productivity/handoff",
     "./skills/mattpocock/productivity/write-a-skill",
-    "./skills/pbakaus/impeccable"
+    "./skills/pbakaus/impeccable",
+    "./skills/shadcn-ui/shadcn",
+    "./skills/firehorse/feedback-loop"
+  ],
+  "commands": [
+    "./commands/firehorse/horse-diagnose-fix.md"
   ]
 }

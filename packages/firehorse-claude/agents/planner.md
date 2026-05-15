@@ -1,9 +1,13 @@
 ---
 name: planner
 description: Creates implementation plans from context and requirements
-tools: Read, Grep, Glob, LS, Write
+tools: Read, Grep, Glob, LS, Write, mcp__plugin_claude-mem_mcp-search__*
 effort: high
 ---
+
+<claude_mem>
+See @guidance/claude-mem-preamble.md (Core Variant) for canonical project-id derivation, past learnings checks, and smart code navigation.
+</claude_mem>
 
 You are a planning subagent.
 

@@ -11,16 +11,20 @@ but this package now exposes curated upstream content:
 
 - `mattpocock/skills` — vendored skill set from core, mirrored into Pi paths.
 - `pbakaus/impeccable` — vendored frontend design skill mirrored into Pi paths.
+- `shadcn/ui` — official shadcn agent skill mirrored into Pi paths for reliable
+  component, registry, and preset work.
 - `context-mode` (`1.0.133`) — Pi extension plus selected skills.
 - `pi-lens` (`3.8.44`) — Pi extension plus selected skills.
 - `pi-mcp-adapter` (`2.6.1`) — Pi MCP adapter extension.
 - `pi-mermaid` (`0.3.0`) — Mermaid diagram rendering extension for the Pi TUI.
 - `pi-subagents` (`0.24.2`) — Pi subagent extension, skill, prompt templates,
   and built-in agents shared with the Claude adapter.
-- Firehorse setup — `/skill:firehorse-setup` for first-time checks and safe
-  Superset MCP configuration.
 - `pi-web-access` (`0.10.7`) — Pi web/search/fetch extension plus the
   `librarian` research skill.
+- `pi-agent-memory` (`0.3.4`) — Pi extension and `mem-search` skill that connect
+  Pi sessions to a running `claude-mem` worker.
+- Firehorse setup — `/skill:firehorse-setup` for first-time checks and safe
+  Superset MCP configuration.
 
 It also ships small `session_start` extensions that check for newer
 `firehorse-pi` releases, apply Firehorse subagent defaults, and load an optional
@@ -65,6 +69,26 @@ After installing, run:
 Use `/skill:firehorse-setup --check` for a read-only status report. The setup
 skill is the place for one-time, idempotent Firehorse configuration that should
 not happen on every session start.
+
+## Memory project identity
+
+Firehorse bundles `pi-agent-memory` for Pi and depends on upstream `claude-mem`
+for Claude. Setup resolves the canonical repository project id with the GitHub
+CLI so memory persists across Superset / Conductor worktrees instead of following
+generated workspace directory names:
+
+```sh
+gh repo view --json name --jq .name
+```
+
+Setup writes or validates non-secret project identity through
+`FIREHORSE_PROJECT_NAME`, `PI_MEM_PROJECT`, `CLAUDE_MEM_PROJECT`, or the private
+user file `~/.config/firehorse/memory.env`. Superset paths like
+`~/.superset/worktrees/firehorse/<owner>/<workspace>` may hint at `firehorse`,
+but Firehorse does not rely on git parent directories or cwd basenames because
+Conductor worktrees may live outside the canonical repo root. Use
+`/skill:firehorse-setup --memory-project <repo>` only as a manual fallback when
+`gh` cannot resolve the repository.
 
 ## Superset MCP
 
@@ -139,7 +163,9 @@ metadata provide the catalog's GitHub links.
 `packages/firehorse-core/upstreams/mattpocock-skills/` and mirrored here under
 `skills/mattpocock/`. `pbakaus/impeccable` is tracked under
 `packages/firehorse-core/upstreams/impeccable/` and mirrored here under
-`skills/pbakaus/impeccable/`. The Pi manifest exposes only the mirrored skills
+`skills/pbakaus/impeccable/`. The official shadcn/ui skill is tracked under
+`packages/firehorse-core/upstreams/shadcn-ui/` and mirrored here under
+`skills/shadcn-ui/shadcn/`. The Pi manifest exposes only the mirrored skills
 selected by each `UPSTREAM.json`.
 
 The built-in `pi-subagents` agent definitions are tracked in core under
@@ -152,21 +178,31 @@ Firehorse also ships `firehorse.subagents.json`, a package-owned default overrid
 manifest for built-in `pi-subagents` agents. On session start,
 `extensions/firehorse-subagent-defaults.ts` applies missing defaults into
 `~/.pi/agent/settings.json`, adding the Firehorse-bundled `pi-lens` tools
-(`ast_grep_search`, `ast_grep_replace`, `lsp_diagnostics`, `lsp_navigation`) to
-code-oriented subagents. Existing user-authored `tools` allowlists are left
-alone unless Firehorse previously created them. Set
-`FIREHORSE_SKIP_SUBAGENT_DEFAULTS=1` to opt out.
+(`ast_grep_search`, `ast_grep_replace`, `lsp_diagnostics`, `lsp_navigation`),
+the Pi-native `memory_recall` tool from `pi-agent-memory`, and context-mode
+processing tools where useful. The `shadcn` skill is exposed by Firehorse but is
+not granted to the `worker` subagent by default yet. Existing user-authored
+`tools` / `skills` allowlists are left alone unless Firehorse previously created
+them. Set `FIREHORSE_SKIP_SUBAGENT_DEFAULTS=1` to opt out.
+
+For Pi-only harness use, Firehorse-pi also bundles `claude-mem@13.2.0` and loads
+`extensions/firehorse-claude-mem-worker.ts`. That extension checks the
+claude-mem worker health endpoint and starts the bundled worker scripts when the
+worker is not already reachable, so Pi memory does not require Claude Code to be
+installed.
 
 Use `pnpm upstreams:check` to detect upstream changes,
 `pnpm upstreams:update:mattpocock-skills` to refresh the Matt Pocock core copy
-plus adapter mirrors, and `pnpm upstreams:update:impeccable` to refresh the
-Impeccable core copy plus adapter mirrors.
+plus adapter mirrors, `pnpm upstreams:update:impeccable` to refresh the
+Impeccable core copy plus adapter mirrors, and `pnpm upstreams:update:shadcn-ui`
+to refresh the official shadcn skill mirrors.
 
 ## Bundling upstream pi packages
 
 Firehorse-pi selectively re-exports parts of other pi packages. Today that is
-`context-mode`, `pi-lens`, `pi-mcp-adapter`, `pi-mermaid`, `pi-subagents`,
-and `pi-web-access`; future packages can follow the same pattern.
+`claude-mem`, `context-mode`, `pi-lens`, `pi-mcp-adapter`, `pi-mermaid`,
+`pi-subagents`, `pi-web-access`, and `pi-agent-memory`; future packages can
+follow the same pattern.
 
 Bundling and surfacing are separate decisions:
 
@@ -177,12 +213,14 @@ So Firehorse can bundle an upstream package for runtime/resources without
 exposing every extension, skill, prompt, or theme from that upstream. Prefer
 exact paths or tight globs in the `pi` manifest. For bundled Pi packages, the
 current skill surface is an allow-list: `context-mode`, `ctx-doctor`,
-`ctx-insight`, `ctx-stats`, `ast-grep`, `lsp-navigation`, `librarian`, and the
-`pi-subagents` skill; destructive/upgrade-oriented context-mode skills are
-intentionally not exposed by default. Firehorse also exposes the `pi-mermaid`
-extension and the `pi-subagents` prompt templates because the subagent extension
-uses those templates for its workflows. Vendored `mattpocock/skills` and `pbakaus/impeccable` entries are
-allow-listed separately from `UPSTREAM.json`.
+`ctx-insight`, `ctx-stats`, `ast-grep`, `lsp-navigation`, `librarian`,
+`mem-search`, and the `pi-subagents` skill; destructive/upgrade-oriented
+context-mode skills are intentionally not exposed by default. Firehorse also
+exposes the `pi-mermaid` extension, the `pi-agent-memory` extension, and the
+`pi-subagents` prompt templates because the subagent extension uses those
+templates for its workflows. Vendored `mattpocock/skills`,
+`pbakaus/impeccable`, and `shadcn/ui` entries are allow-listed separately from
+`UPSTREAM.json`.
 
 The pattern from the Pi docs:
 
@@ -226,10 +264,16 @@ only. For example, `pi-lens` needs `@ast-grep/napi`, `typescript`,
 `jiti`; `pi-mcp-adapter` needs MCP SDK packages, `open`, and `zod`; `pi-mermaid`
 needs `beautiful-mermaid` and `mermaid` available from Firehorse's package root
 so local-path installs do not depend on pnpm's virtual-store symlink layout; and
-`pi-web-access` needs its fetch/search extraction dependencies. Leaving those
-unbundled lets npm install platform-specific optional packages correctly.
+`pi-web-access` needs its fetch/search extraction dependencies. `pi-agent-memory`
+is intentionally bundled as a Pi package but still expects the upstream
+`claude-mem` worker to be installed/running (for example through the Firehorse
+Claude marketplace dependency or upstream `npx claude-mem install`). Leaving
+non-Pi libraries unbundled lets npm install platform-specific optional packages
+correctly.
 Pi core packages (`@earendil-works/pi-ai`, `@earendil-works/pi-agent-core`,
-etc.) stay in `peerDependencies` with `"*"` and must **not** be bundled.
+etc.) stay in `peerDependencies` with `"*"` and must **not** be bundled. The
+legacy `@mariozechner/*` Pi peer names are also optional peers while
+`pi-agent-memory` still imports them upstream; they are not bundled.
 
 ## Update checks
 

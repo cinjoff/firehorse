@@ -26,7 +26,8 @@ function findUpstreamManifests() {
   return readdirSync(upstreamsRoot, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => join(upstreamsRoot, entry.name, "UPSTREAM.json"))
-    .filter((path) => existsSync(path));
+    .filter((path) => existsSync(path))
+    .sort();
 }
 
 function checkBundledPiPackages(skipPackages = new Set()) {

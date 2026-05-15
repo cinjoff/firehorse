@@ -43,12 +43,18 @@
       "types": "./dist/orchestrators/index.d.ts",
       "import": "./dist/orchestrators/index.js",
       "require": "./dist/orchestrators/index.cjs"
+    },
+    "./definitions": {
+      "types": "./dist/definitions/index.d.ts",
+      "import": "./dist/definitions/index.js",
+      "require": "./dist/definitions/index.cjs"
     }
   },
   "files": [
     "dist",
     "upstreams",
-    "README.md"
+    "README.md",
+    "definitions"
   ],
   "scripts": {
     "build": "tsup",
@@ -62,5 +68,9 @@
     "tsup": "^8.3.0",
     "typescript": "^5.6.2",
     "vitest": "^2.1.2"
+  },
+  "dependencies": {
+    "gray-matter": "^4.0.3",
+    "zod": "^4.4.3"
   }
 }

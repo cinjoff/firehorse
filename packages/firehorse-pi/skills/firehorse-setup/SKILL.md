@@ -13,6 +13,14 @@ Pi command: `/skill:firehorse-setup`
 
 - Verify the Firehorse Pi package is installed and exposing its bundled tools.
 - Detect whether the user is using Superset.
+- Pin the claude-mem / pi-agent-memory project id to the canonical repository
+  name so memory persists across Superset and git worktrees.
+- Verify that Firehorse-pi's bundled `claude-mem` worker scripts are installed
+  and reachable; `pi-agent-memory` is the Pi adapter and depends on that
+  worker.
+- Sync generated Firehorse Pi subagent role mirrors from the installed package
+  into the user-global Pi agent directory because `pi-subagents` does not
+  discover package agent directories.
 - If Superset is detected, configure Superset MCP in the **user-global** Pi MCP
   config so it works in new Superset workspaces.
 - Keep Superset API keys out of project files, git worktrees, and chat history.
@@ -26,6 +34,8 @@ Interpret the user's arguments naturally:
   is inconclusive.
 - `--no-superset` — skip Superset MCP setup.
 - `--claude` — also offer Claude Code user-scoped MCP setup if Claude Code is installed.
+- `--memory-project <name>` / "pin memory to <name>" — optional manual override
+  when no GitHub repository can be resolved.
 
 ## Setup status mode (`--check`)
 
@@ -58,19 +68,59 @@ Check:
      installed Firehorse package manifest.
    - Firehorse's `firehorse-superset-env` extension is present so the optional
      private env file can be loaded for Pi sessions launched outside a shell.
+6. Memory project pinning:
+   - Resolve the canonical project id from GitHub repository metadata by
+     running `gh repo view --json name --jq .name` from the current checkout.
+   - Prefer existing explicit env / private env-file values only when they are
+     already set; `--memory-project` is a manual fallback, not the normal path.
+   - The Superset path segment `/.superset/worktrees/<project>/` may be used as
+     a diagnostic suggestion only.
+   - Do **not** infer from git worktree parent directories or cwd basename for
+     Conductor/Superset workspaces; those paths may not mirror the canonical
+     repo name.
+   - Firehorse's `firehorse-memory-project` extension is present.
+   - `PI_MEM_PROJECT` and `CLAUDE_MEM_PROJECT` are explicitly set to the
+     canonical project id, or `~/.config/firehorse/memory.env` exists and is
+     private.
+7. claude-mem worker runtime:
+   - `pi-agent-memory` requires the upstream `claude-mem` worker reachable on
+     `CLAUDE_MEM_HOST` / `CLAUDE_MEM_PORT` (defaults `127.0.0.1:37777`).
+   - Check `npx claude-mem --version`, `~/.claude-mem/`, and a non-destructive
+     worker health request such as `GET http://127.0.0.1:37777/health` when the
+     default port is in use.
+   - If the bundled worker scripts are missing, show `pi update npm:firehorse-pi`
+     or reinstall instructions; if an external fallback is needed, show `npx
+     claude-mem install` or the Claude Code plugin marketplace commands. Do not
+     claim that `npm install -g claude-mem` is sufficient because upstream
+     documents it as SDK/library-only.
+8. Generated Firehorse Pi agent-role sync:
+   - Locate generated package sync artifacts under the installed Firehorse Pi
+     package's `agents/firehorse/*.md` directory.
+   - Check user-global targets under
+     `$PI_CODING_AGENT_DIR/agents/firehorse/` if `PI_CODING_AGENT_DIR` is set,
+     otherwise `~/.pi/agent/agents/firehorse/`.
+   - A target is current only when it exists, has Firehorse provenance, and its
+     `firehorseSourceSha256` matches the source artifact. Missing or stale
+     targets should be reported as needing full setup.
+   - If a target exists without Firehorse provenance, report a conflict and do
+     not overwrite it.
 
 Status table shape:
 
 ```markdown
-| Component               | Status                                    |
-| ----------------------- | ----------------------------------------- |
-| Firehorse package       | ✓ installed / ✗ missing                   |
-| Superset detected       | ✓ yes / ○ no / ? inconclusive             |
-| Superset API key        | ✓ env set / ✓ env file / ✗ missing        |
-| Secret file permissions | ✓ private / ✗ too open / ○ not present    |
-| Pi MCP config           | ✓ configured / ✗ missing / ⚠ needs update |
-| pi-mcp-adapter          | ✓ available / ✗ missing                   |
-| Superset env loader     | ✓ available / ✗ missing                   |
+| Component               | Status                                     |
+| ----------------------- | ------------------------------------------ |
+| Firehorse package       | ✓ installed / ✗ missing                    |
+| Superset detected       | ✓ yes / ○ no / ? inconclusive              |
+| Superset API key        | ✓ env set / ✓ env file / ✗ missing         |
+| Secret file permissions | ✓ private / ✗ too open / ○ not present     |
+| Pi MCP config           | ✓ configured / ✗ missing / ⚠ needs update  |
+| pi-mcp-adapter          | ✓ available / ✗ missing                    |
+| Superset env loader     | ✓ available / ✗ missing                    |
+| Memory project id       | ✓ <project> / ⚠ gh unavailable / ✗ missing |
+| Memory env loader       | ✓ available / ✗ missing                    |
+| claude-mem worker       | ✓ reachable / ✗ not running / ⚠ install    |
+| Firehorse agent roles   | ✓ synced / ⚠ stale / ✗ conflict            |
 ```
 
 If anything needs action, show the exact next command or file path. Then stop.
@@ -111,7 +161,145 @@ If you use Superset, run:
 
 Continue with any other setup checks added to this skill in the future.
 
-### 3. Configure Superset MCP for Pi
+### 3. Configure memory project identity
+
+Firehorse bundles both `pi-agent-memory` and the `claude-mem` npm package for
+Pi-only harness use. `pi-agent-memory` uses `PI_MEM_PROJECT`; the bundled
+claude-mem worker and Claude-side plugin use `CLAUDE_MEM_PROJECT`. Both must
+point at the canonical repository name, not the current Superset/generated
+worktree basename.
+
+Resolve and pin the canonical project id automatically in this order:
+
+1. Explicit `--memory-project <name>` only if the user provided it as an
+   override.
+2. Existing `FIREHORSE_PROJECT_NAME`, `PI_MEM_PROJECT`, or `CLAUDE_MEM_PROJECT`
+   from the environment.
+3. Existing private `~/.config/firehorse/memory.env` value.
+4. GitHub repository name from the current checkout using the GitHub CLI:
+
+```sh
+gh repo view --json name --jq .name
+```
+
+Run this command during setup; do not ask the user for the repo name if it
+succeeds.
+
+Do not derive the canonical id from git worktree parent directories, git root
+basenames, or cwd basenames for Conductor/Superset workspaces. Some orchestrators
+store worktrees outside the canonical repo root, so parent paths can be wrong.
+The Superset path segment `/.superset/worktrees/<project>/...` is only a useful
+hint for humans. If `gh` is unavailable or cannot resolve the repository, ask the
+user to authenticate/install `gh` or run setup with `--memory-project <repo>`
+rather than guessing.
+
+For Superset workspaces like:
+
+```text
+~/.superset/worktrees/firehorse/<owner>/<workspace>
+```
+
+`gh repo view --json name --jq .name` should return:
+
+```text
+firehorse
+```
+
+Pi runtime behavior:
+
+- Firehorse's `firehorse-memory-project` extension loads an explicit private
+  `~/.config/firehorse/memory.env`, then sets missing `FIREHORSE_PROJECT_NAME`,
+  `PI_MEM_PROJECT`, and `CLAUDE_MEM_PROJECT` before `pi-agent-memory` handles
+  `session_start`.
+- For Superset / Conductor / headless launchers, pass these env vars explicitly
+  when spawning agents so subagents inherit the same project id.
+- Create or update `~/.config/firehorse/memory.env` with mode `600`:
+
+```sh
+project_name="$(gh repo view --json name --jq .name)"
+mkdir -p ~/.config/firehorse
+chmod 700 ~/.config/firehorse
+printf 'FIREHORSE_PROJECT_NAME=%s\nPI_MEM_PROJECT=%s\nCLAUDE_MEM_PROJECT=%s\n' \
+  "$project_name" "$project_name" "$project_name" > ~/.config/firehorse/memory.env
+chmod 600 ~/.config/firehorse/memory.env
+```
+
+Do not store secrets in this file; it is only for non-secret memory project
+identity. If it is group/world-readable on Unix-like systems, tell the user to
+run `chmod 600 ~/.config/firehorse/memory.env`.
+
+### 4. Verify claude-mem worker runtime
+
+`pi-agent-memory` is the Pi adapter for memory capture/search. It requires the
+upstream `claude-mem` worker; Firehorse-pi bundles the `claude-mem` npm package
+and ships `firehorse-claude-mem-worker`, a session-start extension that checks
+and starts the bundled worker for Pi-only harness use. The worker provides the
+SQLite/FTS5/Chroma database, context injection API, and search endpoints on port
+`37777` by default.
+
+The upstream installation docs still matter as the fallback / repair path. They
+support two normal install paths:
+
+```sh
+npx claude-mem install
+```
+
+or, inside Claude Code:
+
+```text
+/plugin marketplace add thedotmack/claude-mem
+/plugin install claude-mem
+```
+
+Both configure hooks and start the worker service. Do **not** tell users that
+`npm install -g claude-mem` is sufficient; upstream documents that as the
+SDK/library only, without plugin hooks or worker startup.
+
+During setup/check mode, verify non-destructively:
+
+- Firehorse-pi's installed package has `node_modules/claude-mem/plugin/scripts/worker-service.cjs`
+  and `node_modules/claude-mem/plugin/scripts/bun-runner.js`, or `npx
+claude-mem --version` succeeds as an external fallback.
+- `~/.claude-mem/` exists after the worker has initialized.
+- The worker responds on `http://${CLAUDE_MEM_HOST:-127.0.0.1}:${CLAUDE_MEM_PORT:-37777}/health`
+  when reachable.
+
+If the bundled worker scripts are missing, tell the user to update/reinstall
+`firehorse-pi`; this is a packaging problem, not a Claude Code prerequisite. If
+the scripts exist but the worker is stopped, restart/reload Pi so
+`firehorse-claude-mem-worker` can start it, or ask approval before running
+`npx claude-mem start` / `npx claude-mem repair` as a fallback. Then optionally
+run `/memory-status` to verify the `pi-agent-memory` connection.
+
+### 5. Sync generated Firehorse Pi agent roles
+
+`pi-subagents` discovers builtin, user, and project agent directories, but it
+does not discover agent directories inside installed Pi packages. Firehorse
+therefore ships generated Pi-compatible agent-role mirrors as package sync
+artifacts and `firehorse-setup` copies them into the user-global Pi agent
+directory.
+
+Source artifacts live under the installed Firehorse Pi package's
+`agents/firehorse/*.md` directory. Target directory:
+
+- If `PI_CODING_AGENT_DIR` is set: `$PI_CODING_AGENT_DIR/agents/firehorse/`
+- Otherwise: `~/.pi/agent/agents/firehorse/`
+
+Rules:
+
+- Create the target directory when missing.
+- Copy missing generated agent-role files.
+- Overwrite a target only when it already has valid Firehorse provenance.
+- Treat a target as stale when its `firehorseSourceSha256` differs from the
+  package source artifact.
+- If a target exists without Firehorse provenance, stop and ask the user how to
+  resolve the conflict; do not overwrite a hand-authored agent.
+- Preserve filenames, including the `horse-` native prefix.
+
+The first generated sync artifact is
+`agents/firehorse/horse-diagnostic-reviewer.md`.
+
+### 6. Configure Superset MCP for Pi
 
 Superset MCP v2 is a hosted HTTP MCP server. There is no npm MCP server binary
 to install. Firehorse bundles `pi-mcp-adapter`; setup only needs to write the
@@ -156,7 +344,7 @@ Rules:
 - Create parent directories with mode `700` where possible.
 - Set the MCP config file to mode `600` on Unix-like systems.
 
-### 4. Configure the API key safely
+### 7. Configure the API key safely
 
 Never ask the user to paste a Superset API key into chat.
 
@@ -192,7 +380,7 @@ chmod 600 ~/.config/firehorse/superset.env
 Do not write secrets into `.mcp.json`, `.pi/mcp.json`, project files, or git
 worktrees.
 
-### 5. Verify / refresh
+### 8. Verify / refresh
 
 After configuring MCP, tell the user:
 
@@ -205,7 +393,7 @@ If MCP tools are available in the current session, verify non-destructively by
 listing or describing the `superset` server/tools. Do not create workspaces or
 run agents during setup verification.
 
-### 6. Optional Claude Code setup
+### 9. Optional Claude Code setup
 
 If the user passed `--claude`, or explicitly asks to configure Claude too, use
 the same Superset detection and API-key safety rules, then register Superset MCP
@@ -232,9 +420,11 @@ claude mcp add-json --scope user superset '{
 
 Do not use Claude project scope (`.mcp.json`) for this personal Superset API key.
 If the user primarily uses Claude Code, tell them the Firehorse Claude plugin
-also exposes its own `firehorse-setup` skill with the full Claude-specific flow.
+also exposes its own `firehorse-setup` skill with the full Claude-specific flow,
+including claude-mem project-id patching via
+`scripts/patch-claude-mem-project-env.cjs`.
 
-### 7. Summary
+### 10. Summary
 
 Print:
 
@@ -248,6 +438,7 @@ Then summarize:
 
 - MCP config path
 - Superset MCP status
+- canonical memory project id
 - API key status without printing the key
 - Next command, if any
 

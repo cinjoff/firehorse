@@ -21,8 +21,31 @@
       "repository": "https://github.com/cinjoff/firehorse",
       "license": "MIT",
       "keywords": ["firehorse", "agentic", "skills", "claude-code", "claude-plugin"],
+      "dependencies": ["claude-mem"],
       "category": "agent-frameworks",
       "tags": ["agent-framework", "skills", "cross-provider"]
+    },
+    {
+      "name": "claude-mem",
+      "source": {
+        "source": "git-subdir",
+        "url": "thedotmack/claude-mem",
+        "path": "plugin",
+        "ref": "main",
+        "sha": "37d24944af5f4afaa0de2b0bd0034bb432f2b714"
+      },
+      "description": "Persistent memory system for Claude Code — context compression across sessions.",
+      "version": "13.2.0",
+      "author": {
+        "name": "Alex Newman",
+        "url": "https://github.com/thedotmack"
+      },
+      "homepage": "https://github.com/thedotmack/claude-mem#readme",
+      "repository": "https://github.com/thedotmack/claude-mem",
+      "license": "Apache-2.0",
+      "keywords": ["claude", "claude-code", "mcp", "memory", "compression"],
+      "category": "productivity",
+      "tags": ["memory", "context", "mcp", "hooks", "persistent-memory"]
     }
   ]
 }

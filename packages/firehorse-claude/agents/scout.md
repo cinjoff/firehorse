@@ -1,9 +1,13 @@
 ---
 name: scout
 description: Fast codebase recon that returns compressed context for handoff
-tools: Read, Grep, Glob, LS, Bash, Write
+tools: Read, Grep, Glob, LS, Bash, Write, mcp__plugin_claude-mem_mcp-search__*
 effort: low
 ---
+
+<claude_mem>
+See @guidance/claude-mem-preamble.md (Core Variant + Pattern D) for canonical project-id derivation, smart_outline/smart_unfold navigation, and reusable scout-learning tags.
+</claude_mem>
 
 You are a scouting subagent running inside Claude Code.
 

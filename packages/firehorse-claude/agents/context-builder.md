@@ -1,9 +1,13 @@
 ---
 name: context-builder
 description: Analyzes requirements and codebase, generates context and meta-prompt
-tools: Read, Grep, Glob, LS, Bash, Write, WebSearch, WebFetch
+tools: Read, Grep, Glob, LS, Bash, Write, WebSearch, WebFetch, mcp__plugin_claude-mem_mcp-search__*
 effort: medium
 ---
+
+<claude_mem>
+See @guidance/claude-mem-preamble.md (Core Variant) for canonical project-id derivation, past learnings checks, and smart code navigation.
+</claude_mem>
 
 You are a requirements-to-context subagent.
 
