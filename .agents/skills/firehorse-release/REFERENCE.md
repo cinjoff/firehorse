@@ -155,11 +155,15 @@ If workflows are missing, say so. Do not invent release/publish secrets. If the
 user wants CI added, create a minimal workflow that runs install, upstream check,
 typecheck, build, and test on pushes/PRs/tags.
 
-After pushing the release commit/tag:
+After pushing the release PR branch and after merging/tagging main:
 
 ```sh
-sha=$(git rev-parse HEAD)
-gh run list --commit "$sha" --limit 10
+branch_sha=$(git rev-parse HEAD)
+gh run list --commit "$branch_sha" --limit 10
+gh run watch --exit-status
+
+main_sha=$(git rev-parse origin/main)
+gh run list --commit "$main_sha" --limit 10
 gh run watch --exit-status
 ```
 
@@ -167,25 +171,42 @@ If no workflows ran, include that in the release report.
 
 ## GitHub release commands
 
-Use annotated tags:
+Use a PR-first flow and annotated tags from `main`:
 
 ```sh
 version=0.1.0
 tag="v$version"
+branch="release/$tag"
 
 git status --short
+git switch -c "$branch"
 git add README.md CHANGELOG.md package.json pnpm-lock.yaml packages .claude-plugin .agents docs .planning
 git commit -m "Release $tag"
-git tag -a "$tag" -m "Firehorse $tag"
-git push origin HEAD
+git push -u origin "$branch"
+
+gh pr create \
+  --base main \
+  --head "$branch" \
+  --title "Release $tag" \
+  --body-file .release/notes-$tag.md
+
+# After checks/approval/confirmation:
+gh pr merge --squash --delete-branch
+git fetch origin main --tags
+git switch main
+git pull --ff-only origin main
+main_sha=$(git rev-parse HEAD)
+git tag -a "$tag" "$main_sha" -m "Firehorse $tag"
 git push origin "$tag"
 gh release create "$tag" \
+  --target "$main_sha" \
   --title "Firehorse $tag" \
   --notes-file .release/notes-$tag.md
 ```
 
 If the tag already exists locally or remotely, stop and inspect before deleting
-or moving it.
+or moving it. Never tag the pre-merge release branch commit; tag the post-squash
+`main` commit.
 
 ## Release notes template
 
@@ -227,8 +248,9 @@ or moving it.
 ```markdown
 Released Firehorse vX.Y.Z
 
+- PR: <url>
 - Tag: `vX.Y.Z`
-- Commit: `<sha>`
+- Main commit: `<sha>`
 - GitHub release: <url>
 - Upstream status: all current / intentionally pinned / updates deferred
 - Local validation: ...

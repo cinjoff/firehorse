@@ -1,7 +1,7 @@
 {
   "name": "firehorse-workspace",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Firehorse monorepo — core lib + Pi package + Claude plugin.",
   "license": "MIT",
   "author": {

@@ -46,17 +46,21 @@ mutate package registries unless the user explicitly asks.
    - If GitHub Actions workflows exist, verify they are present and watch the
      release commit/tag runs after pushing.
 
-6. **Publish GitHub release**
-   - Commit the release changes.
-   - Create an annotated `vX.Y.Z` tag.
-   - Push the branch and tag.
-   - Create the GitHub release with concise notes that mention Firehorse changes
-     and upstream package/skill changes.
-   - Verify `gh release view vX.Y.Z` and GitHub Actions status.
+6. **Publish through a PR, then tag main**
+   - Commit release changes on a release/feature branch, never by committing
+     directly to `main`.
+   - Push the branch and open a GitHub PR against `main` with the release notes.
+   - Watch required checks when workflows exist.
+   - Squash-merge the PR into `main` after approval/confirmation.
+   - Fetch `main` and create the annotated `vX.Y.Z` tag from the post-merge
+     `main` commit, not from the pre-merge branch commit.
+   - Push the tag and create the GitHub release with concise notes that mention
+     Firehorse changes and upstream package/skill changes.
+   - Verify `gh release view vX.Y.Z`, the tag target, and GitHub Actions status.
 
 7. **Report**
-   - Return release URL, tag, commit SHA, commands run, quality-gate results,
-     upstream status, and any follow-ups.
+   - Return PR URL, merge commit SHA, release URL, tag, commands run,
+     quality-gate results, upstream status, and any follow-ups.
 
 See [REFERENCE.md](REFERENCE.md) for exact checklists, file lists, commands, and
 release-note template.

@@ -74,7 +74,7 @@ pnpm add firehorse
 The core library is for adapter contracts and future integrations. It is not a
 skill runtime yet.
 
-## What ships in v0.2.0
+## What ships in v0.3.0
 
 - **`firehorse`** — TypeScript core library for provider/orchestrator contracts
   and pinned upstream provenance.
@@ -82,8 +82,10 @@ skill runtime yet.
   and Firehorse skills. This is the recommended user install.
 - **`firehorse-claude`** — Claude Code plugin with mirrored skills and agents.
 
-Firehorse v0.2.0 remains a foundation release. It includes the
-Firehorse Definition Format v1 parser, validator, and build-time projection
+Firehorse v0.3.0 adds the Pi-native Firehorse TUI: a custom `firehorse`
+theme, compact context/model footer, command-first Cheatsheet affordance with
+opt-in mouse handling, and a busy-time ASCII horse indicator. It still includes
+the Firehorse Definition Format v1 parser, validator, and build-time projection
 pipeline, but it does **not** include a Firehorse-authored skill runtime, prompt
 loader, slash-command runtime, or provider API transport yet.
 
@@ -456,6 +458,10 @@ Firehorse adds a small amount of glue around the upstreams:
   of project repos.
 - **Firehorse release checks:** Pi and Claude check Firehorse versions and point
   to Firehorse release notes instead of polling every upstream at startup.
+- **Firehorse Pi TUI:** a `firehorse` theme, custom footer with Git branch,
+  color-coded context usage and inline model, a Cheatsheet quick-reference
+  command plus opt-in clickable button, and a right-aligned compact ASCII horse
+  with green eye, fire mane, spacer row, and busy-time gallop frames.
 - **Adapter-native mirrors:** selected skills are mirrored into Pi and Claude in
   each ecosystem's native format.
 
