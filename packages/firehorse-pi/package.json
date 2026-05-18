@@ -1,6 +1,6 @@
 {
   "name": "firehorse-pi",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Pi.dev distribution of firehorse — bundles selected pi packages and exposes them as a single install.",
   "license": "MIT",
   "author": {
@@ -163,7 +163,7 @@
       "schemaVersion": 1,
       "adapter": "pi",
       "packageName": "firehorse-pi",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "updateCommand": "pi update npm:firehorse-pi",
       "upstreams": [
         {

@@ -2,6 +2,61 @@
 
 ## Unreleased
 
+## v0.3.0 — 2026-05-18
+
+### Added
+
+- Added the Pi-native Firehorse TUI extension with a custom footer showing Git
+  branch, color-coded context-window usage, and the active model inline.
+- Added the `firehorse` Pi theme with Firehorse red, ember, and terminal-green
+  accents.
+- Added a right-aligned compact ASCII horse indicator with green eye, fire mane,
+  spacer row, and busy-time gallop frames.
+- Added `/firehorse-cheatsheet` and `/fh-cheatsheet` quick-reference commands,
+  plus a sectioned Cheatsheet modal for setup, planning, building, quality, and
+  design workflows.
+
+### Changed
+
+- Kept terminal mouse tracking disabled by default so normal terminal scrollback
+  keeps working; clickable footer Cheatsheet handling now requires explicit
+  `FIREHORSE_ENABLE_MOUSE=1` or `FIREHORSE_ENABLE_FOOTER_CLICK=1` opt-in.
+- Updated Firehorse Pi TUI docs with motion, horse, working-indicator, and mouse
+  handling environment toggles.
+- Updated the repo-local Firehorse release skill to use a PR-first release flow:
+  open a PR, squash-merge it to `main`, then tag the post-merge `main` commit.
+- Added a CI-friendly `pnpm upstreams:check:warn` mode so intentionally pinned
+  upstream updates can be reported in PR checks without blocking the release.
+
+### Packages
+
+- `firehorse` v0.3.0
+- `firehorse-pi` v0.3.0
+- `firehorse-claude` plugin v0.3.0
+
+### Bundled / mirrored upstreams
+
+- `context-mode` 1.0.135
+- `pi-lens` 3.8.44
+- `pi-mcp-adapter` 2.6.1
+- `pi-mermaid` 0.3.0
+- `pi-subagents` 0.24.3
+- `pi-web-access` 0.10.7
+- `pi-agent-memory` 0.3.4
+- `claude-mem` 13.2.0
+- `mattpocock/skills` pinned at `e74f0061bb67222181640effa98c675bdb2fdaa7`
+- `pbakaus/impeccable` pinned at `4af581e23f17d112d8f9d6b7a5b7ff37823494e1`
+- `shadcn/ui` pinned at `36139f6200d9c2684ef7695fce5f3d9787378e26`
+
+### Notes
+
+- Upstream updates for `pbakaus/impeccable`, `shadcn/ui`, and `context-mode`
+  were intentionally deferred for this release; v0.3.0 ships the current pinned
+  upstream set plus Firehorse TUI/theme changes.
+- Firehorse v0.3.0 still intentionally does not include a Firehorse-authored
+  skill runtime, prompt loader, command runtime, hook runtime, or provider API
+  transport implementation.
+
 ## v0.2.0 — 2026-05-15
 
 ### Added

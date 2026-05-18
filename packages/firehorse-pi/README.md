@@ -25,12 +25,14 @@ but this package now exposes curated upstream content:
   Pi sessions to a running `claude-mem` worker.
 - Firehorse setup — `/skill:firehorse-setup` for first-time checks and safe
   Superset MCP configuration.
+- Firehorse TUI — the `firehorse` theme plus a custom footer and right-aligned
+  compact ASCII horse with a green eye, fire mane, and busy-time gallop frames.
 
 It also ships small `session_start` extensions that check for newer
-`firehorse-pi` releases, apply Firehorse subagent defaults, and load an optional
-private Superset env file for `pi-mcp-adapter`. First-time setup lives in
-`/skill:firehorse-setup`, including safe Superset MCP configuration when
-Superset is detected.
+`firehorse-pi` releases, apply Firehorse subagent defaults, load an optional
+private Superset env file for `pi-mcp-adapter`, and install the Firehorse TUI
+customizations. First-time setup lives in `/skill:firehorse-setup`, including
+safe Superset MCP configuration when Superset is detected.
 
 ## Install
 
@@ -42,7 +44,7 @@ pi install npm:firehorse-pi
 pi install -l npm:firehorse-pi
 
 # Pinned npm version (skipped by `pi update`)
-pi install npm:firehorse-pi@0.2.0
+pi install npm:firehorse-pi@0.3.0
 
 # GitHub install from this monorepo root
 pi install git:github.com/cinjoff/firehorse
@@ -57,6 +59,44 @@ directory:
 ```sh
 pi install ./packages/firehorse-pi
 ```
+
+## Theme and TUI
+
+Firehorse ships a Pi theme named `firehorse`. Its palette is aligned with the
+curated `tomorrow-night-burns` theme while keeping Firehorse red and terminal
+green accents for brand and status cues. Select it in `/settings` or add it to
+Pi settings:
+
+```json
+{
+  "theme": "firehorse"
+}
+```
+
+The Firehorse TUI extension installs a custom footer showing the current Git
+branch name, context-window usage, and model inline. Context usage is
+color-coded with a neutral faded green baseline, yellow at 30%+, orange at
+40%+, and red at 50%+. A right-aligned compact ASCII horse sits above the
+status footer with a blank spacer row; when motion is enabled it gallops only
+while Pi is busy. Use `/firehorse-cheatsheet` or `/fh-cheatsheet` for the
+quick-reference sheet. If you explicitly opt in to footer mouse handling, the
+footer also exposes a clickable `Cheatsheet` button that underlines on hover.
+Mouse handling is opt-in so terminal scrollback keeps working by default.
+
+Environment toggles:
+
+- `FIREHORSE_SKIP_TUI=1` or `FIREHORSE_DISABLE_TUI=1` — disable all Firehorse
+  TUI customization.
+- `FIREHORSE_HIDE_HORSE=1` — keep the footer/indicator, hide the ASCII horse.
+- `FIREHORSE_TUI_STATIC=1` or `FIREHORSE_REDUCED_MOTION=1` — keep the horse
+  visible but disable busy-time animation.
+- `FIREHORSE_SKIP_WORKING_INDICATOR=1` — keep the footer/horse, leave Pi's
+  default streaming indicator alone.
+- `FIREHORSE_ENABLE_MOUSE=1` or `FIREHORSE_ENABLE_FOOTER_CLICK=1` — opt in to
+  footer mouse tracking for the clickable `Cheatsheet` button. Mouse tracking is
+  disabled by default so terminal scrollback keeps working.
+- `FIREHORSE_DISABLE_MOUSE=1` or `FIREHORSE_DISABLE_FOOTER_CLICK=1` — force
+  footer mouse tracking off; use `/firehorse-cheatsheet` instead.
 
 ## First-time setup
 
