@@ -73,6 +73,10 @@ function checkBundledPiPackages(skipPackages = new Set()) {
   return stale;
 }
 
+const warnOnly =
+  process.argv.includes("--warn-only") ||
+  process.env.FIREHORSE_UPSTREAMS_CHECK_WARN_ONLY === "1";
+
 const manifests = findUpstreamManifests();
 if (manifests.length === 0) {
   console.log("No upstream skill manifests found.");
@@ -151,5 +155,12 @@ for (const manifestPath of manifests) {
 }
 
 staleCount += checkBundledPiPackages(npmUpstreams);
+
+if (staleCount > 0 && warnOnly) {
+  console.warn(
+    `Upstream freshness check found ${staleCount} update(s); continuing because --warn-only is set.`,
+  );
+  process.exit(0);
+}
 
 process.exit(staleCount === 0 ? 0 : 1);

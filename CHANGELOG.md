@@ -25,6 +25,8 @@
   handling environment toggles.
 - Updated the repo-local Firehorse release skill to use a PR-first release flow:
   open a PR, squash-merge it to `main`, then tag the post-merge `main` commit.
+- Added a CI-friendly `pnpm upstreams:check:warn` mode so intentionally pinned
+  upstream updates can be reported in PR checks without blocking the release.
 
 ### Packages
 
