@@ -34,7 +34,6 @@
     "commands",
     "skills",
     "hooks",
-    "README.md",
-    "THIRD_PARTY_NOTICES.md"
+    "README.md"
   ]
 }

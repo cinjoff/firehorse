@@ -1,7 +1,7 @@
 import type { ProviderCapabilities, ProviderId } from "../types.js";
 
 /**
- * Provider adapter contract. Each provider (Claude, Codex, Pi, ...) implements
+ * Provider adapter contract. Each provider (Claude, Codex, ...) implements
  * this interface so skills/agents can stay provider-agnostic.
  *
  * Methods are intentionally minimal — they will grow as the framework defines

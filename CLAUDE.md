@@ -13,7 +13,6 @@ that are genuinely Claude-flavored.
 ## Packages
 
 - `packages/firehorse-core` — TS core library (`firehorse`).
-- `packages/firehorse-pi` — Pi.dev distribution (`firehorse-pi`).
 - `packages/firehorse-claude` — **this is the Claude plugin**. Manifest at
   `.claude-plugin/plugin.json`; commands/, agents/, skills/, hooks/ dirs.
 
@@ -28,8 +27,8 @@ can `/plugin marketplace add cinjoff/firehorse`.
 
 ## Architecture
 
-- `packages/firehorse-core/src/providers/` — provider adapters (Claude, Codex,
-  Pi). Add new providers by implementing `Provider` from `provider.ts`.
+- `packages/firehorse-core/src/providers/` — provider adapters (Claude, Codex).
+  Add new providers by implementing `Provider` from `provider.ts`.
 - `packages/firehorse-core/src/orchestrators/` — orchestrator adapters
   (Superset, Conductor, tmux, terminal). Detection via env vars only; no side
   effects.
