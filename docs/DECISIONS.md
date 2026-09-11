@@ -2856,3 +2856,33 @@ current state.
   current concise summary.
 - Move the content into `docs/codebase/` — rejected because these files are PRD
   planning/contract appendices, not current codebase-map anchors.
+
+## D-151 — Generated native resource names are the canonical Definition ID
+
+**Date:** 2026-09-11
+**Decision:** Generated provider-native resources use the canonical Definition ID
+verbatim as their native name. The `horse-` prefix is removed, so
+`/firehorse:horse-map` becomes `/firehorse:map`. This supersedes D-52, and
+supersedes the native-invocation half of D-58 — `new-project` is now both the
+canonical Workflow ID and the provider-native invocation name. The break is
+clean: no compatibility aliases are projected, and the seven existing
+`/firehorse:horse-*` invocations stop resolving for anyone on plugin v0.3.0.
+**Rationale:** D-52 bought collision avoidance in "user-facing slash-command and
+skill namespaces". That cost no longer buys anything. Claude Code namespaces
+plugin commands as `/firehorse:<id>`, so the plugin name already disambiguates
+and the prefix only repeats it. The prefix was also the last inconsistency in the
+projection surface: skill mirrors have always projected unprefixed, and D-56/D-57
+exempted agent roles, leaving commands as the only prefixed kind. Removing it
+collapses `nativeName()` into identity, so the function goes with it — a second,
+smaller break to the `firehorse-core` public surface, recorded in the changelog.
+Because the namespace now carries disambiguation, user-facing docs must spell
+commands in the `/firehorse:<id>` form; the bare `/<id>` form drops the very
+thing this decision relies on.
+**Alternatives considered:**
+
+- Keep `horse-` — rejected: the collision rationale in D-52 is obsolete under
+  plugin namespacing, and it leaves commands inconsistent with skills and agents.
+- Project both names for one release as aliases — rejected: doubles the command
+  surface users see in the picker to soften a break on a pre-1.0 plugin.
+- Switch to `firehorse-` — rejected: longer, and `/firehorse:firehorse-map`
+  stutters.

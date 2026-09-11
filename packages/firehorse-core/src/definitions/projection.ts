@@ -35,10 +35,6 @@ export interface GeneratedProvenance {
   readonly firehorseSchemaVersion: number;
 }
 
-export function nativeName(id: string): string {
-  return `horse-${id}`;
-}
-
 export function projectDefinitions(
   definitions: readonly FirehorseDefinition[],
   options: ProjectionOptions = {},
@@ -94,13 +90,12 @@ function projectWorkflow(
   options: ProjectionOptions,
 ): GeneratedFile[] {
   const sourcePath = sourcePathFor(definition.path, options.repoRoot);
-  const name = nativeName(definition.frontmatter.id);
   const common = generatedCommonFrontmatter(definition, sourcePath);
   const body = renderGeneratedBody(definition, sourcePath);
 
   return [
     {
-      path: `packages/firehorse-claude/commands/firehorse/${name}.md`,
+      path: `packages/firehorse-claude/commands/firehorse/${definition.frontmatter.id}.md`,
       provider: "claude",
       resourceKind: "workflow",
       definitionId: definition.frontmatter.id,

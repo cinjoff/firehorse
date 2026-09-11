@@ -6,8 +6,9 @@ Claude-adapted variants of firehorse's commands, skills, and hooks.
 ## Status
 
 Shipping. The plugin carries seven generated workflow commands
-(`/horse-build`, `/horse-fix-bug`, `/horse-index`, `/horse-map`,
-`/horse-new-project`, `/horse-ship`, `/horse-upstreams-check`), two skills
+(`/firehorse:build`, `/firehorse:fix-bug`, `/firehorse:index`,
+`/firehorse:map`, `/firehorse:new-project`, `/firehorse:ship`,
+`/firehorse:upstreams-check`), two skills
 (`firehorse-setup` and `firehorse-recall`), and two `SessionStart` hooks — one
 that checks repo setup state, one that checks for a newer Firehorse release.
 
@@ -53,7 +54,7 @@ claude plugin validate .
 claude plugin validate packages/firehorse-claude
 ```
 
-Both run as part of the `/horse-ship` gate; no pnpm gate reads these manifests.
+Both run as part of the `/firehorse:ship` gate; no pnpm gate reads these manifests.
 
 ## Layout
 
@@ -85,10 +86,10 @@ release exists, it surfaces the update command, reload hint, and release-notes
 URL.
 
 This checks Firehorse release versions, not every upstream repository at user
-runtime. Upstream drift is `/horse-upstreams-check`'s job.
+runtime. Upstream drift is `/firehorse:upstreams-check`'s job.
 
 Because the hook reads GitHub _releases_, a release cut as a tag alone leaves it
-silent. `/horse-ship` cuts both the `v{version}` repo tag and the
+silent. `/firehorse:ship` cuts both the `v{version}` repo tag and the
 `firehorse--v{version}` plugin tag that `/plugin update` resolves against, then
 publishes the release the hook reads.
 
@@ -98,7 +99,7 @@ to skip the network check. Results are cached for 24 hours in
 
 ## Per-project setup
 
-`/horse-new-project` scaffolds project-local Claude config (`.claude/`,
-`docs/agents/`, the setup manifest) and then calls `/horse-index`. The
+`/firehorse:new-project` scaffolds project-local Claude config (`.claude/`,
+`docs/agents/`, the setup manifest) and then calls `/firehorse:index`. The
 `check-setup.mjs` hook reads the resulting `.firehorse/manifest.json` on every
 session start and stays silent unless the index is stale.

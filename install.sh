@@ -703,7 +703,7 @@ cat <<EOF
 
 Next:
   1. Restart Claude Code so the plugin, hooks, and MCP servers load.
-  2. Run /horse-map in a repo to open its wayfinder map.
+  2. Run /firehorse:map in a repo to open its wayfinder map.
   3. Verify anytime with: ./install.sh --check
 
 Docs: https://github.com/$FIREHORSE_REPO

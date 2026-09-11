@@ -90,7 +90,7 @@ Required body sections, each as a `##` heading spelled exactly:
 9. `## Projection Notes`
 
 Each workflow projects to one Claude command at
-`packages/firehorse-claude/commands/firehorse/horse-<id>.md`.
+`packages/firehorse-claude/commands/firehorse/<id>.md`.
 
 ## Skill definitions
 

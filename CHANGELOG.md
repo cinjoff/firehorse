@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Changed
+
+- **Breaking:** Dropped the `horse-` prefix from generated Claude command names.
+  The seven workflow commands are now `/firehorse:build`, `/firehorse:fix-bug`,
+  `/firehorse:index`, `/firehorse:map`, `/firehorse:new-project`,
+  `/firehorse:ship`, and `/firehorse:upstreams-check`. The old
+  `/firehorse:horse-*` names no longer resolve and no aliases are projected;
+  update any saved invocation. See D-151, which supersedes D-52.
+
+### Removed
+
+- Removed the `nativeName()` export from `firehorse-core`. With the prefix gone
+  it returned its argument unchanged, so command projection uses the canonical
+  Definition ID directly, as skill projection already did.
+
 ## v0.3.0 — 2026-05-18
 
 ### Added

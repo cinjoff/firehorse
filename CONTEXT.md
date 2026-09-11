@@ -53,7 +53,7 @@ Build-time code that turns canonical Firehorse Definition Files into provider-na
 _Avoid_: Runtime loader, manual port, execution engine
 
 **Generated Mirror**:
-A checked-in provider-native file produced from a canonical Definition File, stored under a provider-native `firehorse/` generated-content folder, named with the `horse-` prefix, marked with source provenance and a SHA-256 source content hash, exposed through manifests, and not hand-edited.
+A checked-in provider-native file produced from a canonical Definition File, stored under a provider-native `firehorse/` generated-content folder, named with its canonical Definition ID, marked with source provenance and a SHA-256 source content hash, exposed through manifests, and not hand-edited.
 _Avoid_: Hand-authored adapter copy, runtime-generated file
 
 **Schema Version**:
@@ -107,14 +107,14 @@ _Avoid_: Timestamp-only confidence, implicit freshness, memory cache
 - A **Definition File** may declare **Capability Requirements** for validation and provider projection.
 - The **Definition Schema** validates **Definition Files** without executing workflows or loading provider runtimes.
 - The **Projection Generator** produces **Generated Mirrors** for the Claude distribution.
-- A **Generated Mirror** is committed, uses a `horse-<id>` native name, and is traceable back to its source **Definition File**.
+- A **Generated Mirror** is committed, uses its canonical Definition ID as its native name, and is traceable back to its source **Definition File**.
 - A **Generated Mirror** contains rendered instructions, not a runtime reference back to the source **Definition File**.
 - A **Generated Mirror** includes a SHA-256 source content hash for freshness checks and is exposed through package-local and repo-root manifests.
 - A **Workflow** projects to a Claude command as its primary user-facing **Generated Mirror**.
-- The future canonical `new-project` **Workflow** projects to the provider-native `horse-new-project` invocation name.
+- The canonical `new-project` **Workflow** projects to the provider-native `new-project` invocation name.
 - The **Projection Generator** updates provider manifests so **Generated Mirrors** are exposed by their distributions.
 - A **Project Anchor** captures durable context for future workflows without depending on GSD.
-- A **Codebase Map** is stored as `docs/codebase/` **Project Anchors** and can be produced independently of `horse-new-project`.
+- A **Codebase Map** is stored as `docs/codebase/` **Project Anchors** and can be produced independently of `new-project`.
 - A **Codebase Map** includes **Freshness Metadata** such as source commit/hash and timestamp.
 - A **Starter Template** may create the first codebase, but product discovery and **Project Anchors** can exist before scaffolding.
 - A **Vertical Slice** can become a GitHub issue after product discovery and approval.
@@ -149,11 +149,11 @@ _Avoid_: Timestamp-only confidence, implicit freshness, memory cache
 - Definition aliases could live in a separate registry or changelog only; resolved: **Definition Aliases** live in definition frontmatter.
 - Definition projection could be runtime-loaded or manually ported; resolved: the **Projection Generator** creates checked-in **Generated Mirrors** with provenance headers.
 - Workflow projection could target Claude skills or Claude commands; resolved: **Workflows** project to Claude commands as their user-facing invocation surface.
-- Generated native names could use raw IDs or a long prefix; resolved: **Generated Mirrors** use `horse-<id>` names while canonical **Definition IDs** stay unprefixed.
+- Generated native names could use raw IDs or a `horse-` prefix; resolved (D-151, superseding D-52): **Generated Mirrors** use the canonical **Definition ID** verbatim, because the provider namespace (`/firehorse:<id>`) already disambiguates.
 - Generated mirrors could be thin references, hand-editable, or manifest-unaware; resolved: **Generated Mirrors** contain full rendered instructions, are edited only through canonical definitions, and are exposed through generated manifest updates.
 - Workflow mirrors could inline every supporting skill body; resolved: they include structured references and instructions for supporting capabilities without duplicating all supporting bodies.
 - Definition IDs could be renamed freely before runtime exists; resolved: **Definition IDs** are stable public API and renames require alias/deprecation handling.
-- `horse-new-project` could be mistaken for a canonical prefixed ID; resolved: the future canonical **Workflow** ID is `new-project`, while `horse-new-project` is the provider-native invocation name.
+- The bootstrap **Workflow** could carry a prefixed ID; resolved: its canonical **Workflow** ID is `new-project`, and that is also its provider-native invocation name.
 - Generated file locations could be mixed into top-level provider directories; resolved: Firehorse generated mirrors live under provider-native `firehorse/` folders.
 - Generated mirrors could preserve stale deleted definitions; resolved: stale **Generated Mirrors** are removed when their provenance is valid and their source no longer exists.
 - Generated mirrors could rewrite canonical headings; resolved: mirrors preserve canonical Markdown headings where possible, with provider-specific frontmatter/provenance wrappers.
@@ -161,7 +161,7 @@ _Avoid_: Timestamp-only confidence, implicit freshness, memory cache
 - Projection modes could be check-only or write-only; resolved: the **Projection Generator** supports both `definitions:write` and `definitions:check`.
 - Source hashes could use git hashes or timestamps; resolved: **Generated Mirrors** use SHA-256 hashes of canonical Definition File content.
 - New-project anchors could be scattered between root and docs; resolved: **Project Anchors** are written under `docs/`, with codebase anchors grouped under `docs/codebase/`.
-- Codebase mapping could be embedded only inside `horse-new-project`; resolved: **Codebase Map** is a reusable project anchor workflow that `horse-new-project` can invoke in brownfield mode.
+- Codebase mapping could be embedded only inside `new-project`; resolved: **Codebase Map** is a reusable project anchor workflow that `new-project` can invoke in brownfield mode.
 - Starter scaffolding could overwrite existing repo contents; resolved: **Starter Template** setup must preserve existing files and overlay starter files only with confirmation.
 - Codebase anchors could be aspirational placeholders; resolved: `docs/codebase/*` describes actual code and is created only when code exists.
 - Issue breakdown could use layer tasks; resolved: product work should be drafted as **Vertical Slices** following the bundled `to-issues` pattern.
