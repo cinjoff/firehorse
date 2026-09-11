@@ -68,13 +68,14 @@ Refer to `docs/ARCHITECTURE.md` for the design rationale.
 
 Before starting work, read:
 
-- `.planning/STATE.md` — current position in the roadmap.
-- `.planning/ROADMAP.md` — phase plan.
-- `.planning/REQUIREMENTS.md` — granular work items (`REQ-NN`).
-- `.planning/DECISIONS.md` — binding decisions, append-only. Don't relitigate.
-- `.planning/PROJECT.md` — vision, scope, success criteria.
+- `docs/MIGRATION-PLAN.md` — the settled plan for the Claude-only migration.
+- `docs/DECISIONS.md` — binding decisions, append-only. Don't relitigate.
+- `docs/PROJECT.md` — vision, scope, success criteria.
+- `docs/agents/` — tracker, domain, and label conventions the skills read.
 
-`.planning/` is hand-written and intentionally lightweight — no `gsd-tools`,
+GitHub Issues is the only tracker (D-149). The wayfinder map and its child
+tickets hold current position and granular work items, so neither lives in the
+repo. `docs/` is hand-written and intentionally lightweight — no `gsd-tools`,
 no plugin-cache symlinks. Keep it that way.
 
 ## Commands
