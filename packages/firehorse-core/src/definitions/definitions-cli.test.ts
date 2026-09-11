@@ -11,10 +11,8 @@ const repoRoot = nodePath.dirname(nodePath.dirname(packageRoot));
 const definitionsScript = nodePath.join(repoRoot, "scripts/definitions.ts");
 const tsxBin = nodePath.join(repoRoot, "node_modules/.bin/tsx");
 
-const workflowCommandPath =
-  "packages/firehorse-claude/commands/firehorse/diagnose-fix.md";
-const skillMirrorPath =
-  "packages/firehorse-claude/skills/firehorse/feedback-loop/SKILL.md";
+const workflowCommandPath = "packages/firehorse-claude/commands/firehorse/diagnose-fix.md";
+const skillMirrorPath = "packages/firehorse-claude/skills/firehorse/feedback-loop/SKILL.md";
 const pluginManifestPath = "packages/firehorse-claude/.claude-plugin/plugin.json";
 
 interface CommandResult {
@@ -29,7 +27,9 @@ afterEach(async () => {
   await Promise.all(tempRepos.splice(0).map((repo) => rm(repo, { recursive: true, force: true })));
 });
 
-describe("definitions repository scripts", () => {
+// Each case spawns a tsx subprocess, which runs well past vitest's 5s default
+// whenever the rest of the suite is competing for CPU.
+describe("definitions repository scripts", { timeout: 30_000 }, () => {
   it("reports stale generated mirrors in non-mutating check mode", async () => {
     const fixture = await createDefinitionsFixture();
     const writeResult = await runDefinitions(fixture, "--write");
@@ -46,9 +46,7 @@ describe("definitions repository scripts", () => {
     const checkResult = await runDefinitions(fixture, "--check");
 
     expect(checkResult.exitCode).toBe(1);
-    expect(commandOutput(checkResult)).toContain(
-      `stale generated mirror: ${workflowCommandPath}`,
-    );
+    expect(commandOutput(checkResult)).toContain(`stale generated mirror: ${workflowCommandPath}`);
     await expect(readFile(absoluteGeneratedPath, "utf8")).resolves.toBe(staleContent);
   });
 
@@ -90,13 +88,8 @@ describe("definitions repository scripts", () => {
     const writeResult = await runDefinitions(fixture, "--write");
 
     expect(writeResult.exitCode).toBe(0);
-    await expect(
-      readJson(nodePath.join(fixture, pluginManifestPath)),
-    ).resolves.toMatchObject({
-      commands: [
-        "./commands/firehorse/alpha-fix.md",
-        "./commands/firehorse/diagnose-fix.md",
-      ],
+    await expect(readJson(nodePath.join(fixture, pluginManifestPath))).resolves.toMatchObject({
+      commands: ["./commands/firehorse/alpha-fix.md", "./commands/firehorse/diagnose-fix.md"],
       skills: ["./skills/firehorse/alpha-loop", "./skills/firehorse/feedback-loop"],
     });
   });
@@ -156,10 +149,8 @@ describe("definitions repository scripts", () => {
     const writeResult = await runDefinitions(fixture, "--write");
     expect(writeResult.exitCode).toBe(0);
 
-    const provenancedStalePath =
-      "packages/firehorse-claude/commands/firehorse/old-workflow.md";
-    const handAuthoredStalePath =
-      "packages/firehorse-claude/commands/firehorse/hand-authored.md";
+    const provenancedStalePath = "packages/firehorse-claude/commands/firehorse/old-workflow.md";
+    const handAuthoredStalePath = "packages/firehorse-claude/commands/firehorse/hand-authored.md";
     const absoluteProvenancedStalePath = nodePath.join(fixture, provenancedStalePath);
     const absoluteHandAuthoredStalePath = nodePath.join(fixture, handAuthoredStalePath);
     const handAuthoredContent = "---\ndescription: Hand authored.\n---\n\n# Hand authored\n";
@@ -243,10 +234,7 @@ function titleFor(id: string): string {
     .join(" ");
 }
 
-function minimalWorkflowDefinition(
-  id: string,
-  supportingSkills: readonly string[] = [],
-): string {
+function minimalWorkflowDefinition(id: string, supportingSkills: readonly string[] = []): string {
   const title = titleFor(id);
   const references =
     supportingSkills.length > 0
