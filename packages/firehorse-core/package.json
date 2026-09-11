@@ -1,7 +1,8 @@
 {
   "name": "firehorse",
   "version": "0.6.0",
-  "description": "Lightweight, cross-provider agentic skills framework \u2014 core library.",
+  "private": true,
+  "description": "Lightweight, cross-provider agentic skills framework — core library.",
   "license": "MIT",
   "author": {
     "name": "cinjoff",
