@@ -8,22 +8,24 @@ that are genuinely Claude-flavored.
 
 - **firehorse** — lightweight, cross-provider agentic skills framework.
 - pnpm monorepo, TypeScript, ESM-first, Node 20+.
-- Status: scaffolding only.
+- Status: scaffolding, plus the supermemory graph app.
 
 ## Packages
 
 - `packages/firehorse-core` — TS core library (`firehorse`).
 - `packages/firehorse-claude` — **this is the Claude plugin**. Manifest at
   `.claude-plugin/plugin.json`; commands/, agents/, skills/, hooks/ dirs.
+- `packages/firehorse-graph` — local Vite + React app for exploring a
+  self-hosted supermemory store as a graph. Private; Vite owns its build.
 
 The repo-level `.claude-plugin/marketplace.json` exposes the plugin so users
 can `/plugin marketplace add cinjoff/firehorse`.
 
 ## Stack
 
-- **Build:** `pnpm build` (per-package tsup).
+- **Build:** `pnpm build` (per-package: tsup for libraries, Vite for the graph app).
 - **Typecheck:** `pnpm typecheck`.
-- **Test:** `pnpm test` (vitest, no tests yet).
+- **Test:** `pnpm test` (vitest).
 
 ## Architecture
 
@@ -38,7 +40,8 @@ See `docs/ARCHITECTURE.md` for design rationale.
 
 ## Conventions
 
-- No default exports. Named exports only.
+- No default exports. Named exports only — except tool config files whose
+  loader requires one (`tsup.config.ts`, `vite.config.ts`).
 - Adapter classes extend `BaseProvider` / `BaseOrchestrator`.
 - Provider-specific quirks stay inside the provider adapter or the matching
   distribution package.

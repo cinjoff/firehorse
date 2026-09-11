@@ -7,7 +7,7 @@ notes live in `CLAUDE.md` and defer here for the substance.
 ## What this repo is
 
 Personal Claude-only tooling, packaged as a Claude Code plugin (D-136), shipped
-as a pnpm monorepo with two packages:
+as a pnpm monorepo with three packages:
 
 - **`packages/firehorse-core`** (`firehorse` on npm) — TypeScript core library.
   Canonical definitions, the projection generator, provider and orchestrator
@@ -15,6 +15,9 @@ as a pnpm monorepo with two packages:
 - **`packages/firehorse-claude`** — Claude Code plugin. `.claude-plugin/plugin.json`
   manifest plus `commands/`, `skills/`, `hooks/` directories. Discovered via the
   repo-level `.claude-plugin/marketplace.json`.
+- **`packages/firehorse-graph`** — private local app that opens a self-hosted
+  supermemory store as a graph, launched by `/firehorse:memory`. A browser app
+  rather than a library, so Vite owns its build and nothing imports from it.
 
 Firehorse depends on upstream plugins and vendors nothing (D-137).
 
@@ -48,7 +51,8 @@ Firehorse depends on upstream plugins and vendors nothing (D-137).
 firehorse/
 ├── packages/
 │   ├── firehorse-core/      Core TS lib + canonical definition sources
-│   └── firehorse-claude/    Claude plugin (consumed via marketplace)
+│   ├── firehorse-claude/    Claude plugin (consumed via marketplace)
+│   └── firehorse-graph/     Local supermemory graph app (private, Vite)
 ├── .claude-plugin/
 │   └── marketplace.json     Repo-level Claude marketplace for Firehorse
 └── docs/ARCHITECTURE.md
@@ -91,7 +95,8 @@ pnpm --filter firehorse typecheck
 
 - TypeScript strict mode, ESM-first, `NodeNext` resolution.
 - Prefer `interface` for adapter contracts, `type` for unions / shapes.
-- No default exports.
+- No default exports, except in tool config files whose loader requires one
+  (`tsup.config.ts`, `vite.config.ts`).
 - Adapter classes extend the matching `Base*` to inherit the contract.
 
 ## When in doubt
