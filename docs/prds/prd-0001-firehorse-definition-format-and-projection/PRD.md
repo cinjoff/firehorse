@@ -1,6 +1,13 @@
 # PRD: Firehorse Definition Format and Projection Generator
 
+Status: Published / historical  
 Published issue: https://github.com/cinjoff/firehorse/issues/2
+
+Status note: this PRD is historical. Its original first fixture names
+`diagnose-fix` and `diagnostic-reviewer`; PRD-0002 later replaced the public
+bug-fix workflow with `fix-bug` and no `horse-diagnose-fix` alias, and D-139
+records the reviewer-role consolidation direction. Do not use this PRD to
+recreate retired generated mirrors.
 
 ## Problem Statement
 
@@ -72,7 +79,7 @@ Add pure projection helpers in `firehorse-core` and repository scripts that gene
 - Write mode deletes stale generated mirrors only when valid Firehorse provenance is present.
 - Check mode fails when definitions or generated mirrors are invalid or stale.
 - Root `typecheck` includes definition validation and generated-mirror freshness checks.
-- `docs/FIREHORSE-DEFINITION-FORMAT.md` must include complete canonical examples for `diagnose-fix`, `feedback-loop`, and `diagnostic-reviewer`.
+- Historical PRD-0001 requirement: the Definition Format appendix, now at `docs/prds/prd-0001-firehorse-definition-format-and-projection/FIREHORSE-DEFINITION-FORMAT.md`, originally needed complete examples for `diagnose-fix`, `feedback-loop`, and `diagnostic-reviewer`. Later PRDs superseded the public examples to current checked-in definitions such as `fix-bug`, `feedback-loop`, and `reviewer`.
 - `horse-new-project` and `horse-map-codebase` should wait for the Definition Format generator rather than being hand-authored provider-native skills first.
 
 ## Testing Decisions
@@ -101,8 +108,8 @@ Add pure projection helpers in `firehorse-core` and repository scripts that gene
 
 ## Further Notes
 
-Authoritative decisions are in `.planning/DECISIONS.md`; the handoff summary is at `docs/handoffs/2026-05-15-firehorse-definition-format-grill-handoff.md`.
+Authoritative decisions are in `docs/DECISIONS.md`; the handoff summary is at `docs/handoffs/2026-05-15-firehorse-definition-format-grill-handoff.md`.
 
-`docs/SKILLS-FRAMEWORK-DISCUSSION-SYNTHESIS.md` remains useful background, but the decisions captured during the grill supersede it where more specific.
+`context/SKILLS_FRAMEWORK_DISCUSSION_SYNTHESIS.md` remains useful background, but the decisions captured during the grill supersede it where more specific.
 
 The project currently has no `docs/agents/` setup files. The repository remote is `cinjoff/firehorse`, and GitHub CLI authentication was available during this PRD creation. The `ready-for-agent` label did not exist before publication, so it may need to be created before applying it to the issue.

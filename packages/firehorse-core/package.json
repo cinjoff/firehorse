@@ -48,6 +48,11 @@
       "types": "./dist/definitions/index.d.ts",
       "import": "./dist/definitions/index.js",
       "require": "./dist/definitions/index.cjs"
+    },
+    "./setup": {
+      "types": "./dist/setup/index.d.ts",
+      "import": "./dist/setup/index.js",
+      "require": "./dist/setup/index.cjs"
     }
   },
   "files": [
