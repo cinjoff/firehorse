@@ -16,14 +16,16 @@ from the `pi-v0.3.0` tag.
 
 ## Install
 
-Firehorse depends on two upstream plugins, `mattpocock-skills` from the official
-`claude-plugins-official` marketplace and `impeccable` from `pbakaus/impeccable`.
-Claude Code installs both along with Firehorse. Add the `impeccable` marketplace
+Firehorse depends on three upstream plugins: `mattpocock-skills` from the
+official `claude-plugins-official` marketplace, `impeccable` from
+`pbakaus/impeccable`, and `supermemory` from `supermemoryai/claude-supermemory`.
+Claude Code installs all three along with Firehorse. Add the other marketplaces
 first, because Claude Code cannot resolve a dependency from a marketplace it does
 not know about yet.
 
 ```text
 /plugin marketplace add pbakaus/impeccable
+/plugin marketplace add supermemoryai/claude-supermemory
 /plugin marketplace add cinjoff/firehorse
 /plugin install firehorse@firehorse
 ```
@@ -46,6 +48,21 @@ then register it at user scope so every project sees it:
 ```sh
 claude mcp add --scope user codebase-memory-mcp <path-to-codebase-memory-mcp>
 ```
+
+### Memory
+
+Recall across sessions comes from a self-hosted supermemory server on
+`localhost:6767`, plus the `firehorse-recall` skill for deliberate queries. The
+plugin installs with Firehorse; the server does not. Set it up once, following
+[the memory runbook](./docs/MEMORY.md):
+
+```sh
+npx -y supermemory@latest local install
+ollama pull gpt-oss:20b
+```
+
+The extraction model must support tool calling, and it must stay resident. The
+runbook explains both, and why each one fails quietly if you skip it.
 
 The core library is published separately for adapter contracts and the
 definition format. It is not a skill runtime.
@@ -79,9 +96,6 @@ pnpm definitions:check  # non-mutating freshness and safety check
 Generated mirrors carry Firehorse provenance and a SHA-256 of their source. Edit
 the canonical definition, never the generated mirror.
 
-The workflow set is empty right now: Phase 3 of the migration plan adds the
-seven workflows, and Phase 2 declares the upstream plugins they orchestrate.
-
 ## Development
 
 ```sh
@@ -97,6 +111,7 @@ pnpm test
 - [Decisions](./docs/DECISIONS.md)
 - [Project vision and scope](./docs/PROJECT.md)
 - [Architecture](./docs/ARCHITECTURE.md)
+- [Memory runbook](./docs/MEMORY.md)
 - [Definition format](./docs/FIREHORSE-DEFINITION-FORMAT.md)
 - [Claude plugin README](./packages/firehorse-claude/README.md)
 - [Changelog](./CHANGELOG.md)

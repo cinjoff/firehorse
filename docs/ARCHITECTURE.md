@@ -168,15 +168,20 @@ before anything in the workspace is built, so it must not import from it.
 
 ## Memory
 
-The design is self-hosted supermemory, reached through `npx supermemory`
-rather than an MCP shim (D-143, D-144). A local server, local embeddings, and
-Ollama for extraction keep it offline; deliberate recall comes from one Firehorse
-skill wrapping `npx supermemory search|add`, invoked explicitly.
+Memory is self-hosted supermemory, reached through `npx supermemory` rather than
+an MCP shim (D-143, D-144). A local server on 6767, local embeddings, and Ollama
+for extraction keep it offline.
 
-**None of it is built yet.** Phase 7 of [the migration plan](./MIGRATION-PLAN.md)
-stands it up last, after the surface it serves has settled (D-148). The `index`
-and `map` workflows already read `SUPERMEMORY_API_URL` and record
-`index.supermemory: false` when the server is absent, so they run without it.
+Two halves reach it. The supermemory plugin's four REST hooks capture each
+session and inject what they judge relevant; they are a declared dependency, so
+Claude Code installs them with Firehorse. The `firehorse-recall` skill
+(`definitions/skills/firehorse-recall.md`) wraps `npx supermemory search|add`
+for deliberate recall, invoked explicitly and never as a reflex (D-145).
+
+The server itself is not a repo artifact — it is machine setup, and
+[`MEMORY.md`](./MEMORY.md) is its runbook. The `index` and `map` workflows read
+`SUPERMEMORY_API_URL` and record `index.supermemory: false` when the server is
+absent, so they run without it.
 
 ## What is intentionally not here
 
