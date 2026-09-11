@@ -4,7 +4,7 @@ Firehorse is personal tooling packaged as one Claude Code plugin (D-155). It
 holds a small set of workflow definitions and a projector that turns them into
 Claude-native commands. Everything a user invokes is a generated slash command.
 
-The repo carries two packages:
+The repo carries three packages:
 
 - `packages/firehorse-core` — the `firehorse` npm library. It owns the
   definition format (schema, parser, validator, projector, manifest merge), the
@@ -14,6 +14,9 @@ The repo carries two packages:
   `.claude-plugin/plugin.json`, the generated `commands/firehorse/` and
   `skills/firehorse/` trees, the hand-authored `skills/firehorse-setup/` skill,
   and the `hooks/` scripts.
+- `packages/firehorse-graph` — the local app `/firehorse:memory` opens on a
+  self-hosted supermemory store. It is `private: true` and built by Vite rather
+  than tsup; nothing imports from it.
 
 `.claude-plugin/marketplace.json` at the repo root exposes the plugin, so you
 add the marketplace once and install `firehorse` from it.
@@ -38,12 +41,22 @@ Purpose, Usage, Inputs, Outputs, Supporting Capabilities, Orchestration Intent,
 Safety Gates, Procedure, Projection Notes. IDs are globally unique across kinds,
 and `validation.ts` enforces that plus alias collisions and `replacedBy` targets.
 
-`projection.ts` emits one file per definition:
+`projection.ts` emits one file per definition, to a root chosen by the
+definition's `audience` — `user` by default, into the plugin; `maintainer` into
+this repo's own `.claude/`, where a command resolves as `/<id>` and never ships:
 
 ```
-definitions/workflows/<id>.md  →  packages/firehorse-claude/commands/firehorse/<id>.md
-definitions/skills/<id>.md     →  packages/firehorse-claude/skills/firehorse/<id>/SKILL.md
+audience: user        definitions/workflows/<id>.md  →  packages/firehorse-claude/commands/firehorse/<id>.md
+                      definitions/skills/<id>.md     →  packages/firehorse-claude/skills/firehorse/<id>/SKILL.md
+audience: maintainer  definitions/workflows/<id>.md  →  .claude/commands/<id>.md
+                      definitions/skills/<id>.md     →  .claude/skills/<id>/SKILL.md
 ```
+
+The body is not copied verbatim: `## Projection Notes` is stripped, and
+`## Supporting Capabilities` gains a table resolving each `upstreamSkills` entry
+to its invocation and `SKILL.md` path, read from `upstreams.lock.json`. So the
+lockfile is a projection input as well as the drift check's baseline, and
+`definitions:check` fails when the two disagree.
 
 Generated files are not hand-editable. Each one opens with provenance —
 `firehorseGenerated`, `firehorseKind`, `firehorseId`, `firehorseSource`,
@@ -121,21 +134,21 @@ the skill's frontmatter `name`; ordering lives in the workflow body.
 Firehorse pulls them in. The skill itself stays in the plugin that ships it.
 
 Upstream plugins ship continuously, so a skill can be renamed or rewritten under
-a workflow without any version changing. The planned drift mechanism is a
-root-level `upstreams.lock.json` baseline plus a `pnpm upstreams:check` that
-compares it against the plugins installed on disk. **Neither exists yet**; Phase 4
-of [the migration plan](./MIGRATION-PLAN.md) builds them, and
-[the upstream skills doc](./UPSTREAM-SKILLS.md) records the lockfile design. The
-`upstreams-check` workflow is written against that mechanism, so its command is
-installed ahead of the script it calls.
+a workflow without any version changing. The drift mechanism is a root-level
+`upstreams.lock.json` baseline at `schemaVersion: 2` plus `pnpm upstreams:check`,
+which compares it against the plugins installed under `~/.claude/plugins/`.
+[The upstream skills doc](./UPSTREAM-SKILLS.md) carries the lockfile format, the
+severity lists, and the CI behaviour. The `upstreams-check` workflow adds the
+impact judgement the script cannot make; it is maintainer-only, so it projects
+to `.claude/commands/` rather than into the plugin.
 
 ## Per-project state
 
 `.firehorse/manifest.json` records what setup and indexing have done in a repo.
 `packages/firehorse-core/src/setup/index.ts` owns its Zod schema at
 `schemaVersion: 2`: `setup.mattPocockSkills` (version and timestamp),
-`index` (`commit`, `at`, `graph`, `supermemory`), `anchors` (`design`,
-`codebase`), and `upstreams.checkedAt`. The same module computes index staleness
+`index` (`commit`, `at`, `graph`, `supermemory`), `anchors` (`context`,
+`agents`, `design`, `adr`, and `codebase`), and `upstreams.checkedAt`. The same module computes index staleness
 from git facts a caller supplies — `computeFirehorseIndexStaleness` never shells
 out itself.
 
