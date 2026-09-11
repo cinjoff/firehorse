@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "map"
 firehorseSource: "packages/firehorse-core/definitions/workflows/map.md"
-firehorseSourceSha256: "acc8daaac098f0bd5196ea270d103344bf4cc7b2f09d9d91df14f7408fdb178b"
+firehorseSourceSha256: "3327c60ac75652a25adba3d16cdb4c6208dbc4e625d541883f1594a62fdf8673"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/map.md
 Definition ID: map
 Definition kind: workflow
-Source SHA-256: acc8daaac098f0bd5196ea270d103344bf4cc7b2f09d9d91df14f7408fdb178b
+Source SHA-256: 3327c60ac75652a25adba3d16cdb4c6208dbc4e625d541883f1594a62fdf8673
 -->
 
 # Map
@@ -24,7 +24,7 @@ Source SHA-256: acc8daaac098f0bd5196ea270d103344bf4cc7b2f09d9d91df14f7408fdb178b
 
 Use this workflow instead of invoking `wayfinder` directly. It adds one thing: the map's `## Notes` block is written from what this repo actually has, so the standing preferences reach every session that loads the map days later.
 
-Wayfinder defines `## Notes` as "domain; skills every session should consult; standing preferences for this effort" and leaves the content to the caller. This workflow supplies that content, and it is the only carrier for those preferences (D-140).
+Wayfinder defines `## Notes` as "domain; skills every session should consult; standing preferences for this effort" and leaves the content to the caller. This workflow supplies that content, and it is the only carrier for those preferences.
 
 The content comes out of `.firehorse/manifest.json`, which `/firehorse:new-project` and `/firehorse:index` wrote. This workflow reads that record rather than re-establishing what it already says.
 
@@ -73,7 +73,7 @@ You run the probe and write the Notes block yourself, then read `wayfinder`'s `S
 - **The Notes block stays under 200 words.** Count before writing; over the cap, stop and report it — the surplus belongs in `CONTEXT.md` or `docs/agents/`, which the Domain line already points at.
 - **Every line points at something the manifest or the resolved table confirms.** One dead pointer teaches the next session that the whole block is decorative.
 - **A pass that last failed is not a preference.** `index.graph` or `index.supermemory` false or absent → omit that paragraph rather than naming the tool.
-- **The map and its tickets are GitHub issues** (D-149), never a draft under `docs/prds/` or `docs/issues/`.
+- **The map and its tickets live in the tracker** the tracker doc records, never a markdown draft committed beside the code.
 - **One ticket per session**, research tickets excepted.
 - **The map indexes; the ticket holds the detail.** A decision is recorded once.
 
@@ -96,7 +96,7 @@ made. If it comes back empty, say so in one line and move on.
 {SKILLS}
 
 **Standing preferences:** small, reviewable commits; `{GATE}` green before any ticket
-closes; never hand-edit a generated mirror.
+closes.
 ```
 
 **`{ANCHORS}`** — append one clause to the Domain sentence per `anchors` field that is `true`, in this order:
@@ -111,7 +111,7 @@ No anchor is `true` → the Domain line is the `CONTEXT.md` sentence alone. `anc
 
 **`{SKILLS}`** — one bullet per skill in the Resolved upstream skills table under [Supporting Capabilities](#supporting-capabilities), which already resolved against `upstreams.lock.json`, so a renamed upstream cannot land here as a dead reference. Name each by its `plugin:skill` invocation: `mattpocock-skills:grilling` and `mattpocock-skills:domain-modeling` on every `wayfinder:grilling` ticket; `mattpocock-skills:tdd` on tickets that change code; `mattpocock-skills:code-review` before opening a PR; `impeccable:impeccable` on anything with a UI surface. A skill the table marks unresolved is dropped without comment.
 
-**`{GATE}`** — from `package.json` scripts: `pnpm typecheck && pnpm test`, plus `&& pnpm definitions:check` when that script exists. No gate script, no clause.
+**`{GATE}`** — derived from this repo, never assumed: the typecheck and test scripts its manifest declares, joined with `&&`, each run through the package manager its lockfile names — `pnpm typecheck && pnpm test` in a pnpm workspace, `npm run typecheck && npm test` where the lockfile is npm's. A repo whose gate has a third script, a `definitions:check` say, names it too. No gate script, no clause.
 
 **Conditional paragraphs** — emit the graph paragraph only when `index.graph` is `true`, and the supermemory paragraph only when `index.supermemory` is `true`. Either one false or absent means that pass did not succeed here, and a preference pointing at it would be a dead pointer.
 

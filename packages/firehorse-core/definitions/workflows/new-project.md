@@ -37,7 +37,7 @@ upstreamSkills:
 
 Use this workflow once per repo, before any other Firehorse workflow runs. `setup-matt-pocock-skills` writes the tracker, label, and domain-doc configuration the engineering skills assume. This workflow adds what Firehorse needs on top: the label vocabulary actually created in the tracker, `.firehorse/manifest.json` at schema version 2, an **interviewed** `DESIGN.md`, and a first index.
 
-`DESIGN.md` is the reason the interview exists. It is the one anchor `/firehorse:index` must not write (D-146): inferring direction from the components that already exist describes what the UI is, not what it should be. A human states it, or it stays absent.
+`DESIGN.md` is the reason the interview exists. It is the one anchor `/firehorse:index` must not write: inferring direction from the components that already exist describes what the UI is, not what it should be. A human states it, or it stays absent.
 
 ## Usage
 
@@ -67,16 +67,16 @@ Invoke the generated command with the project name, a repo path, or a remote URL
 
 ## Orchestration Intent
 
-You follow `setup-matt-pocock-skills` first and take its output as given — tracker and label conventions live in `docs/agents/` under D-145, and nothing here duplicates them into the manifest. Then you create the labels, write the manifest, interview for `DESIGN.md`, and call `/firehorse:index` last, so the index records a commit that already contains the anchors and the manifest.
+You follow `setup-matt-pocock-skills` first and take its output as given — tracker and label conventions live in `docs/agents/`, and nothing here duplicates them into the manifest. Then you create the labels, write the manifest, interview for `DESIGN.md`, and call `/firehorse:index` last, so the index records a commit that already contains the anchors and the manifest.
 
 ## Safety Gates
 
 - **The manifest records what a later workflow would otherwise re-derive every run** — which anchors exist — and nothing a single command already answers. Project name, GitHub owner and repo come from `git remote`; a second copy is a thing that can disagree.
-- **`DESIGN.md` comes from the interview** or it does not exist (D-146).
-- **Tracker and label conventions live in `docs/agents/`** (D-145), not in the manifest.
+- **`DESIGN.md` comes from the interview** or it does not exist.
+- **Tracker and label conventions live in `docs/agents/`**, not in the manifest.
 - **The manifest is committed**, so it carries no secret and no id.
 - **An existing `CONTEXT.md`, `AGENTS.md`, `CLAUDE.md`, or `docs/agents/` file changes only after the human sees the diff.**
-- **Planning lives in the tracker** (D-149), never a draft under `docs/prds/` or `docs/issues/`.
+- **Planning lives in the tracker** the tracker doc records, never a markdown draft committed beside the code.
 
 ## Manifest shape
 

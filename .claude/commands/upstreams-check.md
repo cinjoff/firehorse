@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "upstreams-check"
 firehorseSource: "packages/firehorse-core/definitions/workflows/upstreams-check.md"
-firehorseSourceSha256: "a57c6b8774307d67759dc9c6cf90b48e5fb617db4c603470edf5f9dcb11506d2"
+firehorseSourceSha256: "c058b99feb1fd633c9b6a20b92ca23409426f0e7d84bc0e10b4575775c26e0f2"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/upstreams-check.md
 Definition ID: upstreams-check
 Definition kind: workflow
-Source SHA-256: a57c6b8774307d67759dc9c6cf90b48e5fb617db4c603470edf5f9dcb11506d2
+Source SHA-256: c058b99feb1fd633c9b6a20b92ca23409426f0e7d84bc0e10b4575775c26e0f2
 -->
 
 # Upstreams Check
@@ -24,7 +24,7 @@ Source SHA-256: a57c6b8774307d67759dc9c6cf90b48e5fb617db4c603470edf5f9dcb11506d2
 
 Use this workflow to find out what changed in the upstream skills and what it costs here. `pnpm upstreams:check` reports the mechanical facts — a version moved, a `sha256` changed, a skill ID vanished. This workflow adds the **impact**: for every skill that moved, which workflow definitions reference it, which body steps depend on the part that moved, and whether those steps still make sense against the new `SKILL.md`.
 
-A hash diff tells you something changed. This workflow tells you which of the seven workflows is now wrong.
+A hash diff tells you something changed. This workflow tells you which of your definitions is now wrong.
 
 ## Usage
 

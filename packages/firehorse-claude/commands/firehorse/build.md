@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "build"
 firehorseSource: "packages/firehorse-core/definitions/workflows/build.md"
-firehorseSourceSha256: "918d2e3f27a190fc8f3329e4291b0b3d8292fd61991d0c1afef000c06d345d32"
+firehorseSourceSha256: "19f36b168e00f155abfa37bf87aa80db2e657f31cde4359d9db95efd31396119"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/build.md
 Definition ID: build
 Definition kind: workflow
-Source SHA-256: 918d2e3f27a190fc8f3329e4291b0b3d8292fd61991d0c1afef000c06d345d32
+Source SHA-256: 19f36b168e00f155abfa37bf87aa80db2e657f31cde4359d9db95efd31396119
 -->
 
 # Build
@@ -82,8 +82,8 @@ You drive the sequence; `implement` and `tdd` run inline. `prototype` produces a
 - **Shape before pixels.** While "what should this look like" is still open, the artifact is a prototype.
 - **Cite only what you opened.** `check_index_coverage` confirms every path the graph returns before you quote it.
 - **Evidence closes work, claims do not.** The gate output goes on the issue; a red gate is the result of the run.
-- **Planning lives in the tracker** (D-149) — issues and their comments, never a draft under `docs/prds/` or `docs/issues/`.
-- **Generated mirrors come from `pnpm definitions:write`.** Edit the definition under `packages/firehorse-core/definitions/`, never the mirror under `packages/firehorse-claude/`.
+- **Planning lives in the tracker** — issues and their comments, the way the tracker doc records them, never a markdown draft committed beside the code.
+- **Generated files come from their generator.** Where this repo generates a file from a source of truth, edit the source and re-run the generator; a hand-edit to the output is lost at the next run.
 
 ## Gotchas
 
@@ -111,7 +111,7 @@ You drive the sequence; `implement` and `tdd` run inline. `prototype` produces a
 6. **Implement.** `mattpocock-skills:implement` is user-invoked only, so read its `SKILL.md` at the path in [Supporting Capabilities](#supporting-capabilities) and follow its loop yourself; invoke `mattpocock-skills:tdd` at the step-3 seams.
    → Done when: the behaviour from step 1 is in place and its tests pass.
 
-7. **Run the gate.** `pnpm typecheck`, `pnpm test`, and `pnpm definitions:check` where that script exists. Keep the output verbatim.
+7. **Run the gate.** Derive it from this repo rather than assuming one: the typecheck, test and check scripts its manifest declares — `package.json` `scripts` for a Node repo — run through the package manager its lockfile names. No gate script, no gate: say so in one line. Keep the output verbatim.
    → Done when: every gate is green, or a red gate is recorded and the run stops here.
 
 8. **Commit.** Small, reviewable commits on the current branch.

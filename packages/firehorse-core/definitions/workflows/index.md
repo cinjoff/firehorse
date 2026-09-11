@@ -64,7 +64,7 @@ Invoke the generated command with no arguments to run all three passes. `$ARGUME
 ## Supporting Capabilities
 
 - `wayfinder` supplies the narrative pass — its maps hold the decisions that explain why the structure is as it is. It is user-invoked only; this workflow reads the maps it produced rather than invoking it at all.
-- `codebase-memory-mcp` is required: the anchors are derived from graph output, and an anchor written without it is the recollection D-146 keeps out of this repo. The `supermemory` CLI stays optional. Either one absent is recorded as `false`, never silently skipped.
+- `codebase-memory-mcp` is required: the anchors are derived from graph output, and an anchor written without it is recollection rather than a reading of the code. The `supermemory` CLI stays optional. Either one absent is recorded as `false`, never silently skipped.
 - **Graph reference:** the `codebase-memory` skill carries the `search_graph` and `query_graph` syntax, the edge-type vocabulary, and the multi-hop examples. `codebase-memory-mcp` installs it, so it is present wherever the server is — invoke it when you need the query form rather than guessing one. This workflow says when to query, not how.
 
 ## Orchestration Intent
@@ -73,7 +73,7 @@ Three passes, each recorded independently: graph, memory, anchors. A half-finish
 
 ## Safety Gates
 
-- **`DESIGN.md` is a human statement of direction.** This workflow records whether it exists; inferring it from the components that happen to exist describes what the UI is, not what it should be (D-146).
+- **`DESIGN.md` is a human statement of direction.** This workflow records whether it exists; inferring it from the components that happen to exist describes what the UI is, not what it should be.
 - **Staleness comes from commit ancestry.** See [Freshness rule](#freshness-rule).
 - **`true` means the pass succeeded.** `index.graph` and `index.supermemory` record what actually happened.
 - **Every anchor claim traces to a graph query or a file you opened**, and `check_index_coverage` confirms each path it cites.
@@ -111,7 +111,9 @@ A reader of the manifest applies this, so the report states it:
    - `STRUCTURE.md` — the directory layout and what each directory is for.
    - `CONVENTIONS.md` — the patterns the code actually follows, each with a cited example path.
 
-   → Done when: all three files exist and every path they cite passed `check_index_coverage`.
+   Keep them at the altitude a newcomer needs: the boundaries, what each one is for, and why it is where it is. Per-symbol detail belongs to the graph, which answers it exactly and stays current; an anchor that restates it goes stale the first time someone renames a function.
+
+   → Done when: all three files exist, every path they cite passed `check_index_coverage`, and nothing in them repeats what a graph query answers better.
 
 5. **Memory pass.** `npx supermemory add` for each anchor you wrote and each map decision you read, so a later `npx supermemory search` can reach it. `SUPERMEMORY_API_URL` unset and the supermemory plugin absent → set `index.supermemory: false`, say so in one line, and carry on.
    → Done when: `index.supermemory` is decided, and each `add` was confirmed with `npx supermemory docs get <id>`.

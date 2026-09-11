@@ -31,7 +31,7 @@ optional:
 
 Use this workflow to find out what changed in the upstream skills and what it costs here. `pnpm upstreams:check` reports the mechanical facts — a version moved, a `sha256` changed, a skill ID vanished. This workflow adds the **impact**: for every skill that moved, which workflow definitions reference it, which body steps depend on the part that moved, and whether those steps still make sense against the new `SKILL.md`.
 
-A hash diff tells you something changed. This workflow tells you which of the seven workflows is now wrong.
+A hash diff tells you something changed. This workflow tells you which of your definitions is now wrong.
 
 ## Usage
 

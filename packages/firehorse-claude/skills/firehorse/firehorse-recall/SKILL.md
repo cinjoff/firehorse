@@ -6,7 +6,7 @@ firehorseGenerated: true
 firehorseKind: "skill"
 firehorseId: "firehorse-recall"
 firehorseSource: "packages/firehorse-core/definitions/skills/firehorse-recall.md"
-firehorseSourceSha256: "0cc676cd5d11cc05db3d313d42038ce2388946fd9ba0503f3974769c55b38e89"
+firehorseSourceSha256: "69335000942813ab5a289f232b83330a60d6b9e2b038fbf827ac8e8da7148eda"
 firehorseSchemaVersion: 1
 ---
 
@@ -16,7 +16,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/skills/firehorse-recall.md
 Definition ID: firehorse-recall
 Definition kind: skill
-Source SHA-256: 0cc676cd5d11cc05db3d313d42038ce2388946fd9ba0503f3974769c55b38e89
+Source SHA-256: 69335000942813ab5a289f232b83330a60d6b9e2b038fbf827ac8e8da7148eda
 -->
 
 # Firehorse recall
@@ -25,11 +25,11 @@ Source SHA-256: 0cc676cd5d11cc05db3d313d42038ce2388946fd9ba0503f3974769c55b38e89
 
 Use this skill to reach memory on purpose. The supermemory plugin's hooks already capture every session and inject what they judge relevant; this skill is the other half — the deliberate query you run when you suspect a question has been answered before, and the deliberate note you write when this session answers one.
 
-It is a CLI wrapper, not an MCP surface (D-144). The `npx supermemory` CLI talks to the same self-hosted server the hooks use, so nothing here depends on the hosted service.
+It is a CLI wrapper, not an MCP surface. The `npx supermemory` CLI talks to the same self-hosted server the hooks use, so nothing here depends on the hosted service.
 
 ## Usage
 
-Invoke by name or intent: "recall what we decided about X", "search memory for Y", "remember that Z". Automatic recall is the hooks' job; running both spends context twice on the same store (D-145).
+Invoke by name or intent: "recall what we decided about X", "search memory for Y", "remember that Z". Automatic recall is the hooks' job; running both spends context twice on the same store.
 
 This is procedure, not command reference. For syntax read `npx supermemory <command> --help`, or `npx supermemory help --json` for the machine-readable inventory — both come from the installed version rather than from a copy that can drift.
 

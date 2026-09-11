@@ -80,8 +80,8 @@ You run `diagnosing-bugs` phase by phase and insert the graph trace between Phas
 - **One bug, one patch.** The patch addresses the evidenced cause and stops; a second bug is a second ticket.
 - **Secrets stay out of every artifact.** Write `<REDACTED>` in place of a secret in any command, output, or captured artifact, and build loops against environment variables.
 - **Before-and-after output proves the fix.** The claim without both sides of the loop is not a result.
-- **The diagnosis lives in an issue comment** (D-149), never a draft under `docs/issues/`.
-- **Generated mirrors come from `pnpm definitions:write`**, never an editor.
+- **The diagnosis lives in the tracker**, as a comment on the ticket, never a markdown draft committed beside the code.
+- **Generated files come from their generator**, never an editor.
 
 ## Gotchas
 
@@ -109,7 +109,7 @@ You run `diagnosing-bugs` phase by phase and insert the graph trace between Phas
 6. **Patch and test.** Phase 5: the smallest patch that addresses the confirmed cause, plus a regression test via `mattpocock-skills:tdd` at the seam the loop already reaches.
    → Done when: the loop goes green and the regression test has a path.
 
-7. **Produce regression evidence.** The loop's red output from step 2, the same loop green now, and the regression test failing against the pre-patch code. Then `pnpm typecheck` and `pnpm test`.
+7. **Produce regression evidence.** The loop's red output from step 2, the same loop green now, and the regression test failing against the pre-patch code. Then the repo's own gate — the typecheck and test scripts its manifest declares, run through the package manager its lockfile names; no gate script, no gate.
    → Done when: all three outputs are captured and the gate is green.
 
 8. **Clean up and commit.** Remove the step-5 instrumentation, then commit in small, reviewable commits.
