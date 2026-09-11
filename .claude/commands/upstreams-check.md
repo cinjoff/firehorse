@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "upstreams-check"
 firehorseSource: "packages/firehorse-core/definitions/workflows/upstreams-check.md"
-firehorseSourceSha256: "c058b99feb1fd633c9b6a20b92ca23409426f0e7d84bc0e10b4575775c26e0f2"
+firehorseSourceSha256: "5139690809ff7efa35ab2b9a30bbe04d9e19c549e492120771b7af610c73180b"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/upstreams-check.md
 Definition ID: upstreams-check
 Definition kind: workflow
-Source SHA-256: c058b99feb1fd633c9b6a20b92ca23409426f0e7d84bc0e10b4575775c26e0f2
+Source SHA-256: 5139690809ff7efa35ab2b9a30bbe04d9e19c549e492120771b7af610c73180b
 -->
 
 # Upstreams Check
@@ -47,7 +47,7 @@ Invoke the generated command with no arguments to report. `$ARGUMENTS` may carry
 
 ## Supporting Capabilities
 
-- `pnpm upstreams:check` supplies the mechanical comparison; `gh` is optional, for the issue a breaking drift warrants.
+- `pnpm upstreams:check` supplies the mechanical comparison; `gh` is optional, for the maintainer ticket a breaking drift warrants.
 - This workflow orchestrates no upstream skill. It reads them as data, so `upstreamSkills` is empty by design — a reference here would claim an orchestration that does not happen.
 
 ## Orchestration Intent
@@ -56,7 +56,9 @@ You run the script, then do the part the script cannot: read the changed `SKILL.
 
 ## Classification
 
-**Breaking** — fails `pnpm definitions:check`, so it blocks every workflow in this repo until resolved:
+Both severities are maintainer-facing, and only ever that. Firehorse defines the surface it offers; which upstream skill implements a step is an implementation detail, so an upstream that moves is never a user-facing break. **Breaking** means this repo's gate is red and a definition needs editing — by whoever maintains Firehorse, before the next release.
+
+**Breaking** — fails `pnpm definitions:check`, so nothing ships from this repo until a definition is edited:
 
 - A skill ID named by an `upstreamSkills` entry is absent from the installed plugin.
 - A declared plugin is installed with no lockfile entry.
@@ -95,8 +97,8 @@ You run the script, then do the part the script cannot: read the changed `SKILL.
 4. **Judge each step against the new `SKILL.md`** on disk. Per step: whether it still holds, and when it does not, what in the skill moved and what the step would have to become.
    → Done when: every step from step 3 has a holds-or-not verdict.
 
-5. **Name the consequence for the gate.** Say which workflows a breaking finding blocks.
-   → Done when: each breaking finding names the workflows it blocks.
+5. **Name the consequence for the gate.** Say which definitions a breaking finding stops the gate on, and say it as maintenance work — no user's workflow is broken by an upstream that moved.
+   → Done when: each breaking finding names the definitions it blocks, in maintainer terms.
 
 6. **File tickets for breaking findings** with `gh issue create`, referencing the workflow definitions by path.
    → Done when: every breaking finding has an open ticket. Advisory findings stay in the report unless a step-4 verdict failed.

@@ -105,7 +105,13 @@ case where the tree is the authority.
 
 ### What breaks the build and what only gets reported
 
-Breaking — the command exits non-zero and `definitions:check` fails:
+Both severities are maintainer-facing. Firehorse defines the surface it offers;
+which upstream skill implements a step is an implementation detail, so an
+upstream that moves never breaks a user's workflow. "Breaking" means this
+repo's gate is red until a maintainer edits a definition.
+
+Breaking — the command exits non-zero and `definitions:check` fails, so nothing
+ships from this repo until a definition is edited:
 
 - A skill named by an `upstreamSkills` entry is absent from the installed
   plugin. The report names every workflow that references it.
