@@ -103,7 +103,7 @@ A reader of the manifest applies this, so the report states it:
 2. **Graph pass.** `index_repository` for this repo, `index_status` to confirm it completed, then `check_index_coverage` on each source root.
    → Done when: `index.graph` is decided as `true` or `false`, and a `false` names what failed.
 
-3. **Narrative pass.** `gh issue list --label wayfinder:map --json number,title`, then read each map's Decisions-so-far and fetch the resolution comment of any closed ticket whose decision bears on the structure.
+3. **Narrative pass.** List the `wayfinder:map` tickets the way `docs/agents/issue-tracker.md` records — `gh issue list --label wayfinder:map --json number,title` where the tracker is GitHub — then read each map's Decisions-so-far and fetch the resolution comment of any closed ticket whose decision bears on the structure.
    → Done when: the decisions the anchors will cite are collected. The graph supplies the shape; these supply the reasons.
 
 4. **Write the anchors** under `docs/codebase/`, each from `get_architecture`, `search_graph`, and `query_graph` output plus step 3's decisions:

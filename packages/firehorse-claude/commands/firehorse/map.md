@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "map"
 firehorseSource: "packages/firehorse-core/definitions/workflows/map.md"
-firehorseSourceSha256: "6bd68d90295bdd7a1ecf241bfba579f81c3222db5d442296dc4245f36dcfe937"
+firehorseSourceSha256: "29a357878361e0f06597f11fd65f0628ec20c6e270ac2913d4dec72146a52c65"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/map.md
 Definition ID: map
 Definition kind: workflow
-Source SHA-256: 6bd68d90295bdd7a1ecf241bfba579f81c3222db5d442296dc4245f36dcfe937
+Source SHA-256: 29a357878361e0f06597f11fd65f0628ec20c6e270ac2913d4dec72146a52c65
 -->
 
 # Map
@@ -37,6 +37,7 @@ Invoke the generated command with a loose idea to chart a new map, or with a map
 - `$ARGUMENTS`: a loose idea, or a map issue reference, optionally followed by a ticket reference.
 - `.firehorse/manifest.json` — the one read that answers which anchors this repo has and whether the graph and supermemory passes last succeeded. `/firehorse:new-project` and `/firehorse:index` wrote it; this workflow does not re-derive it.
 - `package.json` scripts, for the verification command.
+- `docs/agents/issue-tracker.md` — which tracker this repo uses, and its **Wayfinding operations** section: how a child ticket is wired, how blocking is expressed, how the frontier is queried, and how a ticket is claimed. Every map and ticket action goes through what it records.
 - The Resolved upstream skills table under [Supporting Capabilities](#supporting-capabilities), for the skills the Notes block may name.
 
 ## Outputs
@@ -129,7 +130,7 @@ No anchor is `true` → the Domain line is the `CONTEXT.md` sentence alone. `anc
 4. **Hand off to `mattpocock-skills:wayfinder`.** It is user-invoked only, so read its `SKILL.md` at the path in [Supporting Capabilities](#supporting-capabilities) and follow it rather than invoking it. Charting → give it the resolved block as the map's `## Notes` at the point where it creates the map. Working an existing map → read its Notes first, and where the block is missing or disagrees with the manifest, update the Notes before you choose a ticket.
    → Done when: the map's Notes match what the manifest records.
 
-5. **Work the map** as `mattpocock-skills:wayfinder` specifies — name the destination, map the frontier, claim one ticket, resolve it, record the resolution, graduate the fog.
+5. **Work the map** as `mattpocock-skills:wayfinder` specifies — name the destination, map the frontier, claim one ticket, resolve it, record the resolution, graduate the fog. Every one of those is a tracker operation, expressed the way `docs/agents/issue-tracker.md`'s **Wayfinding operations** section records for this repo; no tracker CLI is assumed here.
    → Done when: one ticket is resolved and its resolution comment is on the ticket with the matching line on the map.
 
 6. **Report** the map by its title with the link inside the title, the ticket you resolved, and the Notes block you wrote or left alone.

@@ -53,6 +53,7 @@ Invoke the generated command with a bug description, an issue reference, a faili
 - `$ARGUMENTS`: the report or the evidence.
 - The issue body and comments, when the report is a tracker issue.
 - The codebase graph, through `codebase-memory-mcp`.
+- `docs/agents/issue-tracker.md` — which tracker this repo uses and the verbs that reach it. Every tracker action below goes through what it records. Absent → say so and ask, rather than assuming GitHub.
 - `CONTEXT.md` for the repo's vocabulary, and the ADRs covering the area you are touching.
 
 ## Outputs
@@ -91,7 +92,7 @@ You run `diagnosing-bugs` phase by phase and insert the graph trace between Phas
 
 ## Procedure
 
-1. **Read the report.** Name the claimed failure, the expected behaviour, and the evidence you already have. A tracker issue is read with `gh issue view <number> --comments`.
+1. **Read the report.** Name the claimed failure, the expected behaviour, and the evidence you already have. A ticket is read through the tracker `docs/agents/issue-tracker.md` records — `gh issue view <number> --comments` where that is GitHub.
    → Done when: claimed failure and expected behaviour are written down, separately.
 
 2. **Build the loop.** `mattpocock-skills:diagnosing-bugs` Phase 1, spending disproportionate effort here, then Phase 2 to reproduce and minimise.
@@ -115,7 +116,7 @@ You run `diagnosing-bugs` phase by phase and insert the graph trace between Phas
 8. **Clean up and commit.** Remove the step-5 instrumentation, then commit in small, reviewable commits.
    → Done when: the diff contains no instrumentation and the working tree is clean.
 
-9. **Report on the issue.** Comment with the loop, the call-site list, the confirmed cause, the regression evidence, the test path, and anything you did not verify. Leave the issue open for `/firehorse:ship` to close.
+9. **Report on the ticket.** Comment with the loop, the call-site list, the confirmed cause, the regression evidence, the test path, and anything you did not verify. Leave the issue open for `/firehorse:ship` to close.
    → Done when: the comment is posted and the issue is still open.
 
 ## Projection Notes

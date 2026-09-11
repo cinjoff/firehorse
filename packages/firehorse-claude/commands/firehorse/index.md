@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "index"
 firehorseSource: "packages/firehorse-core/definitions/workflows/index.md"
-firehorseSourceSha256: "3f52852069b7d1e7f0febafe15bddbd3e02efebe65d3ea40f4695f2a4a9c2f02"
+firehorseSourceSha256: "5fc82b9bd19261aeed029a4964763f196eb416b17d7347db9562db2de89b51d9"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/index.md
 Definition ID: index
 Definition kind: workflow
-Source SHA-256: 3f52852069b7d1e7f0febafe15bddbd3e02efebe65d3ea40f4695f2a4a9c2f02
+Source SHA-256: 5fc82b9bd19261aeed029a4964763f196eb416b17d7347db9562db2de89b51d9
 -->
 
 # Index
@@ -104,7 +104,7 @@ A reader of the manifest applies this, so the report states it:
 2. **Graph pass.** `index_repository` for this repo, `index_status` to confirm it completed, then `check_index_coverage` on each source root.
    → Done when: `index.graph` is decided as `true` or `false`, and a `false` names what failed.
 
-3. **Narrative pass.** `gh issue list --label wayfinder:map --json number,title`, then read each map's Decisions-so-far and fetch the resolution comment of any closed ticket whose decision bears on the structure.
+3. **Narrative pass.** List the `wayfinder:map` tickets the way `docs/agents/issue-tracker.md` records — `gh issue list --label wayfinder:map --json number,title` where the tracker is GitHub — then read each map's Decisions-so-far and fetch the resolution comment of any closed ticket whose decision bears on the structure.
    → Done when: the decisions the anchors will cite are collected. The graph supplies the shape; these supply the reasons.
 
 4. **Write the anchors** under `docs/codebase/`, each from `get_architecture`, `search_graph`, and `query_graph` output plus step 3's decisions:
