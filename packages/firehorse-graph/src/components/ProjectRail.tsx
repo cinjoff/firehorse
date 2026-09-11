@@ -1,4 +1,4 @@
-import { ALL_PROJECTS } from "../useStore.ts";
+import { ALL_PROJECTS } from "../shared/scope.ts";
 import type { Project } from "../shared/types.ts";
 
 export type ViewMode = "graph" | "list";

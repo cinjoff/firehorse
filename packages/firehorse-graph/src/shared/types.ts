@@ -72,8 +72,3 @@ export interface SearchResponse {
   /** Document `id`s, already remapped from the `customId`s search returns. */
   readonly documentIds: readonly string[];
 }
-
-export interface ApiError {
-  readonly error: string;
-  readonly detail?: string;
-}

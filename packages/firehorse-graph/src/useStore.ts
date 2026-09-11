@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ApiError, fetchDocuments, fetchProjects, fetchSearch } from "./api/client.ts";
+import { ALL_PROJECTS, scopeToContainerTags } from "./shared/scope.ts";
 import type { DocumentWithMemories, Project } from "./shared/types.ts";
 
 const PAGE_SIZE = 100;
-
-export const ALL_PROJECTS = "all";
 
 export interface StoreState {
   readonly projects: readonly Project[];
@@ -57,57 +56,54 @@ export function useStore() {
     };
   }, []);
 
+  /**
+   * Both the first page and every later one load through here. They differ only
+   * in whether the result replaces what is on screen or extends it, and which
+   * loading flag they raise.
+   */
+  const loadPage = useCallback(
+    (options: { page: number; tag: string; append: boolean; id: number }) => {
+      const setBusy = options.append ? setIsLoadingMore : setIsLoading;
+
+      setBusy(true);
+
+      fetchDocuments({
+        page: options.page,
+        limit: PAGE_SIZE,
+        containerTags: scopeToContainerTags(options.tag),
+      })
+        .then((response) => {
+          if (options.id !== requestId.current) return;
+
+          setDocuments((previous) =>
+            options.append ? [...previous, ...response.documents] : response.documents,
+          );
+          setPage(response.pagination.currentPage);
+          setTotalPages(response.pagination.totalPages);
+          setTotalItems(response.pagination.totalItems);
+        })
+        .catch((cause: unknown) => {
+          if (options.id === requestId.current) setError(cause as Error);
+        })
+        .finally(() => {
+          if (options.id === requestId.current) setBusy(false);
+        });
+    },
+    [],
+  );
+
   useEffect(() => {
     const id = ++requestId.current;
 
-    setIsLoading(true);
     setError(undefined);
-    setPage(1);
-
-    fetchDocuments({
-      page: 1,
-      limit: PAGE_SIZE,
-      containerTag: selectedTag === ALL_PROJECTS ? undefined : selectedTag,
-    })
-      .then((response) => {
-        if (id !== requestId.current) return;
-        setDocuments(response.documents);
-        setTotalPages(response.pagination.totalPages);
-        setTotalItems(response.pagination.totalItems);
-      })
-      .catch((cause: unknown) => {
-        if (id === requestId.current) setError(cause as Error);
-      })
-      .finally(() => {
-        if (id === requestId.current) setIsLoading(false);
-      });
-  }, [selectedTag]);
+    loadPage({ page: 1, tag: selectedTag, append: false, id });
+  }, [selectedTag, loadPage]);
 
   const loadMore = useCallback(() => {
     if (isLoadingMore || page >= totalPages) return;
 
-    const next = page + 1;
-    const id = requestId.current;
-
-    setIsLoadingMore(true);
-
-    fetchDocuments({
-      page: next,
-      limit: PAGE_SIZE,
-      containerTag: selectedTag === ALL_PROJECTS ? undefined : selectedTag,
-    })
-      .then((response) => {
-        if (id !== requestId.current) return;
-        setDocuments((previous) => [...previous, ...response.documents]);
-        setPage(next);
-      })
-      .catch((cause: unknown) => {
-        if (id === requestId.current) setError(cause as Error);
-      })
-      .finally(() => {
-        if (id === requestId.current) setIsLoadingMore(false);
-      });
-  }, [isLoadingMore, page, totalPages, selectedTag]);
+    loadPage({ page: page + 1, tag: selectedTag, append: true, id: requestId.current });
+  }, [isLoadingMore, page, totalPages, selectedTag, loadPage]);
 
   const search = useCallback(
     (nextQuery: string) => {
@@ -119,8 +115,7 @@ export function useStore() {
       }
 
       // Search is always scoped — an unscoped one silently returns nothing.
-      const scope =
-        selectedTag === ALL_PROJECTS ? projects.map((project) => project.tag) : [selectedTag];
+      const scope = scopeToContainerTags(selectedTag, projects);
 
       if (scope.length === 0) return;
 

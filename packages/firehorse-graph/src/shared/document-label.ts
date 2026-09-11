@@ -1,3 +1,4 @@
+import { formatMinute } from "./format.ts";
 import type { DocumentWithMemories } from "./types.ts";
 
 /**
@@ -10,20 +11,6 @@ import type { DocumentWithMemories } from "./types.ts";
 const TRANSCRIPT = /<\|turn_start\|>|<\|start\|>|<\|end\|>/;
 const LEADING_TIMESTAMP = /<\|turn_start\|>\s*(\d{4}-\d{2}-\d{2}T[\d:.]+Z?)/;
 
-function sessionTime(value: string | null | undefined): string | undefined {
-  if (!value) return undefined;
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return undefined;
-
-  return date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 export function documentLabel(document: DocumentWithMemories): string {
   const title = document.title?.trim();
 
@@ -33,7 +20,7 @@ export function documentLabel(document: DocumentWithMemories): string {
   // Prefer the timestamp inside the transcript itself; it is when the session
   // ran, which is what someone scanning the list is looking for.
   const stamped = LEADING_TIMESTAMP.exec(title)?.[1];
-  const when = sessionTime(stamped) ?? sessionTime(document.createdAt);
+  const when = formatMinute(stamped) ?? formatMinute(document.createdAt);
 
   return when ? `Session — ${when}` : "Session";
 }

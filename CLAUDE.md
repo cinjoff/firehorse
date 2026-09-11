@@ -8,7 +8,7 @@ that are genuinely Claude-flavored.
 
 - **firehorse** — lightweight, cross-provider agentic skills framework.
 - pnpm monorepo, TypeScript, ESM-first, Node 20+.
-- Status: scaffolding only.
+- Status: scaffolding, plus the supermemory graph app.
 
 ## Packages
 
@@ -25,7 +25,7 @@ can `/plugin marketplace add cinjoff/firehorse`.
 
 - **Build:** `pnpm build` (per-package: tsup for libraries, Vite for the graph app).
 - **Typecheck:** `pnpm typecheck`.
-- **Test:** `pnpm test` (vitest, no tests yet).
+- **Test:** `pnpm test` (vitest).
 
 ## Architecture
 
@@ -40,7 +40,8 @@ See `docs/ARCHITECTURE.md` for design rationale.
 
 ## Conventions
 
-- No default exports. Named exports only.
+- No default exports. Named exports only — except tool config files whose
+  loader requires one (`tsup.config.ts`, `vite.config.ts`).
 - Adapter classes extend `BaseProvider` / `BaseOrchestrator`.
 - Provider-specific quirks stay inside the provider adapter or the matching
   distribution package.

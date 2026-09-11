@@ -1,17 +1,10 @@
 import { documentLabel } from "../shared/document-label.ts";
+import { formatDay } from "../shared/format.ts";
 import type { DocumentWithMemories } from "../shared/types.ts";
 
 interface DetailPanelProps {
   readonly document: DocumentWithMemories | undefined;
   readonly onClose: () => void;
-}
-
-function formatDate(value: string | null | undefined): string {
-  if (!value) return "—";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? "—"
-    : date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
 export function DetailPanel({ document, onClose }: DetailPanelProps) {
@@ -35,7 +28,7 @@ export function DetailPanel({ document, onClose }: DetailPanelProps) {
         </div>
         <div>
           <dt>Created</dt>
-          <dd>{formatDate(document.createdAt)}</dd>
+          <dd>{formatDay(document.createdAt)}</dd>
         </div>
         <div>
           <dt>Memories</dt>
@@ -52,7 +45,7 @@ export function DetailPanel({ document, onClose }: DetailPanelProps) {
           <li key={memory.id} className="memory">
             <p className="memory__text">{memory.memory ?? "Empty memory"}</p>
             <p className="memory__meta">
-              <span>{formatDate(memory.createdAt)}</span>
+              <span>{formatDay(memory.createdAt)}</span>
               {memory.isLatest === false ? <span className="memory__stale">superseded</span> : null}
             </p>
           </li>

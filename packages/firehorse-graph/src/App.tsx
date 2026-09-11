@@ -9,7 +9,8 @@ import { Message } from "./components/Message.tsx";
 import { ProjectRail, type ViewMode } from "./components/ProjectRail.tsx";
 import { SearchField } from "./components/SearchField.tsx";
 import { GRAPH_COLORS } from "./graph-theme.ts";
-import { ALL_PROJECTS, useStore } from "./useStore.ts";
+import { ALL_PROJECTS } from "./shared/scope.ts";
+import { useStore } from "./useStore.ts";
 
 export function App() {
   const { state, selectProject, loadMore, search } = useStore();
