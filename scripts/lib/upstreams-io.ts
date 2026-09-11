@@ -26,6 +26,12 @@ const MARKETPLACE_MANIFEST = ".claude-plugin/marketplace.json";
 const SKILL_FILE = "SKILL.md";
 const SKIPPED_DIRECTORIES = new Set(["node_modules", ".git", "dist", ".out-of-scope"]);
 
+/** Whether `candidate` resolves to `parent` itself or something beneath it. */
+function isInside(parent: string, candidate: string): boolean {
+  const relative = path.relative(path.resolve(parent), path.resolve(candidate));
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
 /** `~/.claude/plugins/`, overridable so a test can point the check at a copy. */
 export function resolveClaudePluginsDir(): string {
   return process.env.FIREHORSE_CLAUDE_PLUGINS_DIR ?? path.join(homedir(), ".claude", "plugins");
@@ -171,7 +177,14 @@ async function resolveInstallPath(options: {
   readonly registry: readonly InstalledRecord[] | undefined;
 }): Promise<{ path: string; version: string } | null> {
   for (const record of options.registry ?? []) {
-    if (record.installPath && (await exists(record.installPath))) {
+    // A registry entry records an absolute path. Honour it only when it sits
+    // inside the plugins directory being read: otherwise pointing the check at
+    // a copy would silently read the real tree while reporting the copy.
+    if (
+      record.installPath &&
+      isInside(options.pluginsDir, record.installPath) &&
+      (await exists(record.installPath))
+    ) {
       return {
         path: record.installPath,
         version: record.version ?? (await readManifestVersion(record.installPath)),

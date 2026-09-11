@@ -26,8 +26,10 @@ frontmatter contract.
 
 Plugins Firehorse depends on are declared in `.claude-plugin/marketplace.json`
 and `packages/firehorse-claude/.claude-plugin/plugin.json`, so installing the
-Firehorse plugin pulls them in. Phase 2 of
-[the migration plan](./MIGRATION-PLAN.md) adds those declarations.
+Firehorse plugin pulls them in. A cross-marketplace dependency also needs the
+root marketplace to allowlist its target through
+`allowCrossMarketplaceDependenciesOn`, or the declaration does nothing at install
+time.
 
 ## The drift-check lockfile
 
@@ -138,6 +140,14 @@ the existing gate. Its diagnostic quotes what it resolved against.
 Set `FIREHORSE_CLAUDE_PLUGINS_DIR` to point either command at a copy of the
 plugins directory instead of `~/.claude/plugins/`. That is how the rename case is
 exercised against a real install without touching it.
+
+The override is hermetic. `installed_plugins.json` records an absolute
+`installPath` per plugin, so a copied registry points back at the real tree; the
+reader therefore ignores any `installPath` that falls outside the directory it
+was told to read, and falls back to the `cache/<marketplace>/<plugin>/<version>/`
+layout inside the copy. Without that rule a copy with its registry copied too
+reports "installed under <the copy>" while having read the real install — a
+silent pass, which is the failure this whole mechanism exists to catch.
 
 ### CI, where no plugins are installed
 
