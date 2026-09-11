@@ -3,7 +3,7 @@ schemaVersion: 1
 id: firehorse-recall
 kind: skill
 title: Firehorse recall
-description: Search the self-hosted supermemory store for what past sessions decided, tried, or ruled out, and add a durable note when this session settles something. Invoke it explicitly — wide and shallow first, full documents only for the hits you chose.
+description: Search the self-hosted supermemory store for what past sessions decided, tried, or ruled out, and write a durable note when this session settles something. Use it when a decision is about to be relitigated ("why is it done this way?"), when a convention or preference should exist but is not in the repo, when work resumes after a gap and the open threads are not in the diff, or when this session hit a trap the next one would rediscover. Invoke it on one of those triggers or on request, never as a session-start reflex.
 compatibility: Requires the supermemory CLI on npx and a reachable supermemory server at SUPERMEMORY_API_URL. Read-only without SUPERMEMORY_API_KEY set; writes need it.
 ---
 
@@ -15,18 +15,11 @@ Use this skill to reach memory on purpose. The supermemory plugin's hooks alread
 
 It is a CLI wrapper, not an MCP surface (D-144). The `npx supermemory` CLI talks to the same self-hosted server the hooks use, so nothing here depends on the hosted service.
 
-This is procedure, not command reference. For CLI syntax read `npx supermemory <command> --help`, or `npx supermemory help --json` for the machine-readable inventory; both come from the installed version rather than from a copy that can drift. Supermemory publishes a fuller reference as the `supermemory-cli` skill in [supermemoryai/skills](https://github.com/supermemoryai/skills), and an SDK-integration skill in [supermemoryai/supermemory](https://github.com/supermemoryai/supermemory/tree/main/skills/supermemory) for code that calls the API directly. Neither repository ships a marketplace manifest, so neither can be declared as a Firehorse dependency today.
-
 ## Usage
 
-Invoke by name or intent: "recall what we decided about X", "search memory for Y", "remember that Z". Never invoke it as background reflex — automatic recall is the hooks' job, and running both spends context twice on the same store (D-145).
+Invoke by name or intent: "recall what we decided about X", "search memory for Y", "remember that Z". Automatic recall is the hooks' job; running both spends context twice on the same store (D-145).
 
-Reach for it when:
-
-- You are about to relitigate something ("why is it done this way?").
-- A convention or preference should exist but is not in the repo.
-- Work resumes after a gap and the open threads are not in the diff.
-- This session settled a decision, hit a trap, or learned a preference that the next session would otherwise rediscover.
+This is procedure, not command reference. For syntax read `npx supermemory <command> --help`, or `npx supermemory help --json` for the machine-readable inventory — both come from the installed version rather than from a copy that can drift.
 
 ## Inputs
 
@@ -38,34 +31,61 @@ Reach for it when:
 ## Outputs
 
 - A short brief: the memories that bear on the question, each with its age, and a plain line when memory has nothing.
-- On a write, the document ID the CLI returns and its extraction status.
+- On a write, the document ID the CLI returned and its extraction status.
 
 ## Instructions
 
-Search in three widening steps. Stop as soon as you can answer — each step costs more than the one before, and a flat query that returns full bodies for everything spends context on results you would have discarded after one line.
+### Resolve the container tag
 
-1. **Wide and shallow.** `npx supermemory search "<question>" --tag <tag> --limit 10 --json`. Read the gists only. This is the step that usually answers the question.
-2. **Judge before you fetch.** Pick the few hits whose one-liners actually bear on the question. Two is normal; five means the query was too vague — rerun step 1 with the user's specific nouns instead.
+`npx supermemory tags list` prints every tag on the server. The repo's is `repo_<repo name>__<hash>`, written by the plugin's capture hook and stable across every worktree of the repo because it hashes the git remote, not the path. Match on the repo-name prefix rather than recomputing the hash.
+
+No tag matches → the repo has nothing captured yet. Say so in one line and move on.
+
+### Search in three widening steps
+
+Stop as soon as you can answer. Each step costs more than the one before, and a flat query that returns full bodies for everything spends context on results you would have discarded after one line.
+
+1. **Wide and shallow.** `npx supermemory search "<question>" --tag <tag> --limit 10 --json`. Read the gists only.
+   → Done when: the question is answered from the gists, or the gists say it cannot be.
+
+2. **Judge before you fetch.** Pick the few hits whose one-liners actually bear on the question.
+   → Done when: the chosen set is small. Two is normal; five means the query was too vague — rerun step 1 with the user's specific nouns.
+
 3. **Detail on demand.** `npx supermemory docs get <id>` for the hits you chose, and nothing else.
+   → Done when: every chosen hit is fetched, and no unchosen one is.
 
-Resolve the container tag before searching. `npx supermemory tags list` prints every tag on the server; the repo's is `repo_<repo name>__<hash>`, written by the plugin's capture hook and stable across every worktree of the repo because it hashes the git remote, not the path. Match on the repo name prefix rather than recomputing the hash. No tag matches: the repo has nothing captured yet — say so in one line and move on.
+### Widen an empty search before concluding memory is empty
 
-Widen a search that returns nothing before concluding memory is empty: `--rewrite` rephrases the query for retrieval, `--threshold 0.4` loosens the similarity floor, and `--mode hybrid` matches document text as well as extracted memories. Widening twice with nothing back is an answer — report it.
+- `--rewrite` rephrases the query for retrieval.
+- `--threshold 0.4` loosens the similarity floor.
+- `--mode hybrid` matches document text as well as extracted memories.
 
-To write, state the durable fact rather than the session's narrative: `npx supermemory add "<fact>" --tag <tag> --title "<short title>"`. Extraction is asynchronous — `add` returns `queued` in milliseconds and a misconfigured extraction model produces nothing while still returning success. Confirm with `npx supermemory docs get <id>` and report what the status actually says.
+Widening twice with nothing back is an answer. Report it.
 
-Report what you found with its age attached. A decision from three days ago and one from eight months ago carry different weight, and a brief that hides the difference makes the reader trust both equally.
+### Write the durable fact
+
+State the fact rather than the session's narrative: `npx supermemory add "<fact>" --tag <tag> --title "<short title>"`. Then confirm with `npx supermemory docs get <id>` and report what the status actually says.
+
+### Report with age attached
+
+A decision from three days ago and one from eight months ago carry different weight. A brief that hides the difference makes the reader trust both equally.
+
+## Gotchas
+
+- `add` returns `queued` in milliseconds, and a misconfigured extraction model produces nothing while still returning success. The `docs get` confirmation is the only evidence a write landed.
+- The container tag hashes the git remote, so every worktree of a repo shares one tag. A worktree that recalls nothing is a server or tag problem, not a path problem.
+- A memory records what was true when it was written. The repo is the authority on what is true now.
 
 ## Boundaries
 
-- Do not invoke this skill automatically, on every prompt, or as a session-start reflex. Explicit invocation only.
-- Do not treat a memory as current fact. It records what was true when it was written; the repo is the authority on what is true now. Where they disagree, the repo wins and the disagreement is worth saying out loud.
-- Do not fetch full documents for every hit. That is the flat recall this skill exists to avoid.
-- Do not write a memory for something the repo already records. A decision in `docs/DECISIONS.md` or a wayfinder map does not need a second home.
-- Do not write secrets, tokens, file contents, or long transcripts. Memories are facts, not artifacts.
-- Do not report a write as stored on the strength of a `queued` response.
-- Do not fall back to the hosted supermemory service or to its MCP tools. This skill is local-only by design; an unreachable server is reported, not routed around.
-- Do not restate CLI flags this file does not need. The installed CLI's own help is the reference.
+- **Explicit invocation only** — on a trigger from the description, or on request. Session-start reflex recall is the hooks' job.
+- **The repo wins a disagreement with memory**, and the disagreement is worth saying out loud.
+- **Full documents go to the hits you chose**, which is the whole point of the three-step ladder.
+- **Memory holds what the repo does not.** A decision already in `docs/DECISIONS.md` or on a wayfinder map has a home.
+- **Memories are facts**, not artifacts: no secrets, no tokens, no file contents, no transcripts.
+- **A write is reported once `docs get` confirms it.**
+- **This skill is local-only by design.** An unreachable server is reported, never routed around through the hosted service or its MCP tools.
+- **The installed CLI's own help is the flag reference.**
 
 ## Examples
 
@@ -95,4 +115,6 @@ npx supermemory docs get <returned id>
 
 ## Projection Notes
 
-The Claude mirror is a generated `SKILL.md` under `packages/firehorse-claude/skills/firehorse/`. It must also be listed in the plugin manifest's `skills` array — the manifest is the authority on which skills exist, and one on disk but unlisted is one Claude never loads. This skill adds no MCP server and no hook; its only transport is the `npx supermemory` CLI. Run `pnpm definitions:write` after editing; the mirror is never hand-edited.
+The mirror must also be listed in the plugin manifest's `skills` array — the manifest is the authority on which skills exist, and one on disk but unlisted is one Claude never loads.
+
+Supermemory publishes a fuller CLI reference as the `supermemory-cli` skill in [supermemoryai/skills](https://github.com/supermemoryai/skills), and an SDK-integration skill in [supermemoryai/supermemory](https://github.com/supermemoryai/supermemory/tree/main/skills/supermemory). Neither repository ships a marketplace manifest, so neither can be declared as a Firehorse dependency today.

@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "index"
 firehorseSource: "packages/firehorse-core/definitions/workflows/index.md"
-firehorseSourceSha256: "539f53b4ba1a58e0748e33f011420bb43146a1293be748288a2e1a5de4d51f63"
+firehorseSourceSha256: "36d98176907e56d5ad5187c234321bb4f487b899f047c24530bf9b27240f8767"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,14 +15,18 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/index.md
 Definition ID: index
 Definition kind: workflow
-Source SHA-256: 539f53b4ba1a58e0748e33f011420bb43146a1293be748288a2e1a5de4d51f63
+Source SHA-256: 36d98176907e56d5ad5187c234321bb4f487b899f047c24530bf9b27240f8767
 -->
 
 # Index
 
 ## Purpose
 
-Use this workflow to make the repo's structure queryable and its history searchable, and to record how fresh that claim is. It adds what neither `codebase-memory-mcp` nor supermemory does on its own: three anchor files derived from the graph rather than from recollection, a narrative source for them taken from the repo's wayfinder maps, and a freshness record computed from commit ancestry so a later session can tell whether the index still describes HEAD.
+Use this workflow to make the repo's structure queryable and its history searchable, and to record how fresh that claim is. It adds what neither `codebase-memory-mcp` nor supermemory does on its own:
+
+- Three **anchor** files derived from the graph rather than from recollection.
+- A narrative source for them, taken from the repo's wayfinder maps.
+- A **freshness** record computed from commit ancestry, so a later session can tell whether the index still describes HEAD.
 
 Freshness is the point. An index nobody can date is an index every session has to distrust.
 
@@ -44,42 +48,80 @@ Invoke the generated command with no arguments to run all three passes. `$ARGUME
 - Documents in supermemory for the anchors and the map decisions.
 - `docs/codebase/ARCHITECTURE.md`, `docs/codebase/STRUCTURE.md`, and `docs/codebase/CONVENTIONS.md`.
 - `.firehorse/manifest.json` updated with `index.commit`, `index.at`, `index.graph`, `index.supermemory`, `anchors.codebase`, and `anchors.design`.
+- The other `anchors` booleans `/firehorse:new-project` wrote — `context`, `agents`, `adr` — left as they are unless the path they describe has appeared or gone.
 
 ## Supporting Capabilities
 
-- Upstream skill: `mattpocock-skills` / `wayfinder`, for the narrative pass — its maps hold the decisions that explain why the structure is as it is.
-- Required: read, write, git, and a shell.
-- Optional: `codebase-memory-mcp` and the `supermemory` CLI. Either one absent is recorded as `false`, never silently skipped.
+- `wayfinder` supplies the narrative pass — its maps hold the decisions that explain why the structure is as it is. It is user-invoked only; this workflow reads the maps it produced rather than invoking it at all.
+- `codebase-memory-mcp` is required: the anchors are derived from graph output, and an anchor written without it is the recollection D-146 keeps out of this repo. The `supermemory` CLI stays optional. Either one absent is recorded as `false`, never silently skipped.
+- **Graph reference:** the `codebase-memory` skill carries the `search_graph` and `query_graph` syntax, the edge-type vocabulary, and the multi-hop examples. `codebase-memory-mcp` installs it, so it is present wherever the server is — invoke it when you need the query form rather than guessing one. This workflow says when to query, not how.
+
+**Resolved upstream skills.** How to reach each one, and where its text lives, so
+neither costs a search. The plugin root is `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`.
+
+A skill marked **read the file and follow it inline** sets
+`disable-model-invocation`, which means only a human can invoke it by name.
+Trying to invoke one fails with "skill not found"; read its `SKILL.md` at the
+path below and carry out its steps yourself.
+
+| Skill | How to reach it | `SKILL.md` under the plugin cache |
+| ----- | --------------- | --------------------------------- |
+| `mattpocock-skills:wayfinder` | **read the file and follow it inline** | `claude-plugins-official/mattpocock-skills/1.2.3/skills/engineering/wayfinder/SKILL.md` |
 
 ## Orchestration Intent
 
-Three passes, each recorded independently: graph, memory, anchors. A half-finished index stays legible because `index.graph` and `index.supermemory` say which pass actually succeeded. The narrative pass reads wayfinder maps and does not write to them — `/index` never creates a ticket, never closes one, and never edits a map.
+Three passes, each recorded independently: graph, memory, anchors. A half-finished index stays legible because `index.graph` and `index.supermemory` say which pass actually succeeded. The narrative pass reads wayfinder maps and writes nothing back — this workflow creates no ticket, closes none, and edits no map.
 
 ## Safety Gates
 
-- Do not write `DESIGN.md`. It is a human statement of direction; inferring it from the components that exist describes what the UI is, not what it should be (D-146). Record only whether it exists.
-- Do not compute staleness from file modification times. They say which tool touched a file last and nothing about whether content changed. Use commit ancestry.
-- Do not record `index.graph: true` or `index.supermemory: true` for a pass that did not succeed.
-- Do not cite a path in an anchor that `check_index_coverage` did not confirm.
-- Do not write an anchor from recollection. Every claim in the three files traces to a graph query or to a file you opened.
-- Do not edit a wayfinder map or any of its tickets.
-- Do not put a secret or an id in the manifest. It is committed.
+- **`DESIGN.md` is a human statement of direction.** This workflow records whether it exists; inferring it from the components that happen to exist describes what the UI is, not what it should be (D-146).
+- **Staleness comes from commit ancestry.** See [Freshness rule](#freshness-rule).
+- **`true` means the pass succeeded.** `index.graph` and `index.supermemory` record what actually happened.
+- **Every anchor claim traces to a graph query or a file you opened**, and `check_index_coverage` confirms each path it cites.
+- **Wayfinder maps and their tickets are read-only here.**
+- **The manifest is committed**, so it carries no secret and no id.
+
+## Freshness rule
+
+A reader of the manifest applies this, so the report states it:
+
+- `index.commit` equal to HEAD → the index is current.
+- Otherwise `git merge-base --is-ancestor <index.commit> HEAD` plus `git rev-list --count <index.commit>..HEAD` gives how far behind it is.
+- Not an ancestor → the index was recorded on a different line of history.
+
+## Gotchas
+
+- File modification times say which tool touched a file last and nothing about whether content changed. They are not a staleness signal.
+- `index_repository` returning without error is not the same as a completed index. `index_status` is the confirmation.
+- `npx supermemory add` returns `queued` in milliseconds, and a misconfigured extraction model produces nothing while still reporting success.
+- `index.commit` and the anchors it describes belong in one commit, or the manifest dates content that was not yet written.
 
 ## Procedure
 
-1. Record the commit first: `git rev-parse HEAD`. Every later field refers to this value, not to HEAD at the time you finish.
-2. Graph pass. Run `index_repository` for this repo, then `index_status` to confirm it completed, then `check_index_coverage` on each source root. Success sets `index.graph: true`; a failure sets it to `false` and the report says what failed.
-3. Narrative pass. List the repo's `wayfinder:map` issues with `gh issue list --label wayfinder:map --json number,title`, read each map's Decisions-so-far, and fetch the resolution comment of any closed ticket whose decision bears on the structure. These are the reasons the anchors cite; the graph supplies the shape.
-4. Write the three derivable anchors under `docs/codebase/`, each from `get_architecture`, `search_graph`, and `query_graph` output plus the decisions from step 3:
+1. **Record the commit.** `git rev-parse HEAD`, first. Every later field refers to this value, not to HEAD at the time you finish.
+   → Done when: the SHA is written down.
+
+2. **Graph pass.** `index_repository` for this repo, `index_status` to confirm it completed, then `check_index_coverage` on each source root.
+   → Done when: `index.graph` is decided as `true` or `false`, and a `false` names what failed.
+
+3. **Narrative pass.** `gh issue list --label wayfinder:map --json number,title`, then read each map's Decisions-so-far and fetch the resolution comment of any closed ticket whose decision bears on the structure.
+   → Done when: the decisions the anchors will cite are collected. The graph supplies the shape; these supply the reasons.
+
+4. **Write the anchors** under `docs/codebase/`, each from `get_architecture`, `search_graph`, and `query_graph` output plus step 3's decisions:
    - `ARCHITECTURE.md` — the modules, their boundaries, and the decision that put each boundary there.
    - `STRUCTURE.md` — the directory layout and what each directory is for.
    - `CONVENTIONS.md` — the patterns the code actually follows, each with a cited example path.
-5. Memory pass. For each anchor you wrote and each map decision you read, run `npx supermemory add` so a later `npx supermemory search` can reach it. `SUPERMEMORY_API_URL` unset and the supermemory plugin absent: set `index.supermemory: false`, say so in one line, and carry on.
-6. Update `.firehorse/manifest.json`: `index.commit` from step 1, `index.at` as an ISO timestamp, `index.graph` and `index.supermemory` from the passes, `anchors.codebase` as the basenames you wrote under `docs/codebase/`, and `anchors.design` as whether `DESIGN.md` exists.
-7. State the freshness rule in your report, because a reader of the manifest applies it: `index.commit` equal to HEAD means current; otherwise `git merge-base --is-ancestor <index.commit> HEAD` plus `git rev-list --count <index.commit>..HEAD` gives how far behind, and a non-ancestor means the index was recorded on a different line of history.
-8. Commit the anchors and the manifest together, so `index.commit` and the anchors it describes stay in one commit.
-9. Report each pass as succeeded or failed, the anchors written, and the manifest fields you set.
 
-## Projection Notes
+   → Done when: all three files exist and every path they cite passed `check_index_coverage`.
 
-The Claude mirror is a static command generated from this definition. The graph tools reach Claude through the `codebase-memory-mcp` MCP server and supermemory through its CLI; this definition adds no transport of its own. Run `pnpm definitions:write` after editing; the mirror is never hand-edited.
+5. **Memory pass.** `npx supermemory add` for each anchor you wrote and each map decision you read, so a later `npx supermemory search` can reach it. `SUPERMEMORY_API_URL` unset and the supermemory plugin absent → set `index.supermemory: false`, say so in one line, and carry on.
+   → Done when: `index.supermemory` is decided, and each `add` was confirmed with `npx supermemory docs get <id>`.
+
+6. **Update `.firehorse/manifest.json`:** `index.commit` from step 1, `index.at` as an ISO timestamp, `index.graph` and `index.supermemory` from the passes, `anchors.codebase` as the basenames written under `docs/codebase/`, and `anchors.design` as whether `DESIGN.md` exists. `/firehorse:map` reads these fields rather than probing, so a field left stale is a dead pointer in every later session's Notes block.
+   → Done when: every one of those six fields is set, and `anchors.context`, `anchors.agents`, and `anchors.adr` still match what is on disk.
+
+7. **Commit anchors and manifest together.**
+   → Done when: one commit carries both, and its parent is the SHA from step 1.
+
+8. **Report each pass** as succeeded or failed, the anchors written, the manifest fields set, and the [freshness rule](#freshness-rule) a reader should apply.
+   → Done when: the report names all three passes explicitly, including any that did not run.
