@@ -10,6 +10,7 @@ import {
   generatedManifestEntries,
   mergeGeneratedManifestEntries,
   projectDefinitions,
+  resolveUpstreamSkills,
   type GeneratedFile,
 } from "../packages/firehorse-core/src/definitions/index.js";
 import { loadDefinitions, listMarkdownFiles } from "./lib/definitions-io.js";
@@ -45,7 +46,12 @@ async function main(): Promise<void> {
       knownUpstreamSkillsSource: source,
     });
 
-    const generatedFiles = projectDefinitions(definitions, { repoRoot });
+    // Mirrors resolve upstream skills from the committed lockfile, never from
+    // ~/.claude/plugins/, so the generated paths are the same on CI as here.
+    const generatedFiles = projectDefinitions(definitions, {
+      repoRoot,
+      upstreamResolutions: resolveUpstreamSkills(upstreams.lockfile),
+    });
     const fileResult = await syncGeneratedFiles(generatedFiles, mode);
     const manifestResult = await syncManifests(generatedFiles, mode);
     const messages = [...fileResult.messages, ...manifestResult.messages];
