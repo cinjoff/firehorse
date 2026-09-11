@@ -86,7 +86,7 @@ describe("Firehorse setup manifest v2", () => {
         code: "setup_manifest.missing",
         severity: "warning",
         path: ".firehorse/manifest.json",
-        message: "no .firehorse/manifest.json — run /new-project",
+        message: "no .firehorse/manifest.json — run /firehorse:new-project",
       },
     ]);
   });
@@ -106,7 +106,7 @@ describe("Firehorse setup manifest v2", () => {
     );
 
     expect(validateFirehorseSetupManifest(parsed, { headCommit: RECORDED_COMMIT })).toMatchObject([
-      { code: "setup.not_run", message: "setup has not run — run /new-project" },
+      { code: "setup.not_run", message: "setup has not run — run /firehorse:new-project" },
     ]);
   });
 
@@ -122,7 +122,7 @@ describe("Firehorse setup manifest v2", () => {
       status: "no-index",
     });
     expect(validateFirehorseSetupManifest(parsed, { headCommit: HEAD_COMMIT })).toMatchObject([
-      { code: "index.missing", message: "repo has not been indexed — run /index" },
+      { code: "index.missing", message: "repo has not been indexed — run /firehorse:index" },
     ]);
   });
 });
@@ -156,7 +156,7 @@ describe("index staleness", () => {
     });
     expect(result.healthy).toBe(false);
     expect(result.diagnostics).toMatchObject([
-      { code: "index.behind", message: "index is 37 commits behind HEAD — run /index" },
+      { code: "index.behind", message: "index is 37 commits behind HEAD — run /firehorse:index" },
     ]);
   });
 
@@ -175,7 +175,7 @@ describe("index staleness", () => {
     expect(result.diagnostics).toMatchObject([
       {
         code: "index.diverged",
-        message: "index was recorded on a different history line — run /index",
+        message: "index was recorded on a different history line — run /firehorse:index",
       },
     ]);
   });

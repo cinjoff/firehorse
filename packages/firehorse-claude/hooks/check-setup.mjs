@@ -47,10 +47,14 @@ function gitSucceeds(root, args) {
   }
 }
 
-/** Markers, first hit wins: .firehorse/, docs/agents/, a firehorse marketplace entry. */
+/**
+ * Consent markers, first hit wins: `.firehorse/`, or a firehorse marketplace
+ * entry. Both are things the user did deliberately. `docs/agents/` is not a
+ * marker — `mattpocock-skills:setup-matt-pocock-skills` writes it, so treating
+ * it as consent nags every mattpocock-skills user who never chose Firehorse.
+ */
 function hasFirehorseMarkers(root) {
   if (existsSync(join(root, ".firehorse"))) return true;
-  if (existsSync(join(root, "docs", "agents"))) return true;
 
   const marketplacePath = join(root, ".claude-plugin", "marketplace.json");
   if (!existsSync(marketplacePath)) return false;
@@ -76,7 +80,7 @@ function setupLine(root) {
 
   if (!existsSync(manifestPath)) {
     if (!hasFirehorseMarkers(root)) return undefined;
-    return `no ${MANIFEST_RELATIVE_PATH} — run /new-project`;
+    return `no ${MANIFEST_RELATIVE_PATH} — run /firehorse:new-project`;
   }
 
   const manifest = readJson(manifestPath);
@@ -84,11 +88,11 @@ function setupLine(root) {
   if (manifest.schemaVersion !== SCHEMA_VERSION) return undefined;
 
   const setup = isRecord(manifest.setup) ? manifest.setup : undefined;
-  if (!isRecord(setup?.mattPocockSkills)) return "setup has not run — run /new-project";
+  if (!isRecord(setup?.mattPocockSkills)) return "setup has not run — run /firehorse:new-project";
 
   const index = isRecord(manifest.index) ? manifest.index : undefined;
   const recorded = typeof index?.commit === "string" ? index.commit.trim() : "";
-  if (!recorded) return "repo has not been indexed — run /index";
+  if (!recorded) return "repo has not been indexed — run /firehorse:index";
 
   // Git command 1 of 3.
   const head = git(root, ["rev-parse", "HEAD"]);
@@ -98,14 +102,14 @@ function setupLine(root) {
   // Git command 2 of 3.
   const isAncestor = gitSucceeds(root, ["merge-base", "--is-ancestor", recorded, head]);
   if (isAncestor === undefined) return undefined;
-  if (!isAncestor) return "index was recorded on a different history line — run /index";
+  if (!isAncestor) return "index was recorded on a different history line — run /firehorse:index";
 
   // Git command 3 of 3.
   const count = git(root, ["rev-list", "--count", `${recorded}..${head}`]);
   const behind = Number.parseInt(count ?? "", 10);
   if (!Number.isFinite(behind) || behind <= 0) return undefined;
 
-  return `index is ${behind} commit${behind === 1 ? "" : "s"} behind HEAD — run /index`;
+  return `index is ${behind} commit${behind === 1 ? "" : "s"} behind HEAD — run /firehorse:index`;
 }
 
 try {
