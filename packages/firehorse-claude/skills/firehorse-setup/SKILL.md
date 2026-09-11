@@ -1,6 +1,6 @@
 ---
 name: firehorse-setup
-description: Run once after installing Firehorse for Claude Code. Checks Firehorse setup, detects Superset, and configures the user-scoped Superset MCP server safely. Use --check for read-only status.
+description: Run once after installing Firehorse for Claude Code. Checks Firehorse setup, verifies the codebase-memory graph requirement, detects Superset, and configures the user-scoped Superset MCP server safely. Use --check for read-only status.
 ---
 
 # firehorse-setup
@@ -25,6 +25,10 @@ skill to check state or to configure Superset MCP on its own.
 ## Goals
 
 - Verify the Firehorse Claude plugin is available.
+- Verify `codebase-memory-mcp` is registered. `/firehorse:build`,
+  `/firehorse:fix-bug`, and `/firehorse:index` declare it required, and it is a
+  standalone server rather than a marketplace plugin, so no plugin dependency can
+  check it.
 - Detect whether the user is using Superset.
 - If Superset is detected, configure Superset MCP in Claude Code's **user**
   scope so it works across new projects and Superset workspaces.
@@ -49,31 +53,36 @@ Check:
 1. Firehorse Claude plugin presence:
    - Current skill is available, or Claude plugin files/settings mention
      `firehorse`.
-2. Superset usage signals:
+2. Codebase-memory graph requirement:
+   - `claude mcp get codebase-memory-mcp` succeeds, or `~/.claude.json` has
+     `mcpServers.codebase-memory-mcp`.
+3. Superset usage signals:
    - current path contains `/.superset/worktrees/`
    - `~/.superset/` exists
    - `/Applications/Superset.app` exists on macOS
    - `superset` CLI exists on `PATH`
    - `SUPERSET_API_KEY` is set
    - `~/.config/firehorse/superset.env` exists
-3. Superset secret safety:
+4. Superset secret safety:
    - `~/.config/firehorse/superset.env` is missing, or has mode `600` on
      Unix-like systems.
-4. Claude Code MCP config:
+5. Claude Code MCP config:
    - `~/.claude.json` has top-level `mcpServers.superset`, or
      `claude mcp get superset` succeeds for user scope.
    - Desired URL is `https://api.superset.sh/api/v2/agent/mcp`.
    - Desired transport/type is `http`.
    - Desired auth uses `headersHelper`, not a literal API key.
-5. Firehorse header helper:
+6. Firehorse header helper:
    - `~/.config/firehorse/superset-mcp-headers.mjs` exists and is not
      group/world-writable on Unix-like systems.
-     Status table shape:
+
+Status table shape:
 
 ```markdown
 | Component               | Status                                    |
 | ----------------------- | ----------------------------------------- |
 | Firehorse Claude plugin | ✓ available / ✗ missing                   |
+| codebase-memory-mcp     | ✓ registered / ✗ missing                  |
 | Superset detected       | ✓ yes / ○ no / ? inconclusive             |
 | Superset API key        | ✓ env set / ✓ env file / ✗ missing        |
 | Secret file permissions | ✓ private / ✗ too open / ○ not present    |
@@ -95,7 +104,25 @@ Print:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-### 2. Detect Superset
+### 2. Verify the codebase-memory graph requirement
+
+`/firehorse:build`, `/firehorse:fix-bug`, and `/firehorse:index` declare
+`mcp:codebase-memory-mcp` as required. It is a standalone server, not a
+marketplace plugin, so `plugin.json` `dependencies` cannot express it and this
+check is the only thing that confirms it is there.
+
+The server installs the `codebase-memory` skill — the query reference the graph
+steps use — so one check covers both. Report, and do not install:
+
+- `claude mcp get codebase-memory-mcp` succeeds → ✓ registered.
+- Missing → ✗, and say which workflows are affected. Point the user at the
+  server's own install instructions rather than guessing a command; Firehorse
+  does not vendor it and does not know where this machine got the binary.
+
+Absence is a warning, not a failure: the workflows still run, report the gap in
+their first line, and fall back to grep with every result treated as incomplete.
+
+### 3. Detect Superset
 
 Use the signals from setup status mode.
 
@@ -119,7 +146,7 @@ If you use Superset, run this setup again with:
 
 Continue with any other setup checks added to this skill in the future.
 
-### 3. Configure the Superset API key safely
+### 4. Configure the Superset API key safely
 
 Never ask the user to paste a Superset API key into chat.
 
@@ -153,71 +180,33 @@ chmod 600 ~/.config/firehorse/superset.env
 Do not write secrets into `.mcp.json`, `.claude/settings.json`,
 `~/.claude.json`, project files, or git worktrees.
 
-### 4. Write the Claude headers helper
+### 5. Write the Claude headers helper
 
-Claude Code supports dynamic MCP request headers via `headersHelper`. Use this
-instead of storing a literal `Authorization` header.
+Claude Code supports dynamic MCP request headers via `headersHelper`. Use that
+rather than storing a literal `Authorization` header.
 
-Create `~/.config/firehorse/superset-mcp-headers.mjs` with mode `700` on
-Unix-like systems. Use native Write for the file, then Bash only for `chmod`.
+The helper ships beside this skill as `superset-mcp-headers.mjs`. Copy it —
+never retype it — to `~/.config/firehorse/superset-mcp-headers.mjs`, then
+`chmod 700` the copy:
 
-File contents:
-
-```js
-#!/usr/bin/env node
-import { existsSync, readFileSync, statSync } from "node:fs";
-import { homedir, platform } from "node:os";
-import { join } from "node:path";
-
-const envFile =
-  process.env.FIREHORSE_SUPERSET_ENV_FILE ||
-  join(homedir(), ".config", "firehorse", "superset.env");
-
-function isSecure(path) {
-  if (platform() === "win32") return true;
-  const mode = statSync(path).mode & 0o777;
-  return (mode & 0o077) === 0;
-}
-
-function parseEnv(text) {
-  const result = {};
-  for (const rawLine of text.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) continue;
-    const index = line.indexOf("=");
-    if (index <= 0) continue;
-    const key = line.slice(0, index).trim();
-    let value = line.slice(index + 1).trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-    result[key] = value;
-  }
-  return result;
-}
-
-let apiKey = process.env.SUPERSET_API_KEY || "";
-
-if (!apiKey && existsSync(envFile)) {
-  if (!isSecure(envFile)) {
-    console.error(`${envFile} must be private. Run: chmod 600 ${envFile}`);
-    process.exit(1);
-  }
-  apiKey = parseEnv(readFileSync(envFile, "utf8")).SUPERSET_API_KEY || "";
-}
-
-if (!apiKey) {
-  console.error("SUPERSET_API_KEY is not set and no private Firehorse env file was found.");
-  process.exit(1);
-}
-
-process.stdout.write(JSON.stringify({ Authorization: `Bearer ${apiKey}` }));
+```sh
+mkdir -p ~/.config/firehorse
+chmod 700 ~/.config/firehorse
+cp "<this skill's directory>/superset-mcp-headers.mjs" \
+  ~/.config/firehorse/superset-mcp-headers.mjs
+chmod 700 ~/.config/firehorse/superset-mcp-headers.mjs
 ```
 
-### 5. Register Superset MCP for Claude Code user scope
+What it does: reads `SUPERSET_API_KEY` from the environment, falling back to
+`FIREHORSE_SUPERSET_ENV_FILE` or `~/.config/firehorse/superset.env`; refuses a
+group- or world-readable env file; and writes
+`{"Authorization":"Bearer <key>"}` to stdout. The key never lands in MCP config.
+
+`install.sh` carries a byte-identical copy in a heredoc, because it runs through
+`curl | bash` and cannot read a repo file. A test in `firehorse-core` fails if
+the two ever drift.
+
+### 6. Register Superset MCP for Claude Code user scope
 
 Superset MCP v2 is a hosted HTTP MCP server. There is no npm MCP server binary
 to install.
@@ -249,7 +238,7 @@ Rules:
   from a terminal with Claude Code installed.
 - Do not put the API key in `--header`; use `headersHelper`.
 
-### 6. Verify / refresh
+### 7. Verify / refresh
 
 After registering MCP, tell the user:
 
@@ -261,7 +250,7 @@ confirm the Superset server is registered.
 Verification must be non-destructive. Do not create Superset workspaces or run
 agents during setup verification.
 
-### 7. Summary
+### 8. Summary
 
 Print:
 
@@ -273,6 +262,7 @@ Print:
 
 Then summarize:
 
+- codebase-memory-mcp status
 - Claude MCP scope: user
 - Claude MCP status
 - header helper path
