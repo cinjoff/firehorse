@@ -1,99 +1,82 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  FIREHORSE_SETUP_MANIFEST_SCHEMA_VERSION,
   FirehorseSetupManifestError,
   checkFirehorseSetup,
+  computeFirehorseIndexStaleness,
   parseFirehorseSetupManifest,
   validateFirehorseSetupManifest,
 } from "./index.js";
 
+const RECORDED_COMMIT = "c4790d9a1f2b3c4d5e6f708192a3b4c5d6e7f809";
+const HEAD_COMMIT = "0123456789abcdef0123456789abcdef01234567";
+
 const manifest = JSON.stringify({
-  schemaVersion: 1,
-  project: {
-    name: "firehorse",
+  schemaVersion: 2,
+  setup: {
+    mattPocockSkills: { version: "1.2.3", at: "2026-09-11T09:24:00.000Z" },
   },
-  github: {
-    owner: "cinjoff",
-    repo: "firehorse",
+  index: {
+    commit: RECORDED_COMMIT,
+    at: "2026-09-11T09:24:00.000Z",
+    graph: true,
+    supermemory: true,
   },
-  memory: {
-    project: "firehorse",
+  anchors: {
+    design: true,
+    codebase: ["ARCHITECTURE.md", "STRUCTURE.md", "CONVENTIONS.md"],
   },
-  tracker: {
-    project: {
-      name: "firehorse",
-      id: "PVT_kwDOExample",
-    },
-    status: {
-      field: {
-        name: "Status",
-        id: "PVTSSF_example",
-      },
-      options: [
-        {
-          name: "Backlog",
-          id: "f75ad846",
-        },
-        {
-          name: "In progress",
-          id: "47fc9ee4",
-        },
-        {
-          name: "Done",
-          id: "98236657",
-        },
-      ],
-    },
-  },
-  labels: {
-    vocabulary: ["ready-for-agent", "blocked", "bug"],
-  },
-  safeApply: {
-    defaultMode: "read-only",
-    mutationPolicy: "explicit-operator-approval",
-  },
+  upstreams: { checkedAt: "2026-09-11T09:24:00.000Z" },
 });
 
-describe("Firehorse setup manifest", () => {
-  it("parses the setup contract fields used by session-start validation", () => {
+describe("Firehorse setup manifest v2", () => {
+  it("parses the recorded setup, index, anchors and upstreams state", () => {
     const parsed = parseFirehorseSetupManifest(manifest);
 
-    expect(parsed).toMatchObject({
-      project: { name: "firehorse" },
-      github: { owner: "cinjoff", repo: "firehorse" },
-      memory: { project: "firehorse" },
-      tracker: {
-        project: { name: "firehorse", id: "PVT_kwDOExample" },
-        status: {
-          field: { name: "Status", id: "PVTSSF_example" },
-          options: [
-            { name: "Backlog", id: "f75ad846" },
-            { name: "In progress", id: "47fc9ee4" },
-            { name: "Done", id: "98236657" },
-          ],
-        },
+    expect(parsed).toEqual({
+      schemaVersion: FIREHORSE_SETUP_MANIFEST_SCHEMA_VERSION,
+      setup: { mattPocockSkills: { version: "1.2.3", at: "2026-09-11T09:24:00.000Z" } },
+      index: {
+        commit: RECORDED_COMMIT,
+        at: "2026-09-11T09:24:00.000Z",
+        graph: true,
+        supermemory: true,
       },
-      labels: { vocabulary: ["ready-for-agent", "blocked", "bug"] },
-      safeApply: { defaultMode: "read-only", mutationPolicy: "explicit-operator-approval" },
+      anchors: { design: true, codebase: ["ARCHITECTURE.md", "STRUCTURE.md", "CONVENTIONS.md"] },
+      upstreams: { checkedAt: "2026-09-11T09:24:00.000Z" },
     });
   });
 
-  it("rejects manifests that are not read-only by default", () => {
-    const unsafeManifest = manifest.replace('"defaultMode":"read-only"', '"defaultMode":"apply"');
-
-    expect(() => parseFirehorseSetupManifest(unsafeManifest)).toThrow(FirehorseSetupManifestError);
-  });
-
-  it("is disabled and silent when no manifest or Firehorse markers are present", () => {
-    expect(checkFirehorseSetup({})).toEqual({
-      enabled: false,
-      healthy: true,
-      markerPaths: [],
-      diagnostics: [],
+  it("accepts a manifest that carries schemaVersion alone", () => {
+    expect(parseFirehorseSetupManifest(JSON.stringify({ schemaVersion: 2 }))).toEqual({
+      schemaVersion: 2,
     });
   });
 
-  it("reports missing setup as an actionable read-only gap when markers are present", () => {
+  it("rejects an unknown schemaVersion", () => {
+    const future = JSON.stringify({ schemaVersion: 3 });
+
+    expect(() => parseFirehorseSetupManifest(future)).toThrow(FirehorseSetupManifestError);
+
+    const result = checkFirehorseSetup({ manifestContent: future });
+    expect(result.healthy).toBe(false);
+    expect(result.manifest).toBeUndefined();
+    expect(result.diagnostics[0]?.field).toBe("schemaVersion");
+  });
+
+  it("rejects a malformed body without throwing out of checkFirehorseSetup", () => {
+    expect(() => parseFirehorseSetupManifest("{ not json")).toThrow(FirehorseSetupManifestError);
+
+    const result = checkFirehorseSetup({ manifestContent: "{ not json" });
+    expect(result.enabled).toBe(true);
+    expect(result.healthy).toBe(false);
+    expect(result.diagnostics).toMatchObject([
+      { code: "setup_manifest.json_parse", severity: "error" },
+    ]);
+  });
+
+  it("reports a missing manifest when Firehorse markers are present", () => {
     const result = checkFirehorseSetup({ markerPaths: [".firehorse"] });
 
     expect(result.enabled).toBe(true);
@@ -103,62 +86,108 @@ describe("Firehorse setup manifest", () => {
         code: "setup_manifest.missing",
         severity: "warning",
         path: ".firehorse/manifest.json",
+        message: "no .firehorse/manifest.json — run /new-project",
       },
     ]);
   });
 
-  it("stays silent when manifest and observed setup match", () => {
+  it("stays disabled and silent with neither manifest nor markers", () => {
+    expect(checkFirehorseSetup({})).toEqual({
+      enabled: false,
+      healthy: true,
+      markerPaths: [],
+      diagnostics: [],
+    });
+  });
+
+  it("reports that setup has not run when setup.mattPocockSkills is absent", () => {
+    const parsed = parseFirehorseSetupManifest(
+      JSON.stringify({ schemaVersion: 2, index: { commit: RECORDED_COMMIT, at: "now" } }),
+    );
+
+    expect(validateFirehorseSetupManifest(parsed, { headCommit: RECORDED_COMMIT })).toMatchObject([
+      { code: "setup.not_run", message: "setup has not run — run /new-project" },
+    ]);
+  });
+
+  it("reports an unindexed repo when index is absent", () => {
+    const parsed = parseFirehorseSetupManifest(
+      JSON.stringify({
+        schemaVersion: 2,
+        setup: { mattPocockSkills: { version: "1.2.3", at: "now" } },
+      }),
+    );
+
+    expect(computeFirehorseIndexStaleness(undefined, { headCommit: HEAD_COMMIT })).toEqual({
+      status: "no-index",
+    });
+    expect(validateFirehorseSetupManifest(parsed, { headCommit: HEAD_COMMIT })).toMatchObject([
+      { code: "index.missing", message: "repo has not been indexed — run /index" },
+    ]);
+  });
+});
+
+describe("index staleness", () => {
+  it("is current when the recorded commit equals HEAD", () => {
+    expect(computeFirehorseIndexStaleness(RECORDED_COMMIT, { headCommit: RECORDED_COMMIT })).toEqual(
+      { status: "current" },
+    );
+
     const result = checkFirehorseSetup({
       manifestContent: manifest,
-      observed: {
-        projectName: "firehorse",
-        github: { owner: "cinjoff", repo: "firehorse" },
-        memoryProject: "firehorse",
-        tracker: {
-          projectId: "PVT_kwDOExample",
-          statusFieldId: "PVTSSF_example",
-          statusOptions: [
-            { name: "Backlog", id: "f75ad846" },
-            { name: "In progress", id: "47fc9ee4" },
-            { name: "Done", id: "98236657" },
-          ],
-        },
-        labels: ["ready-for-agent", "blocked", "bug"],
-      },
+      git: { headCommit: RECORDED_COMMIT },
     });
-
-    expect(result.enabled).toBe(true);
     expect(result.healthy).toBe(true);
     expect(result.diagnostics).toEqual([]);
   });
 
-  it("detects setup drift without mutating provider state", () => {
-    const parsed = parseFirehorseSetupManifest(manifest);
-    const diagnostics = validateFirehorseSetupManifest(parsed, {
-      projectName: "other-project",
-      github: { owner: "cinjoff", repo: "other-repo" },
-      memoryProject: "other-memory-project",
-      tracker: {
-        projectId: "PVT_kwDOOther",
-        statusFieldId: "PVTSSF_other",
-        statusOptions: [
-          { name: "Backlog", id: "changed" },
-          { name: "Done", id: "98236657" },
-        ],
-      },
-      labels: ["ready-for-agent"],
-    });
+  it("is behind when the recorded commit is an ancestor of HEAD", () => {
+    expect(
+      computeFirehorseIndexStaleness(RECORDED_COMMIT, {
+        headCommit: HEAD_COMMIT,
+        recordedIsAncestorOfHead: true,
+        commitsBehind: 37,
+      }),
+    ).toEqual({ status: "behind", commitsBehind: 37 });
 
-    expect(diagnostics.map((diagnostic) => diagnostic.code)).toEqual([
-      "setup_manifest.project_name_drift",
-      "setup_manifest.github_repo_drift",
-      "setup_manifest.memory_project_drift",
-      "setup_manifest.tracker_project_id_drift",
-      "setup_manifest.status_field_id_drift",
-      "setup_manifest.status_option_id_drift",
-      "setup_manifest.status_option_missing",
-      "setup_manifest.label_missing",
-      "setup_manifest.label_missing",
+    const result = checkFirehorseSetup({
+      manifestContent: manifest,
+      git: { headCommit: HEAD_COMMIT, recordedIsAncestorOfHead: true, commitsBehind: 37 },
+    });
+    expect(result.healthy).toBe(false);
+    expect(result.diagnostics).toMatchObject([
+      { code: "index.behind", message: "index is 37 commits behind HEAD — run /index" },
     ]);
+  });
+
+  it("is diverged when the recorded commit is not an ancestor of HEAD", () => {
+    expect(
+      computeFirehorseIndexStaleness(RECORDED_COMMIT, {
+        headCommit: HEAD_COMMIT,
+        recordedIsAncestorOfHead: false,
+      }),
+    ).toEqual({ status: "diverged" });
+
+    const result = checkFirehorseSetup({
+      manifestContent: manifest,
+      git: { headCommit: HEAD_COMMIT, recordedIsAncestorOfHead: false },
+    });
+    expect(result.diagnostics).toMatchObject([
+      {
+        code: "index.diverged",
+        message: "index was recorded on a different history line — run /index",
+      },
+    ]);
+  });
+
+  it("is unknown, and therefore silent, when git facts are unavailable", () => {
+    expect(computeFirehorseIndexStaleness(RECORDED_COMMIT, {})).toEqual({ status: "unknown" });
+    expect(checkFirehorseSetup({ manifestContent: manifest }).diagnostics).toEqual([]);
+  });
+
+  it("matches an abbreviated recorded commit against a full HEAD", () => {
+    expect(
+      computeFirehorseIndexStaleness(RECORDED_COMMIT.slice(0, 10), { headCommit: RECORDED_COMMIT }),
+    ).toEqual({ status: "current" });
   });
 });

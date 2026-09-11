@@ -1,105 +1,46 @@
 import { z } from "zod";
 
-export const FIREHORSE_SETUP_MANIFEST_SCHEMA_VERSION = 1;
+export const FIREHORSE_SETUP_MANIFEST_SCHEMA_VERSION = 2;
 export const FIREHORSE_SETUP_MANIFEST_PATH = ".firehorse/manifest.json";
 
 const nonEmptyStringSchema = z.string().min(1);
+const timestampSchema = z.string().min(1);
+const commitSchema = z
+  .string()
+  .regex(/^[0-9a-f]{7,40}$/, "Expected a lowercase hexadecimal git commit SHA.");
 
-const namedIdSchema = z
-  .object({
-    name: nonEmptyStringSchema,
-    id: nonEmptyStringSchema,
-  })
-  .strict();
-
-const uniqueNamedIdsSchema = z
-  .array(namedIdSchema)
-  .min(1)
-  .superRefine((items, ctx) => {
-    const names = new Set<string>();
-    const ids = new Set<string>();
-
-    for (const [index, item] of items.entries()) {
-      if (names.has(item.name)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `Duplicate option name '${item.name}'.`,
-          path: [index, "name"],
-        });
-      }
-      names.add(item.name);
-
-      if (ids.has(item.id)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `Duplicate option id '${item.id}'.`,
-          path: [index, "id"],
-        });
-      }
-      ids.add(item.id);
-    }
-  });
-
-const uniqueLabelVocabularySchema = z
-  .array(nonEmptyStringSchema)
-  .min(1)
-  .superRefine((labels, ctx) => {
-    const seen = new Set<string>();
-    for (const [index, label] of labels.entries()) {
-      if (seen.has(label)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `Duplicate label '${label}'.`,
-          path: [index],
-        });
-      }
-      seen.add(label);
-    }
-  });
-
-export const firehorseSetupManifestSchema = z
-  .object({
-    schemaVersion: z.literal(FIREHORSE_SETUP_MANIFEST_SCHEMA_VERSION),
-    project: z
-      .object({
-        name: nonEmptyStringSchema,
-      })
-      .strict(),
-    github: z
-      .object({
-        owner: nonEmptyStringSchema,
-        repo: nonEmptyStringSchema,
-      })
-      .strict(),
-    memory: z
-      .object({
-        project: nonEmptyStringSchema,
-      })
-      .strict(),
-    tracker: z
-      .object({
-        project: namedIdSchema,
-        status: z
-          .object({
-            field: namedIdSchema,
-            options: uniqueNamedIdsSchema,
-          })
-          .strict(),
-      })
-      .strict(),
-    labels: z
-      .object({
-        vocabulary: uniqueLabelVocabularySchema,
-      })
-      .strict(),
-    safeApply: z
-      .object({
-        defaultMode: z.literal("read-only"),
-        mutationPolicy: z.enum(["never", "explicit-operator-approval"]),
-      })
-      .strict(),
-  })
-  .strict();
+export const firehorseSetupManifestSchema = z.strictObject({
+  schemaVersion: z.literal(FIREHORSE_SETUP_MANIFEST_SCHEMA_VERSION),
+  setup: z
+    .strictObject({
+      mattPocockSkills: z
+        .strictObject({
+          version: nonEmptyStringSchema,
+          at: timestampSchema,
+        })
+        .optional(),
+    })
+    .optional(),
+  index: z
+    .strictObject({
+      commit: commitSchema,
+      at: timestampSchema,
+      graph: z.boolean().optional(),
+      supermemory: z.boolean().optional(),
+    })
+    .optional(),
+  anchors: z
+    .strictObject({
+      design: z.boolean().optional(),
+      codebase: z.array(nonEmptyStringSchema).optional(),
+    })
+    .optional(),
+  upstreams: z
+    .strictObject({
+      checkedAt: timestampSchema,
+    })
+    .optional(),
+});
 
 export type FirehorseSetupManifest = z.infer<typeof firehorseSetupManifestSchema>;
 
@@ -125,31 +66,44 @@ export class FirehorseSetupManifestError extends Error {
   }
 }
 
-export interface ObservedFirehorseSetup {
-  readonly projectName?: string;
-  readonly github?: {
-    readonly owner?: string;
-    readonly repo?: string;
-  };
-  readonly memoryProject?: string;
-  readonly tracker?: {
-    readonly projectId?: string;
-    readonly statusFieldId?: string;
-    readonly statusOptions?: readonly NamedId[];
-  };
-  readonly labels?: readonly string[];
+/**
+ * Git facts a caller collects with `rev-parse HEAD`, `merge-base --is-ancestor`
+ * and `rev-list --count`. The staleness computation never shells out itself.
+ */
+export interface FirehorseGitFacts {
+  readonly headCommit?: string;
+  readonly recordedIsAncestorOfHead?: boolean;
+  readonly commitsBehind?: number;
 }
 
-export interface NamedId {
-  readonly name: string;
-  readonly id: string;
+export type FirehorseIndexStaleness =
+  | { readonly status: "no-index" }
+  | { readonly status: "unknown" }
+  | { readonly status: "current" }
+  | { readonly status: "behind"; readonly commitsBehind?: number | undefined }
+  | { readonly status: "diverged" };
+
+/**
+ * Compares the commit `/index` recorded against HEAD by ancestry, using only
+ * the git facts supplied by the caller.
+ */
+export function computeFirehorseIndexStaleness(
+  recordedCommit: string | undefined,
+  git: FirehorseGitFacts = {},
+): FirehorseIndexStaleness {
+  if (!recordedCommit) return { status: "no-index" };
+  if (!git.headCommit) return { status: "unknown" };
+  if (commitsMatch(recordedCommit, git.headCommit)) return { status: "current" };
+  if (git.recordedIsAncestorOfHead === undefined) return { status: "unknown" };
+  if (!git.recordedIsAncestorOfHead) return { status: "diverged" };
+  return { status: "behind", commitsBehind: git.commitsBehind };
 }
 
 export interface CheckFirehorseSetupOptions {
   readonly manifestContent?: string;
   readonly manifestPath?: string;
   readonly markerPaths?: readonly string[];
-  readonly observed?: ObservedFirehorseSetup;
+  readonly git?: FirehorseGitFacts;
 }
 
 export interface FirehorseSetupCheckResult {
@@ -213,7 +167,7 @@ export function checkFirehorseSetup(
         {
           code: "setup_manifest.missing",
           severity: "warning",
-          message: `Firehorse project markers were found, but ${FIREHORSE_SETUP_MANIFEST_PATH} is missing. Run the setup check in read-only mode and commit a non-secret manifest before relying on session-start validation.`,
+          message: `no ${FIREHORSE_SETUP_MANIFEST_PATH} — run /new-project`,
           path: manifestPath,
         },
       ],
@@ -222,7 +176,7 @@ export function checkFirehorseSetup(
 
   try {
     const manifest = parseFirehorseSetupManifest(options.manifestContent, manifestPath);
-    const diagnostics = validateFirehorseSetupManifest(manifest, options.observed);
+    const diagnostics = validateFirehorseSetupManifest(manifest, options.git);
     return {
       enabled: true,
       healthy: diagnostics.length === 0,
@@ -245,92 +199,61 @@ export function checkFirehorseSetup(
   }
 }
 
+/**
+ * Reports manifest state in the order the SessionStart hook reports it, so the
+ * first diagnostic is the line the hook prints. State only — never conventions
+ * or preferences (D-145).
+ */
 export function validateFirehorseSetupManifest(
   manifest: FirehorseSetupManifest,
-  observed: ObservedFirehorseSetup = {},
+  git: FirehorseGitFacts = {},
 ): FirehorseSetupDiagnostic[] {
-  const diagnostics: FirehorseSetupDiagnostic[] = [];
-
-  compareObserved(diagnostics, "project.name", manifest.project.name, observed.projectName, {
-    code: "setup_manifest.project_name_drift",
-    message: "Firehorse project name differs from the observed project marker.",
-  });
-  compareObserved(diagnostics, "github.owner", manifest.github.owner, observed.github?.owner, {
-    code: "setup_manifest.github_owner_drift",
-    message: "GitHub owner differs from the observed repository owner.",
-  });
-  compareObserved(diagnostics, "github.repo", manifest.github.repo, observed.github?.repo, {
-    code: "setup_manifest.github_repo_drift",
-    message: "GitHub repo differs from the observed repository name.",
-  });
-  compareObserved(diagnostics, "memory.project", manifest.memory.project, observed.memoryProject, {
-    code: "setup_manifest.memory_project_drift",
-    message: "Memory project differs from the observed memory namespace.",
-  });
-  compareObserved(
-    diagnostics,
-    "tracker.project.id",
-    manifest.tracker.project.id,
-    observed.tracker?.projectId,
-    {
-      code: "setup_manifest.tracker_project_id_drift",
-      message: "Tracker Project ID differs from the observed GitHub Project ID.",
-    },
-  );
-  compareObserved(
-    diagnostics,
-    "tracker.status.field.id",
-    manifest.tracker.status.field.id,
-    observed.tracker?.statusFieldId,
-    {
-      code: "setup_manifest.status_field_id_drift",
-      message: "Tracker Status field ID differs from the observed field ID.",
-    },
-  );
-
-  if (observed.tracker?.statusOptions) {
-    const observedOptions = new Map(
-      observed.tracker.statusOptions.map((option) => [option.name, option.id] as const),
-    );
-    for (const option of manifest.tracker.status.options) {
-      const observedId = observedOptions.get(option.name);
-      if (!observedId) {
-        diagnostics.push({
-          code: "setup_manifest.status_option_missing",
-          severity: "warning",
-          message: `Tracker Status option '${option.name}' is recorded in the manifest but was not observed.`,
-          field: "tracker.status.options",
-          expected: option.name,
-        });
-      } else if (observedId !== option.id) {
-        diagnostics.push({
-          code: "setup_manifest.status_option_id_drift",
-          severity: "warning",
-          message: `Tracker Status option '${option.name}' has a different observed ID.`,
-          field: "tracker.status.options",
-          expected: option.id,
-          actual: observedId,
-        });
-      }
-    }
+  if (!manifest.setup?.mattPocockSkills) {
+    return [
+      {
+        code: "setup.not_run",
+        severity: "warning",
+        message: "setup has not run — run /new-project",
+        field: "setup.mattPocockSkills",
+      },
+    ];
   }
 
-  if (observed.labels) {
-    const observedLabels = new Set(observed.labels);
-    for (const label of manifest.labels.vocabulary) {
-      if (!observedLabels.has(label)) {
-        diagnostics.push({
-          code: "setup_manifest.label_missing",
-          severity: "warning",
-          message: `Label '${label}' is recorded in the manifest but was not observed.`,
-          field: "labels.vocabulary",
-          expected: label,
-        });
-      }
-    }
-  }
+  const staleness = computeFirehorseIndexStaleness(manifest.index?.commit, git);
 
-  return diagnostics;
+  switch (staleness.status) {
+    case "diverged":
+      return [
+        {
+          code: "index.diverged",
+          severity: "warning",
+          message: "index was recorded on a different history line — run /index",
+          field: "index.commit",
+        },
+      ];
+    case "behind":
+      return [
+        {
+          code: "index.behind",
+          severity: "warning",
+          message: `index is ${staleness.commitsBehind ?? 0} commit${
+            staleness.commitsBehind === 1 ? "" : "s"
+          } behind HEAD — run /index`,
+          field: "index.commit",
+        },
+      ];
+    case "no-index":
+      return [
+        {
+          code: "index.missing",
+          severity: "warning",
+          message: "repo has not been indexed — run /index",
+          field: "index",
+        },
+      ];
+    default:
+      return [];
+  }
 }
 
 export function formatFirehorseSetupDiagnostics(
@@ -352,6 +275,11 @@ export function formatFirehorseSetupDiagnostics(
     .join("\n");
 }
 
+function commitsMatch(recorded: string, head: string): boolean {
+  const shorter = Math.min(recorded.length, head.length);
+  return recorded.slice(0, shorter) === head.slice(0, shorter);
+}
+
 function zodIssuesToSetupDiagnostics(error: z.ZodError, path: string): FirehorseSetupDiagnostic[] {
   return error.issues.map((issue) => ({
     code: `setup_manifest.${issue.code}`,
@@ -360,23 +288,4 @@ function zodIssuesToSetupDiagnostics(error: z.ZodError, path: string): Firehorse
     path,
     field: issue.path.map(String).join("."),
   }));
-}
-
-function compareObserved(
-  diagnostics: FirehorseSetupDiagnostic[],
-  field: string,
-  expected: string,
-  actual: string | undefined,
-  diagnostic: { readonly code: string; readonly message: string },
-): void {
-  if (actual === undefined || actual === expected) return;
-
-  diagnostics.push({
-    code: diagnostic.code,
-    severity: "warning",
-    message: diagnostic.message,
-    field,
-    expected,
-    actual,
-  });
 }
