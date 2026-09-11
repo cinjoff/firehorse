@@ -1,7 +1,7 @@
 {
   "name": "firehorse-claude",
   "version": "0.3.0",
-  "description": "Claude Code distribution of firehorse \u2014 a Claude plugin bundling commands, agents, skills, and hooks.",
+  "description": "Claude Code distribution of firehorse — a Claude plugin bundling commands, skills, and hooks.",
   "license": "MIT",
   "author": {
     "name": "cinjoff",
@@ -32,7 +32,6 @@
   "files": [
     ".claude-plugin",
     "commands",
-    "agents",
     "skills",
     "hooks",
     "scripts",
