@@ -142,17 +142,46 @@ runtime. The core copy is the reviewed Firehorse provenance surface, and the
 Claude mirror is adapted from that same pinned source with Claude-compatible
 frontmatter.
 
-## Checking for upstream changes
+## Checking for upstream drift
 
 ```sh
 pnpm upstreams:check
 ```
 
-The command compares git-backed `UPSTREAM.json` pins with their current remote
-refs and checks bundled / npm-backed upstream packages such as `claude-mem`,
-`pi-agent-memory`, `context-mode`, `pi-lens`, `pi-mcp-adapter`, `pi-mermaid`,
-`pi-subagents`, and `pi-web-access` against npm. It exits non-zero when an
-upstream update is available, which makes it suitable for scheduled CI later.
+The command reads the baseline in `upstreams.lock.json`, enumerates the declared
+plugins as installed under `~/.claude/plugins/`, and reports impact rather than
+change. A vanished or renamed skill ID that an `upstreamSkills` entry names is
+**breaking**: the report lists the workflows that break and the command exits
+non-zero. A changed `SKILL.md` hash, a changed plugin version or marketplace, an
+added skill, and a vanished skill nothing references are **advisory**: reported,
+exit 0.
+
+`upstreams.lock.json` records, per declared plugin, its marketplace, its version,
+and for every exposed skill the path, a SHA-256 of the whole `SKILL.md`
+(frontmatter included, CRLF normalised to LF), and whether the key came from
+frontmatter or the directory name. `plugins` is sorted by name and `skills` by
+key, both ASCII, so a real change is the only thing that shows in a diff.
+
+`~/.claude/plugins/` does not exist on CI, and absence is not drift. When the
+directory is missing, `upstreams:check` prints one line, skips the on-disk
+comparison, and exits 0; the reference check folded into `definitions:check`
+degrades to a lockfile-only pass, where every `upstreamSkills` entry must resolve
+to a skill recorded in `upstreams.lock.json`.
+
+`pnpm definitions:check` — which `pnpm typecheck` and CI already run — validates
+every `upstreamSkills` reference with the same data, so upstream breakage fails
+the existing gate.
+
+## Accepting a new baseline
+
+```sh
+pnpm upstreams:check --write
+```
+
+`--write` rewrites `upstreams.lock.json` from what is on disk and prints what
+moved. It never writes without the flag, and it refuses to write when
+`~/.claude/plugins/` is missing. Hand-editing is not a supported path: the output
+is deterministic, so review the diff in the commit instead.
 
 ## Updating an upstream
 
