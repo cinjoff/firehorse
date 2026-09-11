@@ -44,6 +44,6 @@ If a needed concept is not in the glossary yet, treat that as a signal: either r
 
 If a recommendation or implementation would contradict root `docs/DECISIONS.md`, a PRD-local `DECISIONS.md`, a codebase ADR, or another binding decision document, surface the conflict explicitly instead of silently overriding it.
 
-## Agent roles are elsewhere
+## Firehorse's own definitions are elsewhere
 
-This directory configures Matt Pocock engineering skills only. Firehorse-owned agent role definitions belong in `packages/firehorse-core/definitions/agents/` and are projected into Pi and Claude adapter surfaces.
+This directory configures Matt Pocock engineering skills only. Firehorse's own workflow definitions live in `packages/firehorse-core/definitions/workflows/` and are projected into the Claude plugin under `packages/firehorse-claude/`. See [the architecture doc](../ARCHITECTURE.md) for the projection rules.
