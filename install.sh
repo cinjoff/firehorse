@@ -137,9 +137,23 @@ record() { SUMMARY+=("$1	$2	$3"); }
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
-# Substring test that does not pipe into grep. Under `set -o pipefail`, `grep -q`
-# closes the pipe early and the producer dies of SIGPIPE (141), which reads as a
-# false negative. Buffer the output, then match.
+# Exact-entry test against a `claude plugin list` / `marketplace list` listing.
+# Both print one `  ❯ <name>` line per entry, so anchor on that: a substring
+# match is wrong here, because a marketplace named `firehorse` makes every
+# `<plugin>@firehorse` line match a search for `firehorse@firehorse`.
+#
+# It also avoids piping into `grep -q`, which under `set -o pipefail` kills the
+# producer with SIGPIPE (141) and reads as a false negative.
+listed() {
+  local line trimmed
+  while IFS= read -r line; do
+    trimmed="${line#"${line%%[![:space:]]*}"}"
+    [ "$trimmed" = "❯ $2" ] && return 0
+  done <<< "$1"
+  return 1
+}
+
+# Loose substring test, for output with no per-entry structure to anchor on.
 contains() {
   case "$1" in *"$2"*) return 0 ;; *) return 1 ;; esac
 }
@@ -258,9 +272,10 @@ MARKETPLACES=(
 marketplace_present() {
   local listing
   listing="$(claude plugin marketplace list 2>/dev/null || true)"
-  contains "$listing" "$1"
+  listed "$listing" "$1"
 }
 
+MARKETPLACES_MISSING=0
 for entry in "${MARKETPLACES[@]}"; do
   name="${entry%%	*}"
   source="${entry##*	}"
@@ -268,6 +283,7 @@ for entry in "${MARKETPLACES[@]}"; do
     ok "$name already added"
     continue
   fi
+  MARKETPLACES_MISSING=$((MARKETPLACES_MISSING + 1))
   would "claude plugin marketplace add $source" && continue
   if spin "adding $name ($source)" claude plugin marketplace add "$source"; then
     :
@@ -276,7 +292,13 @@ for entry in "${MARKETPLACES[@]}"; do
   fi
 done
 
-record ok "Marketplaces" "impeccable, supermemory-plugins, firehorse"
+if [ "$MARKETPLACES_MISSING" -eq 0 ]; then
+  record ok "Marketplaces" "all three already added"
+elif [ "$CHECK_ONLY" -eq 1 ]; then
+  record skip "Marketplaces" "$MARKETPLACES_MISSING missing (check mode)"
+else
+  record ok "Marketplaces" "added $MARKETPLACES_MISSING of three"
+fi
 end_step
 
 # ── 3. The plugin ────────────────────────────────────────────────────────────
@@ -284,7 +306,7 @@ end_step
 step "Firehorse plugin"
 
 PLUGIN_LISTING="$(claude plugin list 2>/dev/null || true)"
-if contains "$PLUGIN_LISTING" "firehorse"; then
+if listed "$PLUGIN_LISTING" "firehorse@firehorse"; then
   ok "firehorse@firehorse already installed"
   note "Update it later with: claude plugin update firehorse@firehorse"
   record ok "Plugin" "already installed"
@@ -292,7 +314,7 @@ elif would "claude plugin install firehorse@firehorse"; then
   record skip "Plugin" "not installed (check mode)"
 else
   # Installing pulls mattpocock-skills, impeccable, and supermemory with it.
-  if live "installing firehorse@firehorse and its three dependencies" \
+  if live "installing firehorse@firehorse and its dependencies" \
        claude plugin install firehorse@firehorse --scope user --yes; then
     record ok "Plugin" "installed with dependencies"
   else
