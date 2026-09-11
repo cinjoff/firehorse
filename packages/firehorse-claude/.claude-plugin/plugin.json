@@ -31,6 +31,8 @@
     "./skills/firehorse-setup"
   ],
   "commands": [
+    "./commands/firehorse/horse-build.md",
+    "./commands/firehorse/horse-fix-bug.md",
     "./commands/firehorse/horse-map.md"
   ]
 }
