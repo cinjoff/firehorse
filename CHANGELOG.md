@@ -4,6 +4,19 @@
 
 ### Fixed
 
+- The `firehorse-recall` skill shipped this repo's own supermemory container tag
+  in its worked example, where every other occurrence used `<tag>`. A reader
+  copying it queried a container that does not exist for them.
+- `/firehorse:ship` carried a safety gate citing D-136 for "`firehorse` is
+  personal tooling" — a decision number that resolves to something else in
+  `docs/DECISIONS.md`, stated as guidance in a repo it does not apply to. It now
+  states the fact without the citation.
+- `/firehorse:ship`'s version sites missed `packages/firehorse-graph/package.json`,
+  added in v0.5.0. Seven fields carry the version now, not six, and
+  `claude plugin tag` still only checks two of them.
+
+### Fixed
+
 - Workflows no longer tell the agent to invoke a skill it cannot reach.
   `implement`, `wayfinder`, and `setup-matt-pocock-skills` all set
   `disable-model-invocation`, which strips their description from the agent's
@@ -78,6 +91,7 @@
   nothing the generated DO-NOT-EDIT banner did not already say. The section stays
   required in the definitions; `stripAuthoringOnlySections` drops it at projection
   time.
+
 ## v0.5.0 — 2026-09-11
 
 ### Added

@@ -1,8 +1,9 @@
 # firehorse
 
-Personal Claude Code tooling: seven workflows that hold the shape of a job —
-plan it, build it, verify it, ship it — and hand the craft to the skills you
-already have installed.
+A thin, opinionated layer over the agent skills you already have installed:
+eight workflows that hold the shape of a job — plan it, build it, verify it,
+ship it — and hand the craft to those skills, adding memory, a codebase map, and
+UI critique around them.
 
 ## Why it exists
 
@@ -98,6 +99,7 @@ so and carries on rather than failing.
 | `/firehorse:build`           | Take one ticket to a committed, verified change.                                         |
 | `/firehorse:fix-bug`         | Go from a bug report to a fix proven to have changed the behaviour.                      |
 | `/firehorse:ship`            | Review, PR, merge, changelog, version bump, tags, release, issue closures.               |
+| `/firehorse:memory`          | Open the supermemory store as an interactive graph to see what it holds.                 |
 | `/firehorse:upstreams-check` | Report upstream skill drift and which workflow steps it breaks.                          |
 
 Plus two skills: `firehorse-recall`, for asking what past sessions decided, and
@@ -151,11 +153,12 @@ pnpm typecheck
 pnpm test
 ```
 
-Two packages: **`firehorse-core`** holds the definitions, the Firehorse
+Three packages: **`firehorse-core`** holds the definitions, the Firehorse
 Definition Format v1 parser, and the projector; **`firehorse-claude`** is the
-plugin, discovered through the repo-level `.claude-plugin/marketplace.json`. The
-core library is not a skill runtime and is not published to npm — Firehorse is
-personal tooling (D-136).
+plugin, discovered through the repo-level `.claude-plugin/marketplace.json`;
+**`firehorse-graph`** is the local app `/firehorse:memory` opens. The core
+library is not a skill runtime, and nothing here is published to npm — Firehorse
+installs through the marketplace.
 
 [`AGENTS.md`](./AGENTS.md) is the contract an agent working on this repo reads
 first.
