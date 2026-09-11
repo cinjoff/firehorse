@@ -1,6 +1,6 @@
 {
   "name": "firehorse-graph",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Local app for exploring a self-hosted supermemory store as an interactive graph.",
   "license": "MIT",
   "author": {
