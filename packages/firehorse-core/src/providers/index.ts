@@ -2,13 +2,11 @@ export type { Provider } from "./provider.js";
 export { BaseProvider } from "./provider.js";
 export { ClaudeProvider } from "./claude.js";
 export { CodexProvider } from "./codex.js";
-export { PiProvider } from "./pi.js";
 
 import type { Provider } from "./provider.js";
 import type { ProviderId } from "../types.js";
 import { ClaudeProvider } from "./claude.js";
 import { CodexProvider } from "./codex.js";
-import { PiProvider } from "./pi.js";
 
 /**
  * Built-in provider registry. External providers can be added by passing
@@ -17,7 +15,6 @@ import { PiProvider } from "./pi.js";
 export const builtinProviders: Provider[] = [
   new ClaudeProvider(),
   new CodexProvider(),
-  new PiProvider(),
 ];
 
 export function findProvider(id: ProviderId): Provider | undefined {

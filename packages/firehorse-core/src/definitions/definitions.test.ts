@@ -11,7 +11,6 @@ import {
   generatedManifestEntries,
   mergeGeneratedManifestEntries,
   parseDefinition,
-  parseDefinitionFile,
   projectDefinitions,
   validateDefinitionSet,
 } from "./index.js";
@@ -42,53 +41,104 @@ const skillSections = [
   "Examples",
   "Projection Notes",
 ];
-const agentRoleSections = [
-  "Mission",
-  "Responsibilities",
-  "Inputs",
-  "Outputs",
-  "Tools",
-  "Authority",
-  "Escalation",
-  "Collaboration",
-  "Boundaries",
-  "Projection Notes",
-];
 
 function bodyWithSections(sections: readonly string[]): string {
   return sections.map((section) => `## ${section}\n\nContent.`).join("\n\n");
 }
 
-describe("Firehorse definitions", () => {
-  it("parses and validates the canonical diagnose-fix fixture set", async () => {
-    const definitions = await Promise.all([
-      parseDefinitionFile(nodePath.join(definitionsRoot, "workflows/diagnose-fix.md")),
-      parseDefinitionFile(nodePath.join(definitionsRoot, "skills/feedback-loop.md")),
-      parseDefinitionFile(nodePath.join(definitionsRoot, "agent-roles/diagnostic-reviewer.md")),
-    ]);
+function titleFor(id: string): string {
+  return id
+    .split("-")
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(" ");
+}
 
-    expect(() => assertValidDefinitionSet(definitions, { knownUpstreamSkills })).not.toThrow();
+function workflowPath(id: string): string {
+  return nodePath.join(definitionsRoot, `workflows/${id}.md`);
+}
+
+function skillPath(id: string): string {
+  return nodePath.join(definitionsRoot, `skills/${id}.md`);
+}
+
+/** Canonical workflow source text; `extraFrontmatter` lines are appended verbatim. */
+function workflowSource(id: string, extraFrontmatter = ""): string {
+  return `---
+schemaVersion: 1
+id: ${id}
+kind: workflow
+title: ${titleFor(id)}
+description: Workflow fixture for ${id}.
+argumentHint: <freeform bug report>
+requires:
+  tools:
+    - read
+  environment:
+    - filesystem
+${extraFrontmatter}---
+
+# ${titleFor(id)}
+
+${bodyWithSections(workflowSections)}
+`;
+}
+
+/** Canonical skill source text; `extraFrontmatter` lines are appended verbatim. */
+function skillSource(id: string, extraFrontmatter = ""): string {
+  return `---
+schemaVersion: 1
+id: ${id}
+kind: skill
+title: ${titleFor(id)}
+description: Skill fixture for ${id}.
+requires:
+  tools:
+    - read
+  environment:
+    - filesystem
+${extraFrontmatter}---
+
+# ${titleFor(id)}
+
+${bodyWithSections(skillSections)}
+`;
+}
+
+function parseWorkflow(id: string, extraFrontmatter = "") {
+  return parseDefinition({
+    path: workflowPath(id),
+    content: workflowSource(id, extraFrontmatter),
+  });
+}
+
+function parseSkill(id: string, extraFrontmatter = "") {
+  return parseDefinition({
+    path: skillPath(id),
+    content: skillSource(id, extraFrontmatter),
+  });
+}
+
+describe("Firehorse definitions", () => {
+  it("parses and validates a canonical workflow and skill fixture set", () => {
+    const definitions = [
+      parseWorkflow(
+        "diagnose-fix",
+        "supportingSkills:\n  - id: feedback-loop\nupstreamSkills:\n  - upstream: mattpocock-skills\n    id: diagnose\n",
+      ),
+      parseSkill("feedback-loop"),
+    ];
+
+    expect(() =>
+      assertValidDefinitionSet(definitions, { knownUpstreamSkills }),
+    ).not.toThrow();
     expect(definitions.map((definition) => definition.frontmatter.id).sort()).toEqual([
       "diagnose-fix",
-      "diagnostic-reviewer",
       "feedback-loop",
     ]);
-  });
-
-  it("documents complete v1 examples for the accepted definition contract", async () => {
-    const docs = await readFile(
-      nodePath.join(repoRoot, "docs/FIREHORSE-DEFINITION-FORMAT.md"),
-      "utf8",
-    );
-
-    for (const relativePath of [
-      "workflows/diagnose-fix.md",
-      "skills/feedback-loop.md",
-      "agent-roles/diagnostic-reviewer.md",
-    ]) {
-      const source = await readFile(nodePath.join(definitionsRoot, relativePath), "utf8");
-      expect(docs).toContain(source.trim());
-    }
+    expect(definitions.map((definition) => definition.kind).sort()).toEqual([
+      "skill",
+      "workflow",
+    ]);
   });
 
   it("documents generated mirror maintenance and deferred runtime boundaries", async () => {
@@ -100,10 +150,7 @@ describe("Firehorse definitions", () => {
     expect(docs).toContain("pnpm definitions:write");
     expect(docs).toContain("pnpm definitions:check");
     expect(docs).toContain("firehorseSourceSha256");
-    expect(docs).toContain("horse-new-project");
-    expect(docs).toContain("horse-map-codebase");
     expect(docs).toContain("Firehorse runtime loading or execution");
-    expect(docs).toContain("Provider API transports for Claude, Codex, or Pi");
   });
 
   it("reports invalid frontmatter with actionable diagnostics", () => {
@@ -167,9 +214,10 @@ describe("Firehorse definitions", () => {
     ).not.toThrow();
   });
 
-  it("validates duplicate ids and structured references across a definition set", async () => {
-    const workflow = await parseDefinitionFile(
-      nodePath.join(definitionsRoot, "workflows/diagnose-fix.md"),
+  it("validates duplicate ids and structured references across a definition set", () => {
+    const workflow = parseWorkflow(
+      "diagnose-fix",
+      "supportingSkills:\n  - id: feedback-loop\n",
     );
     const duplicateWorkflow = {
       ...workflow,
@@ -180,19 +228,16 @@ describe("Firehorse definitions", () => {
       expect.arrayContaining([
         expect.objectContaining({ code: "set.duplicate_id" }),
         expect.objectContaining({ code: "references.skill_missing" }),
-        expect.objectContaining({ code: "references.agent_role_missing" }),
       ]),
     );
   });
 
-  it("validates aliases and deprecation replacements across a definition set", async () => {
-    const existingSkill = await parseDefinitionFile(
-      nodePath.join(definitionsRoot, "skills/feedback-loop.md"),
+  it("validates aliases and deprecation replacements across a definition set", () => {
+    const existingSkill = parseSkill("feedback-loop");
+    const deprecatedSkill = parseSkill(
+      "old-feedback-loop",
+      "aliases:\n  - feedback-loop\ndeprecated: true\nreplacedBy: missing-feedback-loop\n",
     );
-    const deprecatedSkill = parseDefinition({
-      path: nodePath.join(definitionsRoot, "skills/old-feedback-loop.md"),
-      content: `---\nschemaVersion: 1\nid: old-feedback-loop\nkind: skill\ntitle: Old Feedback Loop\ndescription: Deprecated feedback-loop fixture.\naliases:\n  - feedback-loop\ndeprecated: true\nreplacedBy: missing-feedback-loop\n---\n\n${bodyWithSections(skillSections)}`,
-    });
 
     expect(validateDefinitionSet([existingSkill, deprecatedSkill])).toEqual(
       expect.arrayContaining([
@@ -202,128 +247,125 @@ describe("Firehorse definitions", () => {
     );
   });
 
-  it("validates workflow references by kind and known upstream skill", async () => {
-    const skill = await parseDefinitionFile(
-      nodePath.join(definitionsRoot, "skills/feedback-loop.md"),
+  it("validates workflow references by kind and known upstream skill", () => {
+    const skill = parseSkill("feedback-loop");
+    const referencedWorkflow = parseWorkflow("target-workflow");
+    const workflow = parseWorkflow(
+      "reference-fixture",
+      "supportingSkills:\n  - id: target-workflow\nupstreamSkills:\n  - upstream: unknown-upstream\n    id: diagnose\n",
     );
-    const role = await parseDefinitionFile(
-      nodePath.join(definitionsRoot, "agent-roles/diagnostic-reviewer.md"),
-    );
-    const workflow = parseDefinition({
-      path: nodePath.join(definitionsRoot, "workflows/reference-fixture.md"),
-      content: `---\nschemaVersion: 1\nid: reference-fixture\nkind: workflow\ntitle: Reference Fixture\ndescription: Reference validation fixture.\nsupportingSkills:\n  - id: diagnostic-reviewer\nagentRoles:\n  - id: feedback-loop\nupstreamSkills:\n  - upstream: unknown-upstream\n    id: diagnose\n---\n\n${bodyWithSections(workflowSections)}`,
-    });
 
-    expect(validateDefinitionSet([workflow, skill, role], { knownUpstreamSkills })).toEqual(
+    expect(
+      validateDefinitionSet([workflow, skill, referencedWorkflow], {
+        knownUpstreamSkills,
+      }),
+    ).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: "references.skill_wrong_kind" }),
-        expect.objectContaining({ code: "references.agent_role_wrong_kind" }),
         expect.objectContaining({ code: "references.upstream_skill_missing" }),
       ]),
     );
   });
 
-  it("validates agent role metadata before projection", () => {
-    const role = parseDefinition({
-      path: nodePath.join(definitionsRoot, "agent-roles/diagnostic-reviewer.md"),
-      content: `---\nschemaVersion: 1\nid: diagnostic-reviewer\nkind: agent-role\nname: other-reviewer\ntitle: Diagnostic Reviewer\ndescription: Agent role metadata validation fixture.\n---\n\n${bodyWithSections(agentRoleSections)}`,
-    });
+  it("projects Claude mirrors and manifest entries deterministically", () => {
+    const definitions = [
+      parseWorkflow("diagnose-fix", "supportingSkills:\n  - id: feedback-loop\n"),
+      parseSkill("feedback-loop"),
+    ];
+    assertValidDefinitionSet(definitions);
 
-    expect(validateDefinitionSet([role])).toEqual(
-      expect.arrayContaining([expect.objectContaining({ code: "agent_role.name_id_mismatch" })]),
-    );
-  });
-
-  it("projects provider mirrors and manifest entries deterministically", async () => {
-    const definitions = await Promise.all([
-      parseDefinitionFile(nodePath.join(definitionsRoot, "workflows/diagnose-fix.md")),
-      parseDefinitionFile(nodePath.join(definitionsRoot, "skills/feedback-loop.md")),
-      parseDefinitionFile(nodePath.join(definitionsRoot, "agent-roles/diagnostic-reviewer.md")),
-    ]);
-    assertValidDefinitionSet(definitions, { knownUpstreamSkills });
-
-    const generated = projectDefinitions(definitions, {
-      repoRoot,
-    });
+    const generated = projectDefinitions(definitions, { repoRoot });
 
     expect(generated.map((file) => file.path)).toEqual([
-      "packages/firehorse-claude/agents/firehorse/horse-diagnostic-reviewer.md",
       "packages/firehorse-claude/commands/firehorse/horse-diagnose-fix.md",
       "packages/firehorse-claude/skills/firehorse/feedback-loop/SKILL.md",
-      "packages/firehorse-pi/agents/firehorse/horse-diagnostic-reviewer.md",
-      "packages/firehorse-pi/prompts/firehorse/horse-diagnose-fix.md",
-      "packages/firehorse-pi/skills/firehorse/feedback-loop/SKILL.md",
     ]);
+    expect(generated.map((file) => file.provider)).toEqual(["claude", "claude"]);
+    expect(generated.map((file) => file.resourceKind)).toEqual(["workflow", "skill"]);
 
     expect(generated[0]?.content).toContain("Generated by Firehorse. DO NOT EDIT.");
-    expect(generated[1]?.content).toContain("argument-hint");
-    expect(generated[2]?.content).toContain("firehorseSourceSha256");
+    expect(generated[0]?.content).toContain("argument-hint");
+    expect(generated[0]?.content).toContain("## Procedure");
+    expect(generated[1]?.content).toContain('name: "feedback-loop"');
+    expect(generated[1]?.content).toContain("## Instructions");
 
-    expect(generatedManifestEntries(generated)).toMatchObject({
-      rootPiPrompts: ["./packages/firehorse-pi/prompts/firehorse/horse-diagnose-fix.md"],
-      packagePiSkills: ["./skills/firehorse/feedback-loop"],
+    expect(generatedManifestEntries(generated)).toEqual({
       claudeCommands: ["./commands/firehorse/horse-diagnose-fix.md"],
-      claudeAgents: ["./agents/firehorse/horse-diagnostic-reviewer.md"],
+      claudeSkills: ["./skills/firehorse/feedback-loop"],
     });
 
-    expect(extractGeneratedProvenance(generated[0]?.content ?? "")).toMatchObject({
-      firehorseGenerated: true,
-      firehorseId: "diagnostic-reviewer",
-      firehorseSourceSha256: expect.stringMatching(/^[a-f0-9]{64}$/),
-    });
-    expect(extractGeneratedProvenance("# hand-authored\n")).toBeNull();
+    // Projection order does not depend on input order.
+    expect(
+      projectDefinitions([...definitions].reverse(), { repoRoot }).map(
+        (file) => file.path,
+      ),
+    ).toEqual(generated.map((file) => file.path));
   });
 
-  it("renders feedback-loop skill mirrors with canonical instructions and exact source hashes", async () => {
-    const sourcePath = nodePath.join(definitionsRoot, "skills/feedback-loop.md");
-    const sourceContent = await readFile(sourcePath, "utf8");
-    const feedbackLoop = await parseDefinitionFile(sourcePath);
-    const generated = projectDefinitions([feedbackLoop], { repoRoot });
-    const expectedHash = createHash("sha256").update(sourceContent).digest("hex");
-
-    expect(generated.map((file) => file.path)).toEqual([
-      "packages/firehorse-claude/skills/firehorse/feedback-loop/SKILL.md",
-      "packages/firehorse-pi/skills/firehorse/feedback-loop/SKILL.md",
+  it("stamps generated mirrors with provenance and a SHA-256 source hash", () => {
+    const workflowContent = workflowSource("diagnose-fix");
+    const skillContent = skillSource("feedback-loop");
+    const definitions = [
+      parseDefinition({ path: workflowPath("diagnose-fix"), content: workflowContent }),
+      parseDefinition({ path: skillPath("feedback-loop"), content: skillContent }),
+    ];
+    const expectedHashes = new Map([
+      ["diagnose-fix", createHash("sha256").update(workflowContent).digest("hex")],
+      ["feedback-loop", createHash("sha256").update(skillContent).digest("hex")],
     ]);
+
+    const generated = projectDefinitions(definitions, { repoRoot });
+    expect(generated).toHaveLength(2);
+
     for (const file of generated) {
+      const expectedHash = expectedHashes.get(file.definitionId);
+      expect(expectedHash).toMatch(/^[a-f0-9]{64}$/);
       expect(file.sourceHash).toBe(expectedHash);
-      expect(file.content).toContain("# Feedback Loop");
-      expect(file.content).toContain("## Instructions");
-      expect(file.content).toContain("Do not invent a passing result.");
-      expect(extractGeneratedProvenance(file.content)).toMatchObject({
-        firehorseId: "feedback-loop",
+      expect(file.content).toContain(`Source SHA-256: ${expectedHash}`);
+      expect(extractGeneratedProvenance(file.content)).toEqual({
+        firehorseGenerated: true,
+        firehorseKind: file.resourceKind,
+        firehorseId: file.definitionId,
+        firehorseSource: file.sourcePath,
         firehorseSourceSha256: expectedHash,
+        firehorseSchemaVersion: 1,
       });
+      expect(file.sourcePath).toBe(
+        `packages/firehorse-core/definitions/${file.resourceKind}s/${file.definitionId}.md`,
+      );
     }
+
+    expect(extractGeneratedProvenance("# hand-authored\n")).toBeNull();
+    expect(extractGeneratedProvenance("---\nname: hand-authored\n---\n\nBody.\n")).toBeNull();
   });
 
-  it("adapts diagnostic-reviewer role mirrors for Pi and Claude provider surfaces", async () => {
-    const role = await parseDefinitionFile(
-      nodePath.join(definitionsRoot, "agent-roles/diagnostic-reviewer.md"),
+  it("writes generated manifest entries in deterministic sorted order", () => {
+    const definitions = [
+      parseWorkflow("zeta-workflow"),
+      parseSkill("zeta-loop"),
+      parseWorkflow("alpha-workflow"),
+      parseSkill("alpha-loop"),
+    ];
+
+    const sortedEntries = {
+      claudeCommands: [
+        "./commands/firehorse/horse-alpha-workflow.md",
+        "./commands/firehorse/horse-zeta-workflow.md",
+      ],
+      claudeSkills: ["./skills/firehorse/alpha-loop", "./skills/firehorse/zeta-loop"],
+    };
+
+    expect(generatedManifestEntries(projectDefinitions(definitions, { repoRoot }))).toEqual(
+      sortedEntries,
     );
-    assertValidDefinitionSet([role]);
-
-    const generated = projectDefinitions([role], { repoRoot });
-    const claude = generated.find((file) => file.provider === "claude");
-    const pi = generated.find((file) => file.provider === "pi");
-
-    expect(claude?.path).toBe(
-      "packages/firehorse-claude/agents/firehorse/horse-diagnostic-reviewer.md",
-    );
-    expect(claude?.content).toContain('name: "horse-diagnostic-reviewer"');
-    expect(claude?.content).toContain('tools: "Read, Grep, Glob, LS, Bash"');
-    expect(claude?.content).toContain('effort: "high"');
-    expect(claude?.content).not.toContain("systemPromptMode");
-    expect(claude?.content).not.toContain("defaultReads");
-    expect(claude?.content).toContain("## Mission");
-
-    expect(pi?.path).toBe("packages/firehorse-pi/agents/firehorse/horse-diagnostic-reviewer.md");
-    expect(pi?.content).toContain('name: "horse-diagnostic-reviewer"');
-    expect(pi?.content).toContain('tools: "read, grep, find, ls, bash"');
-    expect(pi?.content).toContain('systemPromptMode: "replace"');
-    expect(pi?.content).toContain('defaultReads: "progress.md"');
-    expect(pi?.content).toContain("maxSubagentDepth: 0");
-    expect(pi?.content).toContain("## Mission");
+    // The same set in any input order produces byte-identical manifest entries.
+    expect(
+      generatedManifestEntries(
+        [...definitions].reverse().flatMap((definition) =>
+          projectDefinitions([definition], { repoRoot }),
+        ),
+      ),
+    ).toEqual(sortedEntries);
   });
 
   it("replaces only generated manifest entries for deterministic stale cleanup", () => {

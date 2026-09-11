@@ -8,6 +8,11 @@ import {
 export interface ValidateDefinitionSetOptions {
   /** Keys use '<upstream>:<id>', e.g. 'mattpocock-skills:diagnose'. */
   readonly knownUpstreamSkills?: ReadonlySet<string>;
+  /**
+   * What `knownUpstreamSkills` was read from, quoted in the diagnostic so the
+   * gate never claims it compared something it did not.
+   */
+  readonly knownUpstreamSkillsSource?: string;
 }
 
 export function validateDefinitionSet(
@@ -22,7 +27,7 @@ export function validateDefinitionSet(
     if (existing) {
       diagnostics.push({
         code: "set.duplicate_id",
-        message: `Definition ID '${definition.frontmatter.id}' is used by both '${existing.path}' and '${definition.path}'. IDs are globally unique across workflows, skills, and agent roles.`,
+        message: `Definition ID '${definition.frontmatter.id}' is used by both '${existing.path}' and '${definition.path}'. IDs are globally unique across workflows and skills.`,
         path: definition.path,
         field: "id",
       });
@@ -58,20 +63,13 @@ export function validateDefinitionSet(
 
     if (definition.kind === "workflow") {
       diagnostics.push(
-        ...validateWorkflowReferences(definition, byId, options.knownUpstreamSkills),
+        ...validateWorkflowReferences(
+          definition,
+          byId,
+          options.knownUpstreamSkills,
+          options.knownUpstreamSkillsSource,
+        ),
       );
-    }
-
-    if (
-      definition.kind === "agent-role" &&
-      definition.frontmatter.name !== definition.frontmatter.id
-    ) {
-      diagnostics.push({
-        code: "agent_role.name_id_mismatch",
-        message: `Agent role name '${definition.frontmatter.name}' must match id '${definition.frontmatter.id}' in canonical definitions. Provider projections add native prefixes.`,
-        path: definition.path,
-        field: "name",
-      });
     }
   }
 
@@ -92,6 +90,7 @@ function validateWorkflowReferences(
   definition: WorkflowDefinition,
   byId: ReadonlyMap<string, FirehorseDefinition>,
   knownUpstreamSkills: ReadonlySet<string> | undefined,
+  knownUpstreamSkillsSource: string | undefined,
 ): DefinitionDiagnostic[] {
   const diagnostics: DefinitionDiagnostic[] = [];
 
@@ -114,32 +113,13 @@ function validateWorkflowReferences(
     }
   }
 
-  for (const reference of definition.frontmatter.agentRoles ?? []) {
-    const target = byId.get(reference.id);
-    if (!target) {
-      diagnostics.push({
-        code: "references.agent_role_missing",
-        message: `Workflow '${definition.frontmatter.id}' references missing agent role '${reference.id}'.`,
-        path: definition.path,
-        field: "agentRoles",
-      });
-    } else if (target.kind !== "agent-role") {
-      diagnostics.push({
-        code: "references.agent_role_wrong_kind",
-        message: `Workflow '${definition.frontmatter.id}' references '${reference.id}' as an agent role, but it is a '${target.kind}'.`,
-        path: definition.path,
-        field: "agentRoles",
-      });
-    }
-  }
-
   if (knownUpstreamSkills) {
     for (const reference of definition.frontmatter.upstreamSkills ?? []) {
       const key = `${reference.upstream}:${reference.id}`;
       if (!knownUpstreamSkills.has(key)) {
         diagnostics.push({
           code: "references.upstream_skill_missing",
-          message: `Workflow '${definition.frontmatter.id}' references unknown upstream skill '${key}'.`,
+          message: `Workflow '${definition.frontmatter.id}' references unknown upstream skill '${key}'${knownUpstreamSkillsSource ? ` (checked against ${knownUpstreamSkillsSource})` : ""}.`,
           path: definition.path,
           field: "upstreamSkills",
         });

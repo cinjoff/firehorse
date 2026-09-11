@@ -13,7 +13,6 @@ that are genuinely Claude-flavored.
 ## Packages
 
 - `packages/firehorse-core` — TS core library (`firehorse`).
-- `packages/firehorse-pi` — Pi.dev distribution (`firehorse-pi`).
 - `packages/firehorse-claude` — **this is the Claude plugin**. Manifest at
   `.claude-plugin/plugin.json`; commands/, agents/, skills/, hooks/ dirs.
 
@@ -28,8 +27,8 @@ can `/plugin marketplace add cinjoff/firehorse`.
 
 ## Architecture
 
-- `packages/firehorse-core/src/providers/` — provider adapters (Claude, Codex,
-  Pi). Add new providers by implementing `Provider` from `provider.ts`.
+- `packages/firehorse-core/src/providers/` — provider adapters (Claude, Codex).
+  Add new providers by implementing `Provider` from `provider.ts`.
 - `packages/firehorse-core/src/orchestrators/` — orchestrator adapters
   (Superset, Conductor, tmux, terminal). Detection via env vars only; no side
   effects.
@@ -48,9 +47,9 @@ See `docs/ARCHITECTURE.md` for design rationale.
 
 ## Planning refs
 
-- **Start here:** `.planning/STATE.md` (current position), then
-  `.planning/ROADMAP.md` (phases), `.planning/REQUIREMENTS.md` (work items),
-  `.planning/DECISIONS.md` (binding decisions — don't relitigate),
-  `.planning/PROJECT.md` (vision and scope).
-- `.pi/gsd/` is reference material from the prior fhhs-skills work. Treat as
-  read-only — migration is out of scope until explicitly planned.
+- **Start here:** the wayfinder map on GitHub Issues (label `wayfinder:map`) for
+  current position and open work, then `docs/MIGRATION-PLAN.md` (the settled
+  plan), `docs/DECISIONS.md` (binding decisions — don't relitigate),
+  `docs/PROJECT.md` (vision and scope).
+- `docs/prds/` stages the six parked PRDs (D-150). Treat as read-only — moving
+  them into the tracker is a separate effort.
