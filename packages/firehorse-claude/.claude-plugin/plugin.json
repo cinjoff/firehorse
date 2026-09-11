@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "firehorse",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Firehorse — lightweight cross-provider agentic skills framework, Claude-adapted distribution.",
   "author": {
     "name": "cinjoff"
