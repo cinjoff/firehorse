@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 2,
+  "setup": {
+    "mattPocockSkills": {
+      "version": "1.2.3",
+      "at": "2026-09-11T18:45:00.000Z"
+    }
+  },
+  "anchors": {
+    "context": true,
+    "agents": true,
+    "design": false,
+    "adr": false
+  },
+  "index": {
+    "commit": "5813940a2d765e1763ea2d9eecff2decb1d9994a",
+    "at": "2026-09-11T18:55:00.000Z",
+    "graph": false,
+    "supermemory": true
+  }
+}

@@ -10,7 +10,7 @@ A thin layer over installed agent skills, for anyone building software (D-170),
 packaged as a Claude Code plugin (D-155) and shipped as a pnpm monorepo with
 three packages:
 
-- **`packages/firehorse-core`** (`firehorse` on npm) — TypeScript core library.
+- **`packages/firehorse-core`** — TypeScript core library, private and unpublished.
   Canonical definitions, the projection generator, the manifest schema, and the
   upstream drift check. No skill runtime.
 - **`packages/firehorse-claude`** — Claude Code plugin. `.claude-plugin/plugin.json`

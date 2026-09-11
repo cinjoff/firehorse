@@ -45,6 +45,24 @@ See `docs/ARCHITECTURE.md` for design rationale.
 - Claude-adapted commands, agents, skills, and hooks live in
   `packages/firehorse-claude/` — **never** in `firehorse-core`.
 
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues for `cinjoff/firehorse`, reached with the `gh` CLI;
+the wayfinding operations — sub-issues, dependencies, the frontier query — are
+recorded there too. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical triage roles, each label string equal to its name. See
+`docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` at the repo root, no `docs/adr/` yet. See
+`docs/agents/domain.md`.
+
 ## Planning refs
 
 - **Start here:** the wayfinder map on GitHub Issues (label `wayfinder:map`) for
