@@ -2,6 +2,82 @@
 
 ## Unreleased
 
+### Fixed
+
+- Workflows no longer tell the agent to invoke a skill it cannot reach.
+  `implement`, `wayfinder`, and `setup-matt-pocock-skills` all set
+  `disable-model-invocation`, which strips their description from the agent's
+  reach and makes them user-invoked only — an agent asking for one gets "skill
+  not found". `upstreams.lock.json` now records `modelInvocable` per skill, every
+  generated workflow carries a table saying which skills to invoke and which to
+  read and follow inline, and `/firehorse:build`, `/firehorse:map`,
+  `/firehorse:new-project`, and `/firehorse:index` say so in the steps that use
+  them. `pnpm upstreams:check` reports a skill losing model invocation as
+  breaking for the workflows that reference it.
+
+### Added
+
+- Generated workflow mirrors carry a **Resolved upstream skills** table: per
+  `upstreamSkills` entry, its `plugin:skill` invocation, whether it can be
+  invoked, and its `SKILL.md` path under the plugin cache. Resolved at projection
+  time from the committed lockfile, so the paths are the same on CI as locally and
+  no session spends turns looking for where a skill lives.
+- Every procedure step carries a completion criterion (`→ Done when:`), so a step
+  ends on a checkable condition rather than on the agent's sense of being
+  finished.
+- A `## Gotchas` section per workflow, holding the environment facts that defy
+  reasonable assumptions — `claude plugin tag` being the only check on the version
+  set, `supermemory add` returning `queued` before anything is stored, file mtimes
+  not being a staleness signal.
+- `firehorse-setup` and `install.sh` verify `codebase-memory-mcp` is registered.
+  It is a standalone server rather than a marketplace plugin, so `plugin.json`
+  `dependencies` cannot express it and this check is what confirms it is there.
+  The server installs the `codebase-memory` skill, so one check covers both. The
+  install is not guessed at.
+- The Superset headers helper ships as
+  `skills/firehorse-setup/superset-mcp-headers.mjs` instead of being inlined in
+  the skill body for the agent to retype. `install.sh` keeps its own heredoc copy
+  because it runs through `curl | bash`; a test fails if the two drift.
+
+### Changed
+
+- `/firehorse:build`, `/firehorse:fix-bug`, and `/firehorse:index` declare
+  `mcp:codebase-memory-mcp` as **required** rather than optional, and their graph
+  steps say what the graph is for — architecture
+  and impact before touching a file. Absence is reported in the first line of the
+  report and every result from the grep fallback is treated as incomplete.
+  `/firehorse:ship` uses `trace_path` so a review covers the call sites a change
+  reaches rather than the files it touches.
+- `/firehorse:map` reads `.firehorse/manifest.json` instead of re-probing the repo
+  on every invocation. `/firehorse:new-project` records `anchors.context`,
+  `anchors.agents`, `anchors.design`, and `anchors.adr` once; `/firehorse:index`
+  keeps them current; the Notes block resolves from those fields and from
+  `index.graph` / `index.supermemory`.
+- Docs and definitions spell Firehorse commands as `/firehorse:<id>` and upstream
+  skills as `plugin:skill`, so a bare `/code-review` no longer reads ambiguously
+  against the built-in command of the same name.
+- Safety gates lead with the behaviour to take rather than the one to avoid, since
+  a prohibition makes the forbidden behaviour more available, not less.
+- Reference material consulted once moved out of the procedures into its own
+  sections: `map`'s Notes-block template and resolution rules, `ship`'s gate
+  command set and version sites, `index`'s freshness rule,
+  `upstreams-check`'s breaking-versus-advisory classification, `new-project`'s
+  manifest shape.
+- `firehorse-recall`'s description lists the four situations that should trigger
+  it instead of describing its own search procedure.
+- `upstreams.lock.json` is at schema version 2. A baseline recorded under an older
+  version is reported as a baseline to regenerate with `--write`, never read as
+  drift.
+- The `definitions` CLI tests allow 30s, since each spawns a `tsx` subprocess and
+  ran past vitest's 5s default whenever the rest of the suite competed for CPU.
+
+### Removed
+
+- `## Projection Notes` no longer ships in the generated mirrors. It tells the
+  person editing the definition how projection works, and told the running agent
+  nothing the generated DO-NOT-EDIT banner did not already say. The section stays
+  required in the definitions; `stripAuthoringOnlySections` drops it at projection
+  time.
 ## v0.5.0 — 2026-09-11
 
 ### Added
