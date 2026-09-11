@@ -30,7 +30,6 @@
       "marketplace": "supermemory-plugins"
     }
   ],
-  "hooks": "./hooks/hooks.json",
   "skills": [
     "./skills/firehorse-setup",
     "./skills/firehorse/firehorse-recall"
