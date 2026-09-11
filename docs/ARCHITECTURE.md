@@ -31,7 +31,7 @@ vendor SDKs directly.
 
 Canonical Firehorse-authored definitions live under
 `packages/firehorse-core/definitions/`, organized by definition kind:
-`workflows/`, `skills/`, and `agent-roles/`. Each definition is a Markdown file
+`workflows/`, `skills/`, and `agents/`. Each definition is a Markdown file
 with frontmatter, so schema version, identity, projection metadata, and
 references stay machine-readable while the structured Markdown body carries
 instruction-heavy workflow and role guidance. Every definition declares a
@@ -51,21 +51,25 @@ native projections are enforced before any runtime exists. `gray-matter` and
 `zod` are normal `firehorse-core` dependencies because the parser/validator are
 exported core APIs. These are shared authoring source files,
 validation helpers, and build-time projection helpers, not execution code.
-Distribution packages receive checked-in generated mirrors with provenance in
-both frontmatter and an obvious HTML comment, pointing back to the source
-definition ID, path, and SHA-256 source content hash. Generated mirrors contain fully
+Distribution packages receive checked-in generated mirrors with provenance
+pointing back to the source definition ID, path, and SHA-256 source content
+hash. Workflow and skill mirrors carry provenance in frontmatter plus an
+obvious HTML comment. Agent Role mirrors carry compact frontmatter-only
+provenance so the role prompt stays provider-native. Generated mirrors contain fully
 rendered instructions so provider installs are self-contained; they include
 structured references and instructions for supporting skills, agent roles, and
 upstream skills rather than inlining every supporting body. Generated mirrors are
 not hand-editable and must be changed by editing the canonical definition.
-Generated native resource names use the `horse-<id>` prefix while canonical IDs
-remain unprefixed. Generated files live under provider-native `firehorse/`
-folders, such as `packages/firehorse-pi/prompts/firehorse/horse-*.md`,
+Generated workflow and skill resource names use the `horse-<id>` prefix while
+canonical IDs remain unprefixed. Generated workflow and skill files live under
+provider-native `firehorse/` folders, such as
+`packages/firehorse-pi/prompts/firehorse/horse-*.md`,
 `packages/firehorse-claude/commands/firehorse/horse-*.md`,
-`packages/firehorse-pi/skills/firehorse/<id>/SKILL.md`,
-`packages/firehorse-claude/skills/firehorse/<id>/SKILL.md`,
-`packages/firehorse-pi/agents/firehorse/horse-*.md` sync artifacts, and
-`packages/firehorse-claude/agents/firehorse/horse-*.md`. The repository exposes
+`packages/firehorse-pi/skills/firehorse/<id>/SKILL.md`, and
+`packages/firehorse-claude/skills/firehorse/<id>/SKILL.md`. Agent Role
+projections use plain provider-native names at top-level agent paths, such as
+`packages/firehorse-pi/agents/<id>.md` sync artifacts and
+`packages/firehorse-claude/agents/<id>.md`. The repository exposes
 `definitions:write` to update mirrors/manifests and `definitions:check` to fail
 when generated output is stale. Write mode removes stale generated mirrors when
 their provenance is valid and the canonical source no longer exists; check mode
@@ -86,12 +90,12 @@ gates, procedure, and projection notes. Generated mirrors preserve
 canonical Markdown headings where possible, wrapped only with provider-specific
 frontmatter and provenance. Workflow invocation metadata, such as argument hints
 for generated Pi prompt templates and Claude commands, lives in workflow
-frontmatter rather than being inferred from prose. The first canonical workflow
-fixture is `diagnose-fix`; it accepts a freeform bug description, references the
+frontmatter rather than being inferred from prose. The first canonical bug-fix workflow
+fixture is `fix-bug`; it accepts a freeform bug description, references the
 upstream `mattpocock-skills` `diagnose` skill, uses the Firehorse-authored
-`feedback-loop` skill and `diagnostic-reviewer` Agent Role, and may patch only
-when the scope is clear and a regression loop exists. Firehorse-authored skills use a
-reusable instruction contract: purpose, usage, inputs, outputs, instructions,
+`feedback-loop` and `verification-contract` skills plus the `reviewer` Agent
+Role, and may patch only when the scope is clear and a regression loop exists. Firehorse-authored skills use a reusable instruction contract: purpose,
+usage, inputs, outputs, instructions,
 boundaries, examples, and projection notes. Agent roles use a role
 contract: mission, responsibilities, inputs, outputs, tools and permissions,
 decision authority, escalation rules, collaboration protocol, boundaries, and
@@ -189,8 +193,9 @@ override manifest for built-in `pi-subagents` roles. Because `pi-subagents`
 discovers agent files from builtin/user/project agent directories rather than Pi
 package manifests, generated Firehorse Agent Role mirrors are synced explicitly
 by `firehorse-setup` into the user's Pi agent directory, e.g.
-`~/.pi/agent/agents/horse-*.md`. A small session-start extension applies missing
-defaults to user settings so code-oriented subagents can use the bundled
+`~/.pi/agent/agents/<id>.md` using plain provider-native names such as
+`worker.md`, `reviewer.md`, and `plan-reviewer.md`. A small session-start
+extension applies missing defaults to user settings so code-oriented subagents can use the bundled
 `pi-lens`, the Pi-native `memory_recall` tool from `pi-agent-memory`, and
 context-mode processing tools where useful without each user configuring those
 allowlists by hand. The bundled `shadcn` skill is exposed for shadcn/ui tasks
@@ -263,57 +268,25 @@ and runtime conventions.
 
 ## Per-project setup
 
-Both distributions will expose `horse-new-project` through generated provider-
-native mirrors once the Firehorse Definition Format projection generator exists.
-It is the Firehorse counterpart to `fh:new-project`. It does not initialize GSD,
-`.planning/`, or observability scaffolding. Instead, it runs a lightweight
-product/business discovery interview, creates or syncs durable project anchors
-under `docs/`, and updates a marked section in cross-provider `AGENTS.md` when
-needed.
-
-The target anchor set is `docs/PROJECT.md`, `docs/DESIGN.md`, and
-`docs/codebase/{ARCHITECTURE,STRUCTURE,CONVENTIONS,TESTING,INTEGRATIONS,CONCERNS}.md`.
-`docs/PROJECT.md` uses long-lived product anchor sections: vision, target users,
-problem, value proposition, success criteria, constraints, and open questions.
-Product anchors can exist before code. `docs/PROJECT.md` is the periodically
-updated high-level picture that future PRDs reference rather than duplicate.
-`docs/DESIGN.md` is created only when brand/design language is actually defined.
-Codebase anchors are split by topic, include source commit/hash and timestamp
-freshness metadata, and are created only when an actual codebase exists or after
-starter setup runs.
-Brownfield mode analyzes existing code before asking questions and fills missing
-codebase anchors. Brand definition is optional; users can invoke the bundled
-Impeccable skill during setup or defer it. When the stack uses shadcn/ui and the
-flow defines `docs/DESIGN.md`, `new-project` derives a shadcn preset from that
-design direction and initializes/applies it through the shadcn CLI before UI
-component implementation.
-
-The setup flow explains technical options in non-technical language. With
-explicit user opt-in, and with confirmation before each external mutation, it may
-run starter app, hosting, database/auth, and dependency setup automation, but it
-never performs Sentry/observability setup. If the user is not ready to scaffold
-code, it can stop after product discovery and project anchors, then recommend
-deeper requirements grilling before GitHub issues are drafted. Before issue drafting, the workflow runs the bundled `setup-matt-pocock-skills`
-setup behavior so issue tracker, triage labels, and domain-doc expectations are
-recorded for `to-prd` / `to-issues`. Issue drafting references the bundled
-`to-prd` / `to-issues` behavior rather than copying their full templates:
-synthesize PRD-level context, break work into tracer-bullet vertical slices,
-include setup/infrastructure and product slices, write local drafts under zero-
-padded paths such as `docs/prds/prd-0001-{slug}.md` and
-`docs/issues/issue-0001-{slug}.md`, ask approval, then create issues with labels
-and an `MVP` milestone. Drafts are retained after publishing and updated with
-GitHub issue links. GitHub CLI authentication is required before approved issues are
-created, but missing `gh` must not block writing the project anchors or local
-drafts. Starter repos default to private GitHub repos from
-`cinjoff/fh-starter-project`; existing repository content is preserved and
-overlaid onto the starter rather than discarded. In existing repos, the starter
-is copied from a temporary checkout, non-conflicting files are copied by default,
-and conflicts are reported for approval before any replacement. After starter setup creates
-code, the workflow runs codebase mapping so docs reflect the resulting codebase.
-Technical choices use fixed, non-technical explanations in the workflow. The
-future canonical workflow ID is `new-project`; `horse-new-project` is the
-provider-native invocation name that follows Firehorse's generated-resource name
+Both distributions expose `horse-new-project` through generated provider-native
+mirrors. The canonical workflow ID is `new-project`; `horse-new-project` is the
+provider-native invocation name that follows Firehorse's generated workflow-name
 prefix convention.
+
+Current `new-project` scope is GitHub-backed project setup, not product
+discovery or application scaffolding. It creates or configures a repository,
+creates or reuses a repository-named Tracker Project, verifies Tracker Status
+options, installs the Matt Pocock issue-tracker label vocabulary, writes the
+non-secret `.firehorse/manifest.json`, and records setup gaps when GitHub
+Project automation or permissions are unavailable.
+
+The setup runtime remains intentionally narrow. Session-start validation reads
+`.firehorse/manifest.json` only when Firehorse project markers exist, stays cheap
+and read-only by default, and is silent when healthy. Mutations require explicit
+workflow invocation, `firehorse-setup`, or user-approved apply steps. Product
+planning remains in `create-plan` Planning Workspaces under `docs/prds/`, and
+codebase maps belong under `docs/codebase/` when current codebase-facing anchors
+are actually produced.
 
 ## What is intentionally not here
 
@@ -325,8 +298,8 @@ prefix convention.
 - No CLI. The framework is a library first.
 - No persistence, no caching, no telemetry.
 - No hand-authored firehorse command/agent/prompt runtime. Firehorse-authored
-  definitions may produce checked-in generated mirrors during Phase 2, but
-  current distribution content is static upstream mirrors, curated Pi package
-  re-exports, and non-blocking update-check hooks.
+  definitions produce checked-in generated mirrors through `definitions:write`,
+  while distribution packages continue to own their provider-native setup,
+  update-check hooks, and bundled upstream surfaces.
 
-These are deferred until the skill model is decided.
+These remain deferred until they are explicitly scoped.

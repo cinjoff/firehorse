@@ -29,7 +29,7 @@ describe("definitions repository scripts", () => {
     const writeResult = await runDefinitions(fixture, "--write");
     expect(writeResult.exitCode).toBe(0);
 
-    const generatedPath = "packages/firehorse-pi/prompts/firehorse/horse-diagnose-fix.md";
+    const generatedPath = "packages/firehorse-pi/prompts/firehorse/horse-fix-bug.md";
     const absoluteGeneratedPath = nodePath.join(fixture, generatedPath);
     const generatedContent = await readFile(absoluteGeneratedPath, "utf8");
     const staleContent = generatedContent.replace(
@@ -50,7 +50,7 @@ describe("definitions repository scripts", () => {
     const writeResult = await runDefinitions(fixture, "--write");
     expect(writeResult.exitCode).toBe(0);
 
-    const generatedPath = "packages/firehorse-claude/commands/firehorse/horse-diagnose-fix.md";
+    const generatedPath = "packages/firehorse-claude/commands/firehorse/horse-fix-bug.md";
     const absoluteGeneratedPath = nodePath.join(fixture, generatedPath);
     await rm(absoluteGeneratedPath);
 
@@ -82,13 +82,24 @@ describe("definitions repository scripts", () => {
         skills: [
           "./packages/firehorse-pi/skills/firehorse/alpha-loop",
           "./packages/firehorse-pi/skills/firehorse/feedback-loop",
+          "./packages/firehorse-pi/skills/firehorse/verification-contract",
         ],
       },
     });
     await expect(
+      readJson(nodePath.join(fixture, "packages/firehorse-pi/package.json")),
+    ).resolves.toMatchObject({
+      files: ["extensions", "skills", "prompts", "themes", "agents"],
+    });
+    await expect(
       readJson(nodePath.join(fixture, "packages/firehorse-claude/.claude-plugin/plugin.json")),
     ).resolves.toMatchObject({
-      skills: ["./skills/firehorse/alpha-loop", "./skills/firehorse/feedback-loop"],
+      skills: [
+        "./skills/firehorse/alpha-loop",
+        "./skills/firehorse/feedback-loop",
+        "./skills/firehorse/verification-contract",
+      ],
+      agents: ["./agents/plan-reviewer.md", "./agents/reviewer.md", "./agents/worker.md"],
     });
   });
 
@@ -118,10 +129,24 @@ describe("definitions repository scripts", () => {
     expect(commandOutput(repairResult)).toContain("updated manifest package.json");
     await expect(readJson(manifestPath)).resolves.toMatchObject({
       pi: {
-        skills: ["./packages/firehorse-pi/skills/firehorse/feedback-loop"],
+        skills: [
+          "./packages/firehorse-pi/skills/firehorse/feedback-loop",
+          "./packages/firehorse-pi/skills/firehorse/verification-contract",
+        ],
         prompts: [
-          "./packages/firehorse-pi/prompts/firehorse/horse-diagnose-fix.md",
+          "./packages/firehorse-pi/prompts/firehorse/build.md",
+          "./packages/firehorse-pi/prompts/firehorse/fix.md",
+          "./packages/firehorse-pi/prompts/firehorse/horse-build.md",
+          "./packages/firehorse-pi/prompts/firehorse/horse-create-plan.md",
+          "./packages/firehorse-pi/prompts/firehorse/horse-fix-bug.md",
+          "./packages/firehorse-pi/prompts/firehorse/horse-new-project.md",
+          "./packages/firehorse-pi/prompts/firehorse/horse-plan-review.md",
+          "./packages/firehorse-pi/prompts/firehorse/horse-review-code.md",
+          "./packages/firehorse-pi/prompts/firehorse/horse-ship.md",
           "./packages/firehorse-pi/prompts/firehorse/horse-update-upstreams.md",
+          "./packages/firehorse-pi/prompts/firehorse/plan-review.md",
+          "./packages/firehorse-pi/prompts/firehorse/plan-work.md",
+          "./packages/firehorse-pi/prompts/firehorse/review.md",
         ],
       },
     });
@@ -154,7 +179,7 @@ describe("definitions repository scripts", () => {
 
     const sourcePath = nodePath.join(
       fixture,
-      "packages/firehorse-pi/prompts/firehorse/horse-diagnose-fix.md",
+      "packages/firehorse-pi/prompts/firehorse/horse-fix-bug.md",
     );
     const stalePath = nodePath.join(
       fixture,
@@ -167,6 +192,34 @@ describe("definitions repository scripts", () => {
     expect(repairResult.exitCode).toBe(0);
     expect(commandOutput(repairResult)).toContain(
       "removed stale generated mirror packages/firehorse-pi/prompts/firehorse/horse-old-workflow.md",
+    );
+    await expect(fileExists(stalePath)).resolves.toBe(false);
+  });
+
+  it("reports and removes stale provenanced agent-role mirrors under agents/firehorse", async () => {
+    const fixture = await createDefinitionsFixture();
+    const writeResult = await runDefinitions(fixture, "--write");
+    expect(writeResult.exitCode).toBe(0);
+
+    const sourcePath = nodePath.join(fixture, "packages/firehorse-claude/agents/reviewer.md");
+    const staleRelativePath = "packages/firehorse-claude/agents/firehorse/reviewer.md";
+    const stalePath = nodePath.join(fixture, staleRelativePath);
+    await mkdir(nodePath.dirname(stalePath), { recursive: true });
+    await writeFile(stalePath, await readFile(sourcePath, "utf8"));
+
+    const checkResult = await runDefinitions(fixture, "--check");
+
+    expect(checkResult.exitCode).toBe(1);
+    expect(commandOutput(checkResult)).toContain(
+      `stale generated mirror should be removed: ${staleRelativePath}`,
+    );
+    await expect(fileExists(stalePath)).resolves.toBe(true);
+
+    const repairResult = await runDefinitions(fixture, "--write");
+
+    expect(repairResult.exitCode).toBe(0);
+    expect(commandOutput(repairResult)).toContain(
+      `removed stale generated mirror ${staleRelativePath}`,
     );
     await expect(fileExists(stalePath)).resolves.toBe(false);
   });
@@ -207,7 +260,13 @@ async function createDefinitionsFixture(): Promise<string> {
     nodePath.join(fixture, "packages/firehorse-core/upstreams/mattpocock-skills/UPSTREAM.json"),
     {
       name: "mattpocock-skills",
-      skills: [{ name: "diagnose" }],
+      skills: [
+        { name: "diagnose" },
+        { name: "grill-with-docs" },
+        { name: "tdd" },
+        { name: "to-issues" },
+        { name: "to-prd" },
+      ],
     },
   );
 

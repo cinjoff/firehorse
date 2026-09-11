@@ -1,6 +1,6 @@
 # firehorse
 
-Core library for the firehorse cross-provider agentic skills framework.
+Core library for the firehorse cross-provider agent workflow framework.
 
 This is the **library** — provider and orchestrator adapters that other code
 (the Pi package, the Claude plugin, custom integrations) builds on. It also

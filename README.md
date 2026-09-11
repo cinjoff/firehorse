@@ -90,10 +90,12 @@ loader, slash-command runtime, or provider API transport yet.
 ## Definition authoring
 
 Canonical Firehorse-authored definitions live in
-`packages/firehorse-core/definitions/{workflows,skills,agent-roles}/` and are
-Markdown files with schema-versioned frontmatter. See
-`docs/FIREHORSE-DEFINITION-FORMAT.md` for the v1 contract and complete examples
-for `diagnose-fix`, `feedback-loop`, and `diagnostic-reviewer`.
+`packages/firehorse-core/definitions/{workflows,skills,agents}/` and are
+Markdown files with schema-versioned frontmatter. The durable architecture
+summary is in `docs/ARCHITECTURE.md`; the detailed PRD-0001 v1 contract appendix
+lives at
+`docs/prds/prd-0001-firehorse-definition-format-and-projection/FIREHORSE-DEFINITION-FORMAT.md`
+with complete examples for `fix-bug`, `feedback-loop`, and `reviewer`.
 
 ```sh
 pnpm definitions:write  # regenerate checked-in Pi/Claude mirrors + manifests
@@ -489,7 +491,7 @@ For future releases, use the repo-local release skill:
 ## Further reading
 
 - [Architecture](./docs/ARCHITECTURE.md)
-- [Workflow map](./docs/WORKFLOW-MAP.md)
+- [PRD-0001 workflow map context](./docs/prds/prd-0001-firehorse-definition-format-and-projection/context/WORKFLOW-MAP.md)
 - [Upstream skills and agents](./docs/UPSTREAM-SKILLS.md)
 - [Pi distribution README](./packages/firehorse-pi/README.md)
 - [Claude plugin README](./packages/firehorse-claude/README.md)

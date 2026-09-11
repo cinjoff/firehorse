@@ -47,7 +47,7 @@
     "@modelcontextprotocol/sdk": "1.29.0",
     "beautiful-mermaid": "1.1.3",
     "claude-mem": "13.2.0",
-    "context-mode": "1.0.135",
+    "context-mode": "1.0.146",
     "jiti": "2.7.0",
     "mermaid": "11.15.0",
     "minimatch": "10.2.5",
@@ -114,13 +114,25 @@
       "./skills/mattpocock/productivity/write-a-skill",
       "./skills/shadcn-ui/shadcn",
       "./skills/pbakaus/impeccable",
-      "./skills/firehorse/feedback-loop"
+      "./skills/firehorse/feedback-loop",
+      "./skills/firehorse/verification-contract"
     ],
     "prompts": [
       "./prompts",
       "./node_modules/pi-subagents/prompts",
-      "./prompts/firehorse/horse-diagnose-fix.md",
-      "./prompts/firehorse/horse-update-upstreams.md"
+      "./prompts/firehorse/build.md",
+      "./prompts/firehorse/fix.md",
+      "./prompts/firehorse/horse-build.md",
+      "./prompts/firehorse/horse-create-plan.md",
+      "./prompts/firehorse/horse-fix-bug.md",
+      "./prompts/firehorse/horse-new-project.md",
+      "./prompts/firehorse/horse-plan-review.md",
+      "./prompts/firehorse/horse-review-code.md",
+      "./prompts/firehorse/horse-ship.md",
+      "./prompts/firehorse/horse-update-upstreams.md",
+      "./prompts/firehorse/plan-review.md",
+      "./prompts/firehorse/plan-work.md",
+      "./prompts/firehorse/review.md"
     ],
     "themes": [
       "./themes"
@@ -243,7 +255,7 @@
       ],
       "bundledPiPackages": {
         "claude-mem": "13.2.0",
-        "context-mode": "1.0.135",
+        "context-mode": "1.0.146",
         "pi-lens": "3.8.44",
         "pi-mcp-adapter": "2.6.1",
         "pi-mermaid": "0.3.0",

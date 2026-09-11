@@ -14,11 +14,15 @@ mutate package registries unless the user explicitly asks.
 ## Required workflow
 
 1. **Load release context**
-   - Read `AGENTS.md`, `.planning/STATE.md`, `.planning/ROADMAP.md`,
-     `.planning/REQUIREMENTS.md`, `.planning/DECISIONS.md`,
-     `docs/ARCHITECTURE.md`, `docs/UPSTREAM-SKILLS.md`, root `README.md`, and
-     package manifests.
-   - Check `git status --short`, current branch, latest tags, and `gh auth status`.
+   - Read `AGENTS.md`, `CLAUDE.md`, `CONTEXT.md`, `docs/PROJECT.md`,
+     `docs/DECISIONS.md`, `docs/ARCHITECTURE.md`, `docs/UPSTREAM-SKILLS.md`,
+     root `README.md`, and package manifests.
+   - If Definition Format examples/projection contracts changed, also read
+     `docs/prds/prd-0001-firehorse-definition-format-and-projection/FIREHORSE-DEFINITION-FORMAT.md`.
+   - If release notes need historical workflow-grouping context, also read
+     `docs/prds/prd-0001-firehorse-definition-format-and-projection/context/WORKFLOW-MAP.md`.
+   - Check `git status --short`, current branch, latest tags, `gh auth status`,
+     and relevant GitHub issues/milestones/projects for release scope.
 
 2. **Check upstream freshness first**
    - Run `pnpm upstreams:check` before editing release docs.

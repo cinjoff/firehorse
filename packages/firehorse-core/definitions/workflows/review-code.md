@@ -1,0 +1,98 @@
+---
+schemaVersion: 1
+id: review-code
+kind: workflow
+title: Review Code
+description: Review a diff, issue-sized change, or holistic workstream against Verification Contracts and quality gates without patching by default.
+argumentHint: "[diff summary | issue URL | branch | Planning Workspace path | review focus]"
+nativeAliases:
+  - review
+requires:
+  tools:
+    - read
+  environment:
+    - filesystem
+    - git
+optional:
+  tools:
+    - grep
+    - find
+    - ls
+    - bash
+    - edit
+    - write
+  orchestration:
+    - subagents
+    - parallel-agents
+    - review-gates
+  environment:
+    - github
+    - pnpm
+supportingSkills:
+  - id: verification-contract
+agentRoles:
+  - id: reviewer
+---
+
+# Review Code
+
+## Purpose
+
+Use this workflow to review a diff, issue-sized change, or holistic workstream against its Verification Contract, acceptance criteria, and project quality gates. It supports issue-scoped and holistic review inputs and reviews without patching by default.
+
+## Usage
+
+Invoke the generated provider command as `horse-review-code` with a diff summary, branch, issue URL, Planning Workspace path, review artifact path, or freeform review request. The workflow may review one issue-sized change, a specific diff, or a broader holistic workstream, but it must clearly state the chosen scope before producing findings.
+
+## Inputs
+
+- `$ARGUMENTS`: the diff, branch, issue, Planning Workspace path, review focus, or freeform review request supplied by the user.
+- The applicable Verification Contract, acceptance criteria, issue draft, Published Issue, or PRD section.
+- Implementation evidence such as files changed, tests run, generated artifacts, build output, and skipped checks.
+- Relevant project guidance from `AGENTS.md`, domain docs, decisions, architecture docs, package manifests, and generated-file provenance.
+
+## Outputs
+
+- A code review report with blocking findings, non-blocking findings, evidence, and recommended next actions.
+- Findings grouped by requested focus or by reviewer focus when useful.
+- A statement of review scope: issue-scoped, diff-scoped, or holistic.
+- Evidence references such as file paths, commands, artifact paths, issue links, or quoted acceptance criteria.
+- Durable review artifact guidance when a Planning Workspace is available.
+
+## Supporting Capabilities
+
+- Firehorse skill reference: `verification-contract` for expected behaviors, required artifacts, acceptance checks, and dependencies.
+- Agent role reference: `reviewer` for correctness, Verification Contract coverage, architecture, maintainability, tests, docs, generated artifacts, and evidence.
+- Required capabilities: read-only file inspection, git-aware diff review, and project-context inspection.
+- Optional capabilities: local validation commands, provider-native parallel review focuses, GitHub issue context, and write tools only when the user explicitly asks for mutation.
+
+## Orchestration Intent
+
+Keep the canonical workflow provider-neutral and review-first. First identify the review scope and Verification Contract, then inspect the diff and evidence, then apply reviewer focuses, then return findings. If provider-native subagents are available, the parent agent may run separate review focuses in parallel through the `reviewer` role and merge the results. If delegation is unavailable, perform the same focuses in one agent session and state that the review was single-pass.
+
+## Safety Gates
+
+- Review without patching by default. Mutation requires explicit user direction before any edit or write.
+- Do not approve a change only because tests pass; map evidence back to the Verification Contract and acceptance criteria.
+- Do not expand an issue-scoped review into a holistic review without saying so and explaining why.
+- Do not treat missing evidence as passing evidence. Report unavailable commands, credentials, or artifacts honestly.
+- Do not hand-edit generated mirrors when the correct fix is to update canonical definitions and regenerate.
+- Do not make provider-specific choreography part of the canonical workflow. Keep provider-specific orchestration in projection notes or provider mirrors.
+- Do not add a Firehorse runtime, prompt loader, provider transport, slash-command runtime, hook, or autonomous execution engine.
+
+## Procedure
+
+1. Read `$ARGUMENTS` and identify the requested review target: diff, branch, issue-sized change, Published Issue, Planning Workspace, review artifact, or holistic workstream.
+2. State the review scope and whether it is issue-scoped, diff-scoped, or holistic. Ask before broadening scope when the requested target is unclear.
+3. Gather the applicable Verification Contract, acceptance criteria, implementation evidence, changed files, and project guidance.
+4. Inspect the diff or workstream read-only before forming findings. Prefer exact file paths, generated provenance, and command evidence over broad impressions.
+5. Apply reviewer focuses: correctness, Verification Contract coverage, architecture, maintainability, tests, docs, generated artifacts, and evidence.
+6. Separate blocking findings from non-blocking findings. Keep each finding tied to evidence or an explicitly missing artifact.
+7. Recommend next actions: proceed, revise, regenerate, add evidence, split scope, ask for product decision, or request explicit mutation approval.
+8. If a Planning Workspace is available, write or recommend preserving the review report under its review artifacts; otherwise include a concise durable report in the final response.
+9. If the user asks for fixes after review, restate the requested mutation scope before editing and keep the review evidence separate from implementation evidence.
+10. Finalize with review scope, blocking findings, non-blocking findings, evidence, recommended next actions, skipped checks, and residual risks.
+
+## Projection Notes
+
+Workflow projections are static provider-native mirrors: Pi prompt templates and Claude commands named `horse-review-code`. They contain rendered instructions and structured references, but they do not create a runtime execution graph. Provider-specific implementations may use separate reviewer focus passes or parallel agents when available, but the canonical definition remains review-only and no-patch by default.

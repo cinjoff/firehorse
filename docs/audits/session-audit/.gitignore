@@ -1,0 +1,5 @@
+# Session Audit reports are local review artifacts by default.
+# They may contain private paths, project names, workflow behavior, or redacted evidence.
+*.md
+*.json
+!.gitignore

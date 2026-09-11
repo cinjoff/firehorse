@@ -8,7 +8,7 @@
 
 - Added Firehorse Definition Format v1 parser, validator, build-time projections,
   generated mirror freshness checks, and repository-script regression tests.
-- Added generated `horse-diagnose-fix` and `horse-update-upstreams` workflow
+- Added generated `horse-fix-bug` and `horse-update-upstreams` workflow
   prompts/commands for Pi and Claude.
 - Added pinned `claude-mem` upstream metadata, exposed the upstream Claude
   plugin as a Firehorse marketplace dependency, and bundled the `claude-mem` npm

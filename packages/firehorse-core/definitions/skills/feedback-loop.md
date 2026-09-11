@@ -32,7 +32,7 @@ Use this skill to turn vague confidence into an explicit feedback loop. A loop h
 
 ## Usage
 
-Load this skill when a workflow asks for a regression loop, reproduction loop, validation command, or before/after evidence. It is especially useful inside `diagnose-fix`, but it is intentionally reusable for build and review workflows.
+Load this skill when a workflow asks for a regression loop, reproduction loop, validation command, or before/after evidence. It is especially useful inside `fix-bug`, but it is intentionally reusable for build and review workflows.
 
 ## Inputs
 

@@ -1,56 +1,35 @@
 # CLAUDE.md
 
-Claude-specific guidance for firehorse. The canonical agent contract lives in
-[`AGENTS.md`](./AGENTS.md) — read that first. This file only captures things
-that are genuinely Claude-flavored.
+Claude-specific guidance for firehorse. The canonical cross-provider agent
+contract lives in [`AGENTS.md`](./AGENTS.md); read that first and treat this file
+as Claude-only addenda.
 
-## Project
+## Claude plugin surface
 
-- **firehorse** — lightweight, cross-provider agentic skills framework.
-- pnpm monorepo, TypeScript, ESM-first, Node 20+.
-- Status: scaffolding only.
+- `packages/firehorse-claude/` is the Claude Code plugin package.
+- Its manifest is `packages/firehorse-claude/.claude-plugin/plugin.json`.
+- Claude-native generated mirrors live under that package's `commands/`,
+  `agents/`, and `skills/` directories.
+- The repo-level `.claude-plugin/marketplace.json` exposes the marketplace entry
+  so users can `/plugin marketplace add cinjoff/firehorse`.
 
-## Packages
+## Claude-specific boundaries
 
-- `packages/firehorse-core` — TS core library (`firehorse`).
-- `packages/firehorse-pi` — Pi.dev distribution (`firehorse-pi`).
-- `packages/firehorse-claude` — **this is the Claude plugin**. Manifest at
-  `.claude-plugin/plugin.json`; commands/, agents/, skills/, hooks/ dirs.
+- Keep Claude plugin behavior in `packages/firehorse-claude/`; do not put
+  Claude-specific commands, agents, skills, hooks, or plugin metadata in
+  `firehorse-core`.
+- Firehorse-authored Claude commands/agents/skills are generated mirrors from
+  canonical definitions in `packages/firehorse-core/definitions/`. Do not
+  hand-edit generated mirrors.
+- Runtime-heavy upstreams such as `claude-mem` stay as plugin dependencies or
+  upstream mirrors rather than becoming Firehorse runtime code.
 
-The repo-level `.claude-plugin/marketplace.json` exposes the plugin so users
-can `/plugin marketplace add cinjoff/firehorse`.
+## Context and tracking
 
-## Stack
+Use the project context and tracking rules in `AGENTS.md`: durable context lives
+in `CONTEXT.md`, `docs/PROJECT.md`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`,
+and relevant `docs/prds/` Planning Workspaces; roadmap/state/requirements live in
+GitHub Issues/Projects. Do not recreate `.planning/`.
 
-- **Build:** `pnpm build` (per-package tsup).
-- **Typecheck:** `pnpm typecheck`.
-- **Test:** `pnpm test` (vitest, no tests yet).
-
-## Architecture
-
-- `packages/firehorse-core/src/providers/` — provider adapters (Claude, Codex,
-  Pi). Add new providers by implementing `Provider` from `provider.ts`.
-- `packages/firehorse-core/src/orchestrators/` — orchestrator adapters
-  (Superset, Conductor, tmux, terminal). Detection via env vars only; no side
-  effects.
-- `packages/firehorse-core/src/types.ts` — shared types.
-
-See `docs/ARCHITECTURE.md` for design rationale.
-
-## Conventions
-
-- No default exports. Named exports only.
-- Adapter classes extend `BaseProvider` / `BaseOrchestrator`.
-- Provider-specific quirks stay inside the provider adapter or the matching
-  distribution package.
-- Claude-adapted commands, agents, skills, and hooks live in
-  `packages/firehorse-claude/` — **never** in `firehorse-core`.
-
-## Planning refs
-
-- **Start here:** `.planning/STATE.md` (current position), then
-  `.planning/ROADMAP.md` (phases), `.planning/REQUIREMENTS.md` (work items),
-  `.planning/DECISIONS.md` (binding decisions — don't relitigate),
-  `.planning/PROJECT.md` (vision and scope).
-- `.pi/gsd/` is reference material from the prior fhhs-skills work. Treat as
-  read-only — migration is out of scope until explicitly planned.
+`.pi/gsd/` remains read-only reference material from prior fhhs-skills work until
+migration is explicitly scoped.

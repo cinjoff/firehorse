@@ -1,8 +1,7 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
-import { homedir, platform } from "node:os";
-import { dirname, join, parse, resolve, sep } from "node:path";
+import { dirname, join, parse, resolve } from "node:path";
 
-const DEFAULT_MEMORY_ENV_FILE = join(homedir(), ".config", "firehorse", "memory.env");
+const MANIFEST_RELATIVE_PATH = ".firehorse/manifest.json";
 const PROJECT_ENV_KEYS = ["FIREHORSE_PROJECT_NAME", "CLAUDE_MEM_PROJECT", "PI_MEM_PROJECT"];
 
 type NotifyType = "info" | "success" | "warning" | "error";
@@ -23,6 +22,11 @@ interface ApplyResult {
   source: string;
 }
 
+interface ManifestProjectResult {
+  projectName: string;
+  source: string;
+}
+
 function isTruthy(value: string | undefined): boolean {
   return value === "1" || value === "true" || value === "yes";
 }
@@ -31,59 +35,62 @@ function shouldSkip(): boolean {
   return isTruthy(process.env.FIREHORSE_SKIP_MEMORY_PROJECT);
 }
 
-function memoryEnvFile(): string {
-  return process.env.FIREHORSE_MEMORY_ENV_FILE || DEFAULT_MEMORY_ENV_FILE;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isSecureEnvFile(path: string): boolean {
-  if (platform() === "win32") return true;
-
-  const mode = statSync(path).mode & 0o777;
-  return (mode & 0o077) === 0;
-}
-
-function parseEnvLine(line: string): [string, string] | undefined {
-  const trimmed = line.trim();
-  if (!trimmed || trimmed.startsWith("#")) return undefined;
-
-  const index = trimmed.indexOf("=");
-  if (index <= 0) return undefined;
-
-  const key = trimmed.slice(0, index).trim();
-  let value = trimmed.slice(index + 1).trim();
-  if (
-    (value.startsWith('"') && value.endsWith('"')) ||
-    (value.startsWith("'") && value.endsWith("'"))
-  ) {
-    value = value.slice(1, -1);
+function stringAt(value: Record<string, unknown>, path: readonly string[]): string | undefined {
+  let current: unknown = value;
+  for (const part of path) {
+    if (!isRecord(current)) return undefined;
+    current = current[part];
   }
-
-  return [key, value];
+  return typeof current === "string" && current.trim() ? current.trim() : undefined;
 }
 
-function loadMemoryEnv(): void {
-  const path = memoryEnvFile();
-  if (!existsSync(path) || !isSecureEnvFile(path)) return;
+function findManifest(start: string): string | undefined {
+  let current = resolve(start);
+  const root = parse(current).root;
 
-  for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
-    const entry = parseEnvLine(line);
-    if (!entry) continue;
-
-    const [key, value] = entry;
-    if (!PROJECT_ENV_KEYS.includes(key) || process.env[key]) continue;
-    process.env[key] = value;
+  while (true) {
+    const manifestPath = join(current, MANIFEST_RELATIVE_PATH);
+    if (existsSync(manifestPath)) return manifestPath;
+    if (current === root) return undefined;
+    current = dirname(current);
   }
 }
 
-function splitPath(path: string): string[] {
-  return resolve(path).split(sep).filter(Boolean);
-}
+function fromSetupManifest(cwd: string): ManifestProjectResult | undefined {
+  const manifestPath = findManifest(cwd);
+  if (!manifestPath) return undefined;
 
-function fromSupersetPath(cwd: string): string | undefined {
-  const parts = splitPath(cwd);
-  const index = parts.findIndex((part, i) => part === ".superset" && parts[i + 1] === "worktrees");
-  const project = index >= 0 ? parts[index + 2] : undefined;
-  return project && project.trim() ? project : undefined;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(manifestPath, "utf8"));
+  } catch {
+    return undefined;
+  }
+  if (!isRecord(parsed)) return undefined;
+
+  const explicitMemoryProject = stringAt(parsed, ["memory", "project"]);
+  if (explicitMemoryProject) {
+    return {
+      projectName: explicitMemoryProject,
+      source: `${MANIFEST_RELATIVE_PATH}:memory.project`,
+    };
+  }
+
+  const githubRepo = stringAt(parsed, ["github", "repo"]);
+  if (githubRepo) {
+    return { projectName: githubRepo, source: `${MANIFEST_RELATIVE_PATH}:github.repo` };
+  }
+
+  const projectName = stringAt(parsed, ["project", "name"]);
+  if (projectName) {
+    return { projectName, source: `${MANIFEST_RELATIVE_PATH}:project.name` };
+  }
+
+  return undefined;
 }
 
 function findGitMarker(start: string): string | undefined {
@@ -190,9 +197,9 @@ function fromGitHubRemote(cwd: string): { projectName: string; source: string } 
   return projectName ? { projectName, source: `github-remote:${selected.name}` } : undefined;
 }
 
-function canonicalProjectName(cwd: string): { projectName: string; source: string } | undefined {
-  const explicit = process.env.FIREHORSE_PROJECT_NAME?.trim();
-  if (explicit) return { projectName: explicit, source: "FIREHORSE_PROJECT_NAME" };
+function fromExplicitEnv(): { projectName: string; source: string } | undefined {
+  const firehorseProject = process.env.FIREHORSE_PROJECT_NAME?.trim();
+  if (firehorseProject) return { projectName: firehorseProject, source: "FIREHORSE_PROJECT_NAME" };
 
   const claudeMem = process.env.CLAUDE_MEM_PROJECT?.trim();
   if (claudeMem) return { projectName: claudeMem, source: "CLAUDE_MEM_PROJECT" };
@@ -200,24 +207,16 @@ function canonicalProjectName(cwd: string): { projectName: string; source: strin
   const piMem = process.env.PI_MEM_PROJECT?.trim();
   if (piMem) return { projectName: piMem, source: "PI_MEM_PROJECT" };
 
-  const githubProject = fromGitHubRemote(cwd);
-  if (githubProject) return githubProject;
-
-  const supersetProject = fromSupersetPath(cwd);
-  if (supersetProject)
-    return { projectName: supersetProject, source: "inferred-superset-worktree-path" };
-
-  // Do not infer from git parent/common-dir or cwd basename here. Conductor and
-  // Superset worktrees can be stored outside the canonical repository root, so
-  // setup should pass/persist the project id explicitly for all non-Superset
-  // layouts.
   return undefined;
+}
+
+function canonicalProjectName(cwd: string): { projectName: string; source: string } | undefined {
+  return fromSetupManifest(cwd) ?? fromGitHubRemote(cwd) ?? fromExplicitEnv();
 }
 
 function applyMemoryProject(cwd = process.cwd()): ApplyResult | undefined {
   if (shouldSkip()) return undefined;
 
-  loadMemoryEnv();
   const canonical = canonicalProjectName(cwd);
   if (!canonical) return undefined;
 
@@ -234,7 +233,8 @@ function applyMemoryProject(cwd = process.cwd()): ApplyResult | undefined {
 }
 
 // Apply once during module loading so later extensions such as pi-agent-memory
-// see PI_MEM_PROJECT before their session_start handlers run.
+// see PI_MEM_PROJECT before their session_start handlers run. This writes only
+// process-local environment variables, never user-global config.
 applyMemoryProject();
 
 export default function (pi: ExtensionAPI) {

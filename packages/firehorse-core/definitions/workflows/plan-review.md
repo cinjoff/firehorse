@@ -1,0 +1,96 @@
+---
+schemaVersion: 1
+id: plan-review
+kind: workflow
+title: Plan Review
+description: Review a PRD or plan adversarially from product, technical, and execution perspectives before issue breakdown or implementation.
+argumentHint: "[PRD path | plan text | issue URL | Planning Workspace path]"
+nativeAliases:
+  - plan-review
+requires:
+  tools:
+    - read
+  environment:
+    - filesystem
+optional:
+  tools:
+    - grep
+    - find
+    - ls
+    - bash
+    - edit
+    - write
+  orchestration:
+    - subagents
+    - parallel-agents
+    - review-gates
+  environment:
+    - git
+    - github
+    - pnpm
+supportingSkills:
+  - id: verification-contract
+agentRoles:
+  - id: plan-reviewer
+---
+
+# Plan Review
+
+## Purpose
+
+Use this workflow to review a PRD, Planning Workspace, issue breakdown, or implementation plan before issue breakdown or implementation begins. It is independently invokable and also serves as the recommended `create-plan` gate for plans that are not small and high-confidence.
+
+## Usage
+
+Invoke the generated provider command as `horse-plan-review` with a PRD path, plan text, issue URL, Planning Workspace path, or other pointer to the plan being reviewed. In generated prompt templates and commands, the user's freeform input is available as `$ARGUMENTS`.
+
+## Inputs
+
+- `$ARGUMENTS`: the PRD, plan, issue link, Planning Workspace path, or review request supplied by the user.
+- The original ask, Planning Decisions, gathered context, PRD Draft, issue drafts, and Verification Contract when available.
+- Relevant project guidance from `AGENTS.md`, domain docs, ADRs, roadmap state, architecture docs, and package manifests.
+- Any known constraints on issue breakdown, implementation order, validation evidence, or publication timing.
+
+## Outputs
+
+- A review report with findings, challenged assumptions, required decisions, and whether issue breakdown can proceed.
+- Product, technical, and execution findings grouped separately when useful.
+- Blocking issues that must be resolved before publication, issue breakdown, or implementation.
+- Non-blocking risks and follow-up recommendations that can move into issue drafts when appropriate.
+- Evidence references such as file paths, issue links, quoted plan sections, commands inspected, or missing context.
+
+## Supporting Capabilities
+
+- Firehorse skill reference: `verification-contract` for checking expected behaviors, required artifacts, acceptance checks, and dependencies.
+- Agent role reference: `plan-reviewer` for product, technical, and execution perspectives.
+- Required capabilities: local file reading and project-context inspection.
+- Optional capabilities: provider-native subagents, parallel perspective review, GitHub issue context, git inspection, and shell validation for cheap evidence checks.
+
+## Orchestration Intent
+
+Keep the canonical workflow provider-neutral. First understand the plan and its Verification Contract, then challenge it from product, technical, and execution perspectives, then return a go/no-go recommendation. If provider-native subagents are available, the product, technical, and execution perspectives may run separately through the `plan-reviewer` role and then be merged by the parent agent. If delegation is unavailable, perform the same perspectives in one agent session and state that the review was single-pass.
+
+## Safety Gates
+
+- Do not mutate code while performing plan review.
+- Do not publish issues or alter tracker state unless the user explicitly asks for a follow-up workflow to do so.
+- Do not approve issue breakdown when the user outcome, architecture constraints, dependencies, or Verification Contract are too unclear to validate.
+- Do not invent product requirements, acceptance checks, or planning decisions; ask for the missing decision or mark it as required.
+- Do not make provider-specific choreography part of the canonical workflow. Keep provider-specific orchestration in projection notes or provider mirrors.
+- Do not add a Firehorse runtime, prompt loader, provider transport, slash-command runtime, hook, or autonomous execution engine.
+
+## Procedure
+
+1. Read `$ARGUMENTS` and identify the plan artifact: PRD, Planning Workspace, issue draft set, issue URL, or freeform plan.
+2. Gather the minimum context needed to review the plan without flooding the main context: original ask, decisions, Verification Contract, relevant docs, and affected architecture constraints.
+3. Use the `verification-contract` skill to identify expected behaviors, required artifacts, acceptance checks, and dependencies that the plan must satisfy.
+4. Run the `plan-reviewer` role or apply its contract directly across product, technical, and execution perspectives.
+5. Challenge assumptions explicitly: user value, non-goals, technical feasibility, provider boundaries, generated-file ownership, validation evidence, dependency ordering, and issue slice size.
+6. Separate blocking findings from non-blocking risks and follow-ups.
+7. Decide whether issue breakdown can proceed. If not, list the required decisions or plan edits before proceeding.
+8. If the review is part of a Planning Workspace, write or recommend preserving the findings in the workspace's review artifact.
+9. Finalize with findings, challenged assumptions, required decisions, evidence consulted, and the proceed/revise/split/ask recommendation.
+
+## Projection Notes
+
+Workflow projections are static provider-native mirrors: Pi prompt templates and Claude commands named `horse-plan-review`. They contain rendered instructions and structured references, but they do not create a runtime execution graph. Provider-specific orchestration may choose to run separate product, technical, and execution review passes through available agent systems, but the canonical definition remains a provider-neutral review contract.

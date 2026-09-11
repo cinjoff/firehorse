@@ -7,7 +7,7 @@ firehorseGenerated: true
 firehorseKind: "skill"
 firehorseId: "feedback-loop"
 firehorseSource: "packages/firehorse-core/definitions/skills/feedback-loop.md"
-firehorseSourceSha256: "9a087e058842d7d5ddd95e6283617f77be75429f40c9e77b84454e637e608885"
+firehorseSourceSha256: "6ddb2620570b9d2a593cd5139ed81c2d728ed071d9cfa37a9f95010378c6a7f0"
 firehorseSchemaVersion: 1
 ---
 
@@ -17,7 +17,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/skills/feedback-loop.md
 Definition ID: feedback-loop
 Definition kind: skill
-Source SHA-256: 9a087e058842d7d5ddd95e6283617f77be75429f40c9e77b84454e637e608885
+Source SHA-256: 6ddb2620570b9d2a593cd5139ed81c2d728ed071d9cfa37a9f95010378c6a7f0
 -->
 
 # Feedback Loop
@@ -28,7 +28,7 @@ Use this skill to turn vague confidence into an explicit feedback loop. A loop h
 
 ## Usage
 
-Load this skill when a workflow asks for a regression loop, reproduction loop, validation command, or before/after evidence. It is especially useful inside `diagnose-fix`, but it is intentionally reusable for build and review workflows.
+Load this skill when a workflow asks for a regression loop, reproduction loop, validation command, or before/after evidence. It is especially useful inside `fix-bug`, but it is intentionally reusable for build and review workflows.
 
 ## Inputs
 

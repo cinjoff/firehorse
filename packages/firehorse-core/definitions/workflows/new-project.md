@@ -1,0 +1,101 @@
+---
+schemaVersion: 1
+id: new-project
+kind: workflow
+title: New Project
+description: Create or configure a GitHub-backed project with a repository, Tracker Project, status options, issue labels, and Firehorse setup manifest for future workflow validation.
+argumentHint: "[project name | GitHub owner/repo | existing repo URL | product seed]"
+requires:
+  tools:
+    - read
+    - edit
+    - write
+    - bash
+  environment:
+    - filesystem
+    - github
+optional:
+  tools:
+    - grep
+    - find
+    - ls
+  environment:
+    - git
+    - node
+    - pnpm
+supportingSkills:
+  - id: verification-contract
+---
+
+# New Project
+
+## Purpose
+
+Use this workflow to create or configure a GitHub-backed Firehorse project so future workflows have a known repository, Tracker Project, status vocabulary, issue-tracker labels, and checked-in setup manifest. The workflow supports both a missing repository that should be created and an existing repository that should be configured in place. It records resolved GitHub and ProjectV2 IDs when available, writes or updates `.firehorse/manifest.json`, and records setup gaps when GitHub Project automation is unavailable instead of blocking repository creation.
+
+## Usage
+
+Invoke the generated provider command as `horse-new-project` with a project name, GitHub owner/repo, existing repository URL, product seed, or explicit setup request. If `$ARGUMENTS` does not identify whether the repository should be created or an existing repository should be configured, stop after inventory and ask for the missing owner/repository decision before mutating GitHub.
+
+Use this workflow when the desired outcome is project setup rather than product implementation. If the user already has a Planning Workspace but no repository or tracker, run `horse-new-project` before publishing dependent issues. If the user only needs a plan, prefer `horse-create-plan`; if the user already has an Agent-Ready Issue, prefer `horse-build`.
+
+## Inputs
+
+- `$ARGUMENTS`: the project name, GitHub owner/repo, existing repository URL, product seed, or setup request supplied by the user.
+- GitHub access context: authenticated owner, repository permissions, organization policy, ProjectV2 availability, label permissions, and any required repository visibility or template settings.
+- Existing local files and setup markers such as `.firehorse/manifest.json`, `docs/PROJECT.md`, `CONTEXT.md`, `docs/DECISIONS.md`, package manifests, `.git/config`, and Planning Workspace artifacts.
+- Existing GitHub repository, labels, milestones, Projects, ProjectV2 fields, Status options, and issue-tracker state when configuring an existing project.
+- Desired safe-apply policy for future setup checks, defaulting to read-only validation unless the user explicitly approves setup mutations.
+
+## Outputs
+
+- A created GitHub repository or a configured existing repository, when credentials and explicit scope allow it.
+- A repository-named Tracker Project created or reused under the same owner as the repository when permissions allow.
+- Tracker Status field/options verified or created where possible: Backlog, Ready, In Progress, In Review, and Done.
+- Matt Pocock issue-tracker label vocabulary installed or verified, including `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix`.
+- A checked-in, non-secret `.firehorse/manifest.json` written or updated with project name, GitHub owner/repo, Tracker Project name and resolved IDs, Status field/options, label vocabulary, and safe-apply policy.
+- A setup-gap report for missing permissions, unavailable GitHub Project automation, unresolved ProjectV2 IDs, missing status options, or labels that could not be verified or created.
+- A final setup summary with commands attempted, resolved IDs, manifest path, created/reused resources, validation evidence, setup gaps, and safe next workflow.
+
+## Supporting Capabilities
+
+- Firehorse skill reference: `verification-contract` for turning the setup request into explicit expected resources, acceptance checks, and evidence before mutating project infrastructure.
+- Required capabilities: file reading/editing/writing, shell command validation, GitHub repository and Project setup through approved user-facing tooling such as `gh`, and local filesystem inspection.
+- Optional capabilities: local git remote inspection, package-manager checks, and repository-template inspection when a starter repository or package manifest exists.
+- Setup schema reference: the `firehorse/setup` helpers from issue #23 define the `.firehorse/manifest.json` schema and read-only drift checks. Use that schema as the manifest contract; do not turn session-start validation into a mutation path.
+
+## Orchestration Intent
+
+Keep setup maintainer-controlled and evidence-driven. The workflow inventories requested owner/repository scope first, then creates or configures the repository, then creates or reuses the Tracker Project, then verifies status options and label vocabulary, then writes the Firehorse Setup Manifest, then runs read-only validation against the manifest. Provider-specific implementations may use `gh` commands and GraphQL when available, but the canonical workflow is setup guidance and generated provider text, not a persistent project daemon.
+
+Separate repository creation from GitHub Project automation. Repository creation may succeed even when ProjectV2 fields or organization-level project permissions are unavailable. In that case, record a setup gap with the attempted command, missing permission or API limitation, and the manifest fields left unresolved instead of failing the entire setup.
+
+## Safety Gates
+
+- Do not create a repository, Project, labels, or files until the user-approved owner/repo scope and safe-apply policy are clear.
+- Prefer configuring an existing repository when the requested owner/repo already exists; do not delete, rename, transfer, or reinitialize existing repositories in this workflow.
+- Do not mutate live GitHub state during generated-file validation or session-start checks; this workflow may guide explicit setup actions only when invoked for setup and approved by the operator.
+- Keep `.firehorse/manifest.json` non-secret. Never write tokens, API keys, local absolute paths, or hidden runtime state into the manifest.
+- Ensure the manifest `safeApply.defaultMode` remains `read-only`. Use `safeApply.mutationPolicy` to document whether future apply steps require explicit operator approval or are never allowed.
+- Missing GitHub Project automation must be recorded as a setup gap when ProjectV2 creation, field mutation, or option resolution is unavailable or blocked by permissions; continue with repository creation/configuration evidence when safe.
+- Do not add a general workflow runtime, prompt loader, provider transport, session-start mutator, autonomous agent loop, release workflow, or long-lived service.
+- Do not mark the project ready for downstream `build` work until the repository, Tracker Project status vocabulary, label vocabulary, and manifest gaps are either resolved or explicitly documented.
+
+## Procedure
+
+1. Read `$ARGUMENTS` and determine the setup target: new repository, existing repository, owner/repo pair, local project seed, or continuation of a partially configured Firehorse project.
+2. Inventory the current state before mutating anything: local git remote, repository existence, authenticated GitHub owner, repository permissions, existing ProjectV2 boards, existing Status field/options, existing labels, `.firehorse/manifest.json`, and any setup gaps already recorded.
+3. Confirm safe-apply scope. State whether the next actions are read-only verification, explicit repository creation, explicit repository configuration, or manifest-only update. Ask for confirmation before creating or changing GitHub resources when the request is ambiguous.
+4. Create the GitHub repository when it is missing and the user-approved scope allows creation. Otherwise configure the existing repository in place. Record the owner, repo name, URL, visibility, default branch, and command evidence.
+5. Create or reuse a repository-named Tracker Project under the same owner as the repository when permissions allow. Prefer reuse when a matching project already exists. Record the ProjectV2 name, node ID, project number or URL when available, and whether it was created or reused.
+6. Ensure the Tracker Project has a Status field with these options: Backlog, Ready, In Progress, In Review, and Done. Reuse existing matching options, create missing options only when permissions allow, and record option IDs. If ProjectV2 field mutation is unavailable, record a setup gap rather than blocking repository setup.
+7. Install or verify the Matt Pocock issue-tracker label vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix`. Preserve existing labels with matching names. Create missing labels only when permissions and explicit setup scope allow it; otherwise record a setup gap.
+8. Write or update `.firehorse/manifest.json` using the Firehorse Setup Manifest schema: `schemaVersion: 1`, `project.name`, `github.owner`, `github.repo`, `tracker.project.name`, `tracker.project.id`, `tracker.status.field.name`, `tracker.status.field.id`, `tracker.status.options`, `labels.vocabulary`, and `safeApply` with `defaultMode: "read-only"`.
+9. When IDs cannot be resolved, avoid inventing placeholder IDs. Either omit the unresolved setup from the apply step until it can be resolved, or write only the verified fields supported by the schema and record a setup gap that names the missing Project, field, option, or label evidence.
+10. Run the read-only manifest validation path from `firehorse/setup` or the provider session-start setup check when available. Treat healthy validation as silent; for setup work, record the explicit validation command/result in the setup summary.
+11. If a repository was created but ProjectV2 automation failed, finalize with the repository URL, manifest state, and setup gaps. The missing Project automation is a follow-up setup gap, not a reason to roll back repository creation.
+12. Finalize with created/reused resources, resolved IDs, manifest diff/path, label vocabulary status, Status field/options status, setup gaps, validation evidence, skipped checks, and the recommended next workflow such as `horse-create-plan` or `horse-build`.
+
+## Projection Notes
+
+Workflow projections are static provider-native mirrors: Pi prompt templates and Claude commands named `horse-new-project`. They guide explicit setup actions for repositories, Tracker Projects, labels, status options, and `.firehorse/manifest.json`, but they do not create a runtime execution graph, provider transport, session-start mutator, prompt loader, autonomous setup bot, or long-lived service. Provider-specific implementations may use GitHub CLI or GraphQL when the operator approves setup mutations, while the issue #23 setup checks remain read-only by default and silent when healthy.

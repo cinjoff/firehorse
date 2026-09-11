@@ -5,13 +5,14 @@
 Read these before cutting a release:
 
 - `AGENTS.md` and `CLAUDE.md`
-- `.planning/STATE.md`
-- `.planning/ROADMAP.md`
-- `.planning/REQUIREMENTS.md`
-- `.planning/DECISIONS.md`
-- `.planning/PROJECT.md`
+- `CONTEXT.md`
+- `docs/PROJECT.md`
+- `docs/DECISIONS.md`
 - `docs/ARCHITECTURE.md`
+- `docs/prds/prd-0001-firehorse-definition-format-and-projection/FIREHORSE-DEFINITION-FORMAT.md` when Definition Format examples or projection contracts changed
+- `docs/prds/prd-0001-firehorse-definition-format-and-projection/context/WORKFLOW-MAP.md` when reviewing historical workflow-grouping context
 - `docs/UPSTREAM-SKILLS.md`
+- Relevant GitHub issues/milestones/projects for release scope
 - `README.md`
 - `packages/*/README.md`
 - `package.json`
@@ -174,7 +175,7 @@ version=0.1.0
 tag="v$version"
 
 git status --short
-git add README.md CHANGELOG.md package.json pnpm-lock.yaml packages .claude-plugin .agents docs .planning
+git add README.md CHANGELOG.md package.json pnpm-lock.yaml packages .claude-plugin .agents docs
 git commit -m "Release $tag"
 git tag -a "$tag" -m "Firehorse $tag"
 git push origin HEAD

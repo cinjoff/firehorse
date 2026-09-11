@@ -2,24 +2,15 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "firehorse",
   "version": "0.2.0",
-  "description": "Firehorse — lightweight cross-provider agentic skills framework, Claude-adapted distribution.",
+  "description": "Firehorse — lightweight cross-provider agent workflow framework, Claude-adapted distribution.",
   "author": {
     "name": "cinjoff"
   },
   "homepage": "https://github.com/cinjoff/firehorse",
   "repository": "https://github.com/cinjoff/firehorse",
   "license": "MIT",
-  "keywords": [
-    "firehorse",
-    "agentic",
-    "skills",
-    "claude-code",
-    "claude-plugin"
-  ],
-  "dependencies": [
-    "claude-mem"
-  ],
-  "hooks": "./hooks/hooks.json",
+  "keywords": ["firehorse", "agentic", "skills", "claude-code", "claude-plugin"],
+  "dependencies": ["claude-mem"],
   "agents": [
     "./agents/context-builder.md",
     "./agents/delegate.md",
@@ -29,7 +20,7 @@
     "./agents/reviewer.md",
     "./agents/scout.md",
     "./agents/worker.md",
-    "./agents/firehorse/horse-diagnostic-reviewer.md"
+    "./agents/plan-reviewer.md"
   ],
   "skills": [
     "./skills/firehorse-setup",
@@ -49,10 +40,22 @@
     "./skills/mattpocock/productivity/write-a-skill",
     "./skills/shadcn-ui/shadcn",
     "./skills/pbakaus/impeccable",
-    "./skills/firehorse/feedback-loop"
+    "./skills/firehorse/feedback-loop",
+    "./skills/firehorse/verification-contract"
   ],
   "commands": [
-    "./commands/firehorse/horse-diagnose-fix.md",
-    "./commands/firehorse/horse-update-upstreams.md"
+    "./commands/firehorse/build.md",
+    "./commands/firehorse/fix.md",
+    "./commands/firehorse/horse-build.md",
+    "./commands/firehorse/horse-create-plan.md",
+    "./commands/firehorse/horse-fix-bug.md",
+    "./commands/firehorse/horse-new-project.md",
+    "./commands/firehorse/horse-plan-review.md",
+    "./commands/firehorse/horse-review-code.md",
+    "./commands/firehorse/horse-ship.md",
+    "./commands/firehorse/horse-update-upstreams.md",
+    "./commands/firehorse/plan-review.md",
+    "./commands/firehorse/plan-work.md",
+    "./commands/firehorse/review.md"
   ]
 }

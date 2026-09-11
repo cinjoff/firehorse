@@ -8,7 +8,7 @@ export type DefinitionKind = (typeof definitionKinds)[number];
 export const definitionKindDirectories = {
   workflow: "workflows",
   skill: "skills",
-  "agent-role": "agent-roles",
+  "agent-role": "agents",
 } as const satisfies Record<DefinitionKind, string>;
 
 export const definitionIdSchema = z
@@ -41,13 +41,7 @@ const commonCapabilities = {
     "fetch-content",
     "get-search-content",
   ]),
-  orchestration: new Set([
-    "subagents",
-    "parallel-agents",
-    "worktrees",
-    "intercom",
-    "review-gates",
-  ]),
+  orchestration: new Set(["subagents", "parallel-agents", "worktrees", "intercom", "review-gates"]),
   modalities: new Set(["text", "vision"]),
   environment: new Set([
     "filesystem",
@@ -66,10 +60,7 @@ const extensionCapabilityPattern = /^[a-z][a-z0-9-]*:[a-zA-Z0-9_./-]+$/;
 
 function capabilityValueSchema(category: CapabilityCategory) {
   return z.string().superRefine((value, ctx) => {
-    if (
-      commonCapabilities[category].has(value) ||
-      extensionCapabilityPattern.test(value)
-    ) {
+    if (commonCapabilities[category].has(value) || extensionCapabilityPattern.test(value)) {
       return;
     }
 
@@ -83,10 +74,7 @@ function capabilityValueSchema(category: CapabilityCategory) {
 export const capabilityDeclarationSchema = z
   .object({
     tools: z.array(capabilityValueSchema("tools")).min(1).optional(),
-    orchestration: z
-      .array(capabilityValueSchema("orchestration"))
-      .min(1)
-      .optional(),
+    orchestration: z.array(capabilityValueSchema("orchestration")).min(1).optional(),
     modalities: z.array(capabilityValueSchema("modalities")).min(1).optional(),
     environment: z.array(capabilityValueSchema("environment")).min(1).optional(),
   })
@@ -130,6 +118,7 @@ export const workflowFrontmatterSchema = commonDefinitionFrontmatterSchema
   .extend({
     kind: z.literal("workflow"),
     argumentHint: z.string().min(1).optional(),
+    nativeAliases: z.array(definitionIdSchema).optional(),
     supportingSkills: z.array(definitionReferenceSchema).optional(),
     agentRoles: z.array(definitionReferenceSchema).optional(),
     upstreamSkills: z.array(upstreamSkillReferenceSchema).optional(),
@@ -144,14 +133,7 @@ export const skillFrontmatterSchema = commonDefinitionFrontmatterSchema
   })
   .strict();
 
-export const thinkingLevelSchema = z.enum([
-  "off",
-  "minimal",
-  "low",
-  "medium",
-  "high",
-  "xhigh",
-]);
+export const thinkingLevelSchema = z.enum(["off", "minimal", "low", "medium", "high", "xhigh"]);
 
 export const systemPromptModeSchema = z.enum(["replace", "append"]);
 export const defaultContextSchema = z.enum(["fresh", "fork"]);
@@ -187,9 +169,7 @@ export const definitionFrontmatterSchema = z.discriminatedUnion("kind", [
 
 export type CapabilityDeclaration = z.infer<typeof capabilityDeclarationSchema>;
 export type DefinitionReference = z.infer<typeof definitionReferenceSchema>;
-export type UpstreamSkillReference = z.infer<
-  typeof upstreamSkillReferenceSchema
->;
+export type UpstreamSkillReference = z.infer<typeof upstreamSkillReferenceSchema>;
 export type WorkflowFrontmatter = z.infer<typeof workflowFrontmatterSchema>;
 export type SkillFrontmatter = z.infer<typeof skillFrontmatterSchema>;
 export type AgentRoleFrontmatter = z.infer<typeof agentRoleFrontmatterSchema>;
@@ -225,20 +205,11 @@ export interface FirehorseDefinitionBase<
   readonly sourceHash: string;
 }
 
-export type WorkflowDefinition = FirehorseDefinitionBase<
-  "workflow",
-  WorkflowFrontmatter
->;
+export type WorkflowDefinition = FirehorseDefinitionBase<"workflow", WorkflowFrontmatter>;
 export type SkillDefinition = FirehorseDefinitionBase<"skill", SkillFrontmatter>;
-export type AgentRoleDefinition = FirehorseDefinitionBase<
-  "agent-role",
-  AgentRoleFrontmatter
->;
+export type AgentRoleDefinition = FirehorseDefinitionBase<"agent-role", AgentRoleFrontmatter>;
 
-export type FirehorseDefinition =
-  | WorkflowDefinition
-  | SkillDefinition
-  | AgentRoleDefinition;
+export type FirehorseDefinition = WorkflowDefinition | SkillDefinition | AgentRoleDefinition;
 
 export const requiredSectionsByKind = {
   workflow: [
@@ -276,9 +247,7 @@ export const requiredSectionsByKind = {
   ],
 } as const satisfies Record<DefinitionKind, readonly string[]>;
 
-export function formatDefinitionDiagnostics(
-  diagnostics: readonly DefinitionDiagnostic[],
-): string {
+export function formatDefinitionDiagnostics(diagnostics: readonly DefinitionDiagnostic[]): string {
   return diagnostics
     .map((diagnostic) => {
       const location = [

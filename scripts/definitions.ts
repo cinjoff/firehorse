@@ -23,18 +23,15 @@ interface CheckResult {
 type Mode = "check" | "write";
 
 const repoRoot = process.cwd();
-const definitionsRoot = path.join(
-  repoRoot,
-  "packages/firehorse-core/definitions",
-);
+const definitionsRoot = path.join(repoRoot, "packages/firehorse-core/definitions");
 
 const generatedDirectories = [
   "packages/firehorse-pi/prompts/firehorse",
   "packages/firehorse-pi/skills/firehorse",
-  "packages/firehorse-pi/agents/firehorse",
+  "packages/firehorse-pi/agents",
   "packages/firehorse-claude/commands/firehorse",
   "packages/firehorse-claude/skills/firehorse",
-  "packages/firehorse-claude/agents/firehorse",
+  "packages/firehorse-claude/agents",
 ];
 
 async function main(): Promise<void> {
@@ -89,9 +86,7 @@ function parseMode(args: readonly string[]): Mode {
 }
 
 async function loadDefinitions(): Promise<FirehorseDefinition[]> {
-  const files = (await listMarkdownFiles(definitionsRoot)).sort((a, b) =>
-    a.localeCompare(b),
-  );
+  const files = (await listMarkdownFiles(definitionsRoot)).sort((a, b) => a.localeCompare(b));
   return Promise.all(files.map((file) => parseDefinitionFile(file)));
 }
 
@@ -159,11 +154,16 @@ async function syncGeneratedFiles(
     }
 
     const provenance = extractGeneratedProvenance(current);
-    if (!provenance) {
+    if (!provenance && file.resourceKind !== "agent-role") {
       hasErrors = true;
       messages.push(
         `refusing to ${mode === "write" ? "overwrite" : "accept"} unprovenanced generated target: ${file.path}`,
       );
+      continue;
+    }
+
+    if (!provenance && file.resourceKind === "agent-role" && mode !== "write") {
+      messages.push(`stale generated mirror: ${file.path}`);
       continue;
     }
 
@@ -218,10 +218,7 @@ async function findStaleGeneratedFiles(
   return stale.sort((a, b) => a.localeCompare(b));
 }
 
-async function syncManifests(
-  files: readonly GeneratedFile[],
-  mode: Mode,
-): Promise<CheckResult> {
+async function syncManifests(files: readonly GeneratedFile[], mode: Mode): Promise<CheckResult> {
   const entries = generatedManifestEntries(files);
   const manifestTargets = await Promise.all([
     transformJsonFile("package.json", (json) => {
@@ -244,11 +241,7 @@ async function syncManifests(
         files?: string[];
         pi?: { skills?: string[]; prompts?: string[] };
       };
-      manifest.files = mergeGeneratedManifestEntries(
-        manifest.files,
-        ["agents"],
-        "agents",
-      );
+      manifest.files = mergeGeneratedManifestEntries(manifest.files, ["agents"], "agents");
       manifest.pi ??= {};
       manifest.pi.skills = mergeGeneratedManifestEntries(
         manifest.pi.skills,
@@ -262,32 +255,29 @@ async function syncManifests(
       );
       return manifest;
     }),
-    transformJsonFile(
-      "packages/firehorse-claude/.claude-plugin/plugin.json",
-      (json) => {
-        const manifest = json as {
-          commands?: string[];
-          skills?: string[];
-          agents?: string[];
-        };
-        manifest.commands = mergeGeneratedManifestEntries(
-          manifest.commands,
-          entries.claudeCommands,
-          "./commands/firehorse/",
-        );
-        manifest.skills = mergeGeneratedManifestEntries(
-          manifest.skills,
-          entries.claudeSkills,
-          "./skills/firehorse/",
-        );
-        manifest.agents = mergeGeneratedManifestEntries(
-          manifest.agents,
-          entries.claudeAgents,
-          "./agents/firehorse/",
-        );
-        return manifest;
-      },
-    ),
+    transformJsonFile("packages/firehorse-claude/.claude-plugin/plugin.json", (json) => {
+      const manifest = json as {
+        commands?: string[];
+        skills?: string[];
+        agents?: string[];
+      };
+      manifest.commands = mergeGeneratedManifestEntries(
+        manifest.commands,
+        entries.claudeCommands,
+        "./commands/firehorse/",
+      );
+      manifest.skills = mergeGeneratedManifestEntries(
+        manifest.skills,
+        entries.claudeSkills,
+        "./skills/firehorse/",
+      );
+      manifest.agents = mergeGeneratedManifestEntriesWithStalePrefixes(
+        manifest.agents,
+        entries.claudeAgents,
+        ["./agents/firehorse/"],
+      );
+      return manifest;
+    }),
   ]);
 
   const messages: string[] = [];
@@ -305,6 +295,19 @@ async function syncManifests(
   }
 
   return { ok: messages.length === 0 || mode === "write", messages };
+}
+
+function mergeGeneratedManifestEntriesWithStalePrefixes(
+  existing: readonly string[] | undefined,
+  generated: readonly string[],
+  staleGeneratedPathPrefixes: readonly string[],
+): string[] {
+  const retained = (existing ?? []).filter(
+    (entry) => !staleGeneratedPathPrefixes.some((prefix) => entry.startsWith(prefix)),
+  );
+  return [...retained, ...generated].filter(
+    (value, index, values) => values.indexOf(value) === index,
+  );
 }
 
 async function transformJsonFile(

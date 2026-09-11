@@ -30,7 +30,7 @@ optional:
 supportingSkills:
   - id: feedback-loop
 agentRoles:
-  - id: diagnostic-reviewer
+  - id: reviewer
 ---
 
 # Update Upstreams
@@ -46,7 +46,7 @@ Invoke the generated provider command as `horse-update-upstreams` with optional 
 ## Inputs
 
 - `$ARGUMENTS`: optional constraints, requested upstream names, or validation exceptions supplied by the user.
-- Existing repo guidance from `AGENTS.md`, `.planning/`, `docs/ARCHITECTURE.md`, `docs/UPSTREAM-SKILLS.md`, package manifests, and the current git status.
+- Existing repo guidance from `AGENTS.md`, `CONTEXT.md`, `docs/PROJECT.md`, `docs/DECISIONS.md`, `docs/ARCHITECTURE.md`, `docs/UPSTREAM-SKILLS.md`, relevant GitHub Issues/Projects, package manifests, and the current git status.
 - `pnpm upstreams:check` output, which is the source of truth for stale pinned upstreams and bundled Pi dependencies.
 - Upstream update scripts such as `pnpm upstreams:update:mattpocock-skills`, `pnpm upstreams:update:impeccable`, and `pnpm upstreams:update:shadcn-ui`, plus package-manager updates for stale bundled npm packages.
 
@@ -61,13 +61,13 @@ Invoke the generated provider command as `horse-update-upstreams` with optional 
 ## Supporting Capabilities
 
 - Firehorse skill reference: `feedback-loop` for defining the validation loop before and after the update batch.
-- Agent role reference: `diagnostic-reviewer` for optional review of the resulting diff and evidence.
+- Agent role reference: `reviewer` for optional review of the resulting diff and evidence.
 - Required capabilities: local file reading, git inspection, shell validation, Node, and pnpm.
 - Optional capabilities: provider-native subagents, parallel review, GitHub context, and edit/write tools for docs and manifest adjustments.
 
 ## Orchestration Intent
 
-Keep the parent agent in control of the update batch. Use one reconnaissance pass to identify all stale upstreams, then execute the required update steps sequentially when they mutate the same worktree or lockfile. Parallelize only read-only checks or review tasks. If provider-native subagents are available, use a fresh reviewer after the batch to inspect the diff; otherwise use the `diagnostic-reviewer` role as an inline checklist.
+Keep the parent agent in control of the update batch. Use one reconnaissance pass to identify all stale upstreams, then execute the required update steps sequentially when they mutate the same worktree or lockfile. Parallelize only read-only checks or review tasks. If provider-native subagents are available, use a fresh reviewer after the batch to inspect the diff; otherwise use the `reviewer` role as an inline checklist.
 
 ## Safety Gates
 
@@ -90,7 +90,7 @@ Keep the parent agent in control of the update batch. Use one reconnaissance pas
 8. Update release-facing docs when the pinned upstream set changes: root `README.md`, package READMEs, `docs/UPSTREAM-SKILLS.md`, and `CHANGELOG.md` as appropriate. Keep docs factual and version/commit-specific.
 9. Search for stale old pins, old commits, and old plugin versions introduced by the update batch. Fix any stale references that should track the new pins.
 10. Rerun the feedback loop and quality gates unless explicitly skipped: `pnpm upstreams:check`, `pnpm definitions:check`, `pnpm typecheck`, `pnpm build`, and `pnpm test`.
-11. Review or simulate `diagnostic-reviewer` on the diff. Check provenance, generated-file freshness, lockfile consistency, docs accuracy, and that no unrelated dependency scope slipped in.
+11. Review or simulate `reviewer` on the diff. Check provenance, generated-file freshness, lockfile consistency, docs accuracy, and that no unrelated dependency scope slipped in.
 12. Finalize with a concise report: upstreams updated, skipped items and reasons, commands run, validation evidence, changed files, pre-existing dirty files, and any release or follow-up tasks.
 
 ## Projection Notes

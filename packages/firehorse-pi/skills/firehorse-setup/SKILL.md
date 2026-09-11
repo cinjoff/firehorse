@@ -90,15 +90,14 @@ Check:
      default port is in use.
    - If the bundled worker scripts are missing, show `pi update npm:firehorse-pi`
      or reinstall instructions; if an external fallback is needed, show `npx
-     claude-mem install` or the Claude Code plugin marketplace commands. Do not
+claude-mem install` or the Claude Code plugin marketplace commands. Do not
      claim that `npm install -g claude-mem` is sufficient because upstream
      documents it as SDK/library-only.
 8. Generated Firehorse Pi agent-role sync:
    - Locate generated package sync artifacts under the installed Firehorse Pi
-     package's `agents/firehorse/*.md` directory.
-   - Check user-global targets under
-     `$PI_CODING_AGENT_DIR/agents/firehorse/` if `PI_CODING_AGENT_DIR` is set,
-     otherwise `~/.pi/agent/agents/firehorse/`.
+     package's `agents/*.md` directory.
+   - Check user-global targets under `$PI_CODING_AGENT_DIR/agents/` if
+     `PI_CODING_AGENT_DIR` is set, otherwise `~/.pi/agent/agents/`.
    - A target is current only when it exists, has Firehorse provenance, and its
      `firehorseSourceSha256` matches the source artifact. Missing or stale
      targets should be reported as needing full setup.
@@ -279,11 +278,11 @@ therefore ships generated Pi-compatible agent-role mirrors as package sync
 artifacts and `firehorse-setup` copies them into the user-global Pi agent
 directory.
 
-Source artifacts live under the installed Firehorse Pi package's
-`agents/firehorse/*.md` directory. Target directory:
+Source artifacts live under the installed Firehorse Pi package's `agents/*.md`
+directory. Target directory:
 
-- If `PI_CODING_AGENT_DIR` is set: `$PI_CODING_AGENT_DIR/agents/firehorse/`
-- Otherwise: `~/.pi/agent/agents/firehorse/`
+- If `PI_CODING_AGENT_DIR` is set: `$PI_CODING_AGENT_DIR/agents/`
+- Otherwise: `~/.pi/agent/agents/`
 
 Rules:
 
@@ -294,10 +293,16 @@ Rules:
   package source artifact.
 - If a target exists without Firehorse provenance, stop and ask the user how to
   resolve the conflict; do not overwrite a hand-authored agent.
-- Preserve filenames, including the `horse-` native prefix.
+- Preserve package source filenames exactly. Generic agent-role mirrors use
+  provider-native names without a `horse-` prefix.
 
-The first generated sync artifact is
-`agents/firehorse/horse-diagnostic-reviewer.md`.
+Sync every generated `agents/*.md` package artifact rather than assuming a fixed
+filename. Current generated examples include `agents/reviewer.md`,
+`agents/plan-reviewer.md`, and `agents/worker.md`; retired generated artifacts
+such as `agents/firehorse/reviewer.md`, `agents/firehorse/plan-reviewer.md`,
+`horse-code-reviewer.md`, `horse-plan-reviewer.md`, and
+`horse-diagnostic-reviewer.md` should be removed from user-global targets only
+when they have valid Firehorse provenance.
 
 ### 6. Configure Superset MCP for Pi
 

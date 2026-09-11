@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -28,17 +28,45 @@ interface SettingsShape {
   [key: string]: unknown;
 }
 
+interface GeneratedAgentSource {
+  readonly fileName: string;
+  readonly content: string;
+}
+
+interface AgentRoleSyncResult {
+  readonly created: string[];
+  readonly updated: string[];
+  readonly removed: string[];
+  readonly conflicts: string[];
+}
+
 const PACKAGE_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const DEFAULTS_PATH = join(PACKAGE_ROOT, "firehorse.subagents.json");
+const GENERATED_AGENTS_DIR = join(PACKAGE_ROOT, "agents");
+const RETIRED_AGENT_TARGETS = new Set([
+  "firehorse/reviewer.md",
+  "firehorse/plan-reviewer.md",
+  "horse-code-reviewer.md",
+  "horse-diagnostic-reviewer.md",
+  "horse-plan-reviewer.md",
+]);
 
 function isTruthy(value: string | undefined): boolean {
   return value === "1" || value === "true" || value === "yes";
 }
 
-function shouldSkip(): boolean {
+function shouldSkipSubagentDefaults(): boolean {
   return (
     isTruthy(process.env.FIREHORSE_SKIP_SUBAGENT_DEFAULTS) ||
     isTruthy(process.env.FIREHORSE_DISABLE_SUBAGENT_DEFAULTS) ||
+    isTruthy(process.env.CI)
+  );
+}
+
+function shouldSkipAgentSync(): boolean {
+  return (
+    isTruthy(process.env.FIREHORSE_SKIP_AGENT_SYNC) ||
+    isTruthy(process.env.FIREHORSE_DISABLE_AGENT_SYNC) ||
     isTruthy(process.env.CI)
   );
 }
@@ -49,6 +77,10 @@ function agentDir(): string {
 
 function settingsPath(): string {
   return join(agentDir(), "settings.json");
+}
+
+function agentRolesDir(): string {
+  return join(agentDir(), "agents");
 }
 
 function readJson<T>(path: string): T {
@@ -95,7 +127,7 @@ function defaultedStrings(
 }
 
 function applySubagentDefaults(): boolean {
-  if (shouldSkip()) return false;
+  if (shouldSkipSubagentDefaults()) return false;
 
   const defaults = tryReadJson<SubagentDefaultsManifest>(DEFAULTS_PATH);
   if (!defaults?.agentOverrides || defaults.schemaVersion < 1) return false;
@@ -163,21 +195,162 @@ function applySubagentDefaults(): boolean {
   return true;
 }
 
+function frontmatterValue(content: string, key: string): string | undefined {
+  const frontmatter = content.match(/^---\n(?<frontmatter>[\s\S]*?)\n---\n?/u)?.groups?.frontmatter;
+  if (!frontmatter) return undefined;
+
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  const rawValue = frontmatter.match(new RegExp(`^${escapedKey}:\\s*(.+)$`, "mu"))?.[1];
+  if (!rawValue) return undefined;
+
+  const trimmed = rawValue.trim();
+  if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+    try {
+      return JSON.parse(trimmed) as string;
+    } catch {
+      return trimmed.slice(1, -1);
+    }
+  }
+  return trimmed;
+}
+
+function isFirehorseAgentRole(content: string): boolean {
+  return (
+    frontmatterValue(content, "firehorseGenerated") === "true" &&
+    frontmatterValue(content, "firehorseKind") === "agent-role" &&
+    Boolean(frontmatterValue(content, "firehorseSourceSha256"))
+  );
+}
+
+function generatedAgentSources(): GeneratedAgentSource[] {
+  if (!existsSync(GENERATED_AGENTS_DIR)) return [];
+
+  return readdirSync(GENERATED_AGENTS_DIR, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
+    .map((entry) => {
+      const content = readFileSync(join(GENERATED_AGENTS_DIR, entry.name), "utf8");
+      return { fileName: entry.name, content };
+    })
+    .filter((source) => isFirehorseAgentRole(source.content));
+}
+
+function targetMarkdownFiles(dir: string, prefix = ""): string[] {
+  if (!existsSync(dir)) return [];
+
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+    const absolutePath = join(dir, entry.name);
+    if (entry.isDirectory()) return targetMarkdownFiles(absolutePath, relativePath);
+    if (entry.isFile() && entry.name.endsWith(".md")) return [relativePath];
+    return [];
+  });
+}
+
+function shouldRemoveStaleAgentTarget(relativePath: string, content: string): boolean {
+  if (!isFirehorseAgentRole(content)) return false;
+  if (RETIRED_AGENT_TARGETS.has(relativePath)) return true;
+
+  const source = frontmatterValue(content, "firehorseSource");
+  return source?.startsWith("packages/firehorse-core/definitions/agents/") === true;
+}
+
+function syncGeneratedAgentRoles(): AgentRoleSyncResult {
+  const result: AgentRoleSyncResult = {
+    created: [],
+    updated: [],
+    removed: [],
+    conflicts: [],
+  };
+
+  if (shouldSkipAgentSync()) return result;
+
+  const sources = generatedAgentSources();
+  if (sources.length === 0) return result;
+
+  const targetDir = agentRolesDir();
+  mkdirSync(targetDir, { recursive: true });
+
+  for (const source of sources) {
+    const targetPath = join(targetDir, source.fileName);
+    if (!existsSync(targetPath)) {
+      writeFileSync(targetPath, source.content);
+      result.created.push(source.fileName);
+      continue;
+    }
+
+    const current = readFileSync(targetPath, "utf8");
+    if (current === source.content) continue;
+
+    if (!isFirehorseAgentRole(current)) {
+      result.conflicts.push(targetPath);
+      continue;
+    }
+
+    writeFileSync(targetPath, source.content);
+    result.updated.push(source.fileName);
+  }
+
+  const expectedTargets = new Set(sources.map((source) => source.fileName));
+  for (const relativePath of targetMarkdownFiles(targetDir)) {
+    if (expectedTargets.has(relativePath)) continue;
+
+    const absolutePath = join(targetDir, relativePath);
+    const current = readFileSync(absolutePath, "utf8");
+    if (!shouldRemoveStaleAgentTarget(relativePath, current)) continue;
+
+    rmSync(absolutePath);
+    result.removed.push(relativePath);
+  }
+
+  return result;
+}
+
+function syncSummary(result: AgentRoleSyncResult): string | undefined {
+  const parts = [
+    result.created.length ? `${result.created.length} created` : undefined,
+    result.updated.length ? `${result.updated.length} updated` : undefined,
+    result.removed.length ? `${result.removed.length} retired` : undefined,
+  ].filter((part): part is string => Boolean(part));
+
+  if (parts.length === 0) return undefined;
+  return parts.join(", ");
+}
+
 export default function (pi: ExtensionAPI) {
   pi.on("session_start", (event, ctx) => {
     if (event.reason === "reload") return;
 
     try {
-      const changed = applySubagentDefaults();
-      if (changed) {
+      const defaultsChanged = applySubagentDefaults();
+      const agentSync = syncGeneratedAgentRoles();
+      const agentSyncSummary = syncSummary(agentSync);
+
+      if (defaultsChanged) {
         ctx.ui?.notify(
           "Firehorse enabled bundled tools and skills for built-in pi-subagents. Set FIREHORSE_SKIP_SUBAGENT_DEFAULTS=1 to opt out.",
           "info",
         );
       }
+
+      if (agentSyncSummary) {
+        ctx.ui?.notify(
+          `Firehorse synced generated Pi subagent roles (${agentSyncSummary}). Set FIREHORSE_SKIP_AGENT_SYNC=1 to opt out.`,
+          "info",
+        );
+      }
+
+      if (agentSync.conflicts.length > 0) {
+        ctx.ui?.notify(
+          `Firehorse found ${agentSync.conflicts.length} hand-authored Pi subagent role conflict(s); run /skill:firehorse-setup --check for details.`,
+          "warning",
+        );
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      ctx.ui?.notify(`Firehorse could not apply subagent defaults: ${message}`, "warning");
+      ctx.ui?.notify(
+        `Firehorse could not apply subagent defaults or sync agent roles: ${message}`,
+        "warning",
+      );
     }
   });
 }

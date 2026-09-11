@@ -1,0 +1,77 @@
+---
+schemaVersion: 1
+id: verification-contract
+kind: skill
+title: Verification Contract
+description: Defines verifiable expected behaviors, required artifacts, acceptance checks, and dependency gates for Firehorse planning, build, review, and fix workflows.
+requires:
+  tools:
+    - read
+  environment:
+    - filesystem
+optional:
+  tools:
+    - grep
+    - find
+    - ls
+    - bash
+    - edit
+    - write
+  environment:
+    - git
+    - github
+    - pnpm
+license: MIT
+compatibility: Works in static Firehorse projections; does not require a Firehorse runtime.
+---
+
+# Verification Contract
+
+## Purpose
+
+Use this skill to make a plan, issue, implementation slice, or review outcome checkable. A Verification Contract states the expected behaviors, required artifacts, acceptance checks, and dependencies that downstream workflow steps must satisfy before work is considered complete.
+
+## Usage
+
+Load this skill when a Firehorse workflow asks for a Verification Contract, when turning a PRD Draft into issue-sized work, when building against a Published Issue, or when reviewing code against promised outcomes. The contract may live in a PRD, Planning Workspace, issue draft, Published Issue, review artifact, or final handoff.
+
+## Inputs
+
+- The user ask, PRD Draft, issue draft, Published Issue, bug report, diff, or review request.
+- Existing project guidance, domain language, ADRs, planning decisions, and acceptance criteria.
+- Known dependencies, blockers, constraints, and validation commands.
+- Any existing evidence from planning, implementation, or review work.
+
+## Outputs
+
+- A compact Verification Contract with expected behaviors, required artifacts, acceptance checks, and dependencies.
+- A clear distinction between blocking requirements and optional follow-up work.
+- Downstream gates that a build, review-code, plan-review, create-plan, or fix-bug workflow can cite without inventing new scope.
+- Evidence notes showing which checks have run, which could not run, and what remains unverified.
+
+## Instructions
+
+1. Identify the smallest user-visible or maintainer-visible behaviors that must hold. Write them as expected behaviors, not implementation steps.
+2. List required artifacts such as canonical Definition Files, generated mirrors, PRD sections, issue drafts, review reports, tests, docs, or validation logs.
+3. List acceptance checks as commands, manual checks, or review gates with the exact expected signal when known.
+4. List dependencies and blockers separately from the behaviors so downstream workflows can preserve ordering.
+5. Keep the contract stable across refactors. If code structure changes but behavior does not, the contract should still apply.
+6. When evidence is missing, say so explicitly instead of marking the contract satisfied.
+7. Update the contract only when the user, PRD, issue, or observed evidence changes the required behavior.
+
+## Boundaries
+
+- Do not add a runtime, prompt loader, provider transport, autonomous execution loop, or hidden workflow state.
+- Do not treat implementation details as required behaviors unless they are part of the public contract or repository architecture.
+- Do not expand scope beyond the PRD, issue, or user-approved plan just to make the contract look complete.
+- Do not invent validation evidence. If a command cannot run, record the reason and the risk.
+
+## Examples
+
+- For a workflow PRD: expected behaviors name the provider surfaces; required artifacts include canonical definitions and generated mirrors; acceptance checks include `pnpm definitions:check` and typecheck.
+- For an issue-sized build: expected behaviors describe the user-facing slice; required artifacts include code, tests, and evidence; dependencies list prerequisite issues.
+- For a code review: expected behaviors come from the issue or PRD; acceptance checks include targeted tests, generated-file freshness, and review findings.
+
+## Projection Notes
+
+Generated provider skill mirrors keep this instruction body intact and add only provider-native frontmatter plus Firehorse provenance. The generated skill remains a reusable instruction ingredient for planning, build, review-code, plan-review, and fix-bug workflows; it is not a runnable command and does not execute a workflow by itself.

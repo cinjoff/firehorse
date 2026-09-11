@@ -82,7 +82,7 @@
   ],
   "bundledPiPackages": {
     "claude-mem": "13.2.0",
-    "context-mode": "1.0.135",
+    "context-mode": "1.0.146",
     "pi-lens": "3.8.44",
     "pi-mcp-adapter": "2.6.1",
     "pi-mermaid": "0.3.0",
