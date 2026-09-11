@@ -93,7 +93,7 @@ Recall before repeating a decision:
 
 ```
 npx supermemory tags list
-npx supermemory search "why postgres over sqlite" --tag repo_firehorse__cb4653b1d26a8449 --limit 10 --json
+npx supermemory search "why postgres over sqlite" --tag <tag> --limit 10 --json
 npx supermemory docs get MZP7ZRbjTEW1JmMDry1mQc
 ```
 

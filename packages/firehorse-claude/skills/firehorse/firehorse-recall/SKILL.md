@@ -6,7 +6,7 @@ firehorseGenerated: true
 firehorseKind: "skill"
 firehorseId: "firehorse-recall"
 firehorseSource: "packages/firehorse-core/definitions/skills/firehorse-recall.md"
-firehorseSourceSha256: "fe738524adeff2284bd0cbfe322950f6b817044fdbe2b1578a27c9d4f6c37bbf"
+firehorseSourceSha256: "0cc676cd5d11cc05db3d313d42038ce2388946fd9ba0503f3974769c55b38e89"
 firehorseSchemaVersion: 1
 ---
 
@@ -16,7 +16,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/skills/firehorse-recall.md
 Definition ID: firehorse-recall
 Definition kind: skill
-Source SHA-256: fe738524adeff2284bd0cbfe322950f6b817044fdbe2b1578a27c9d4f6c37bbf
+Source SHA-256: 0cc676cd5d11cc05db3d313d42038ce2388946fd9ba0503f3974769c55b38e89
 -->
 
 # Firehorse recall
@@ -105,7 +105,7 @@ Recall before repeating a decision:
 
 ```
 npx supermemory tags list
-npx supermemory search "why postgres over sqlite" --tag repo_firehorse__cb4653b1d26a8449 --limit 10 --json
+npx supermemory search "why postgres over sqlite" --tag <tag> --limit 10 --json
 npx supermemory docs get MZP7ZRbjTEW1JmMDry1mQc
 ```
 
