@@ -51,5 +51,7 @@ See `docs/ARCHITECTURE.md` for design rationale.
   current position and open work, then `docs/MIGRATION-PLAN.md` (the settled
   plan), `docs/DECISIONS.md` (binding decisions — don't relitigate),
   `docs/PROJECT.md` (vision and scope).
+- **Memory:** `docs/MEMORY.md` is the runbook for the self-hosted supermemory
+  server and the `firehorse-recall` skill. Recall is local-only by design.
 - `docs/prds/` stages the six parked PRDs (D-150). Treat as read-only — moving
   them into the tracker is a separate effort.

@@ -64,6 +64,8 @@ Before starting work, read:
 - `docs/DECISIONS.md` — binding decisions, append-only. Don't relitigate.
 - `docs/PROJECT.md` — vision, scope, success criteria.
 - `docs/agents/` — tracker, domain, and label conventions the skills read.
+- `docs/MEMORY.md` — the self-hosted supermemory runbook. Read it before
+  changing anything that touches recall, and when a session recalls nothing.
 
 GitHub Issues is the only tracker (D-149). The wayfinder map and its child
 tickets hold current position and granular work items, so neither lives in the
@@ -79,6 +81,7 @@ pnpm build              # runs per-package build
 pnpm test               # vitest, when tests exist
 pnpm definitions:write  # regenerate Firehorse definition mirrors/manifests
 pnpm definitions:check  # validate definitions and generated mirror freshness
+pnpm upstreams:check    # detect upstream plugin drift against upstreams.lock.json
 
 pnpm --filter firehorse build           # build a single package
 pnpm --filter firehorse typecheck
