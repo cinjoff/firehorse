@@ -1,11 +1,10 @@
 ---
 description: "Open the supermemory store as an interactive graph — start the local proxy if it is not already up, then hand back the URL."
-argument-hint: "[--port <number>] [--no-open]"
 firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "memory"
 firehorseSource: "packages/firehorse-core/definitions/workflows/memory.md"
-firehorseSourceSha256: "e61e831f06ca6ba8c55ee4baa436c5b73d94e1f671d5fedd619fe931b6fa55c1"
+firehorseSourceSha256: "ac73b9aef278502ac40d8714ec5bdaf06bfd2277757b366f345e0d5b116a27b4"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +14,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/memory.md
 Definition ID: memory
 Definition kind: workflow
-Source SHA-256: e61e831f06ca6ba8c55ee4baa436c5b73d94e1f671d5fedd619fe931b6fa55c1
+Source SHA-256: ac73b9aef278502ac40d8714ec5bdaf06bfd2277757b366f345e0d5b116a27b4
 -->
 
 # Memory
@@ -28,7 +27,7 @@ It is the only Firehorse workflow that leaves something running. Every other com
 
 ## Usage
 
-Invoke the generated command with no arguments to open the store as it stands. `[--port <number>] [--no-open]` moves the server off its default port, or suppresses opening a browser when you only want the URL.
+Invoke the generated command with no arguments. It takes none: the port is `FIREHORSE_GRAPH_PORT` and the store is `SUPERMEMORY_API_URL`, so there is nothing left for a flag to carry.
 
 ## Inputs
 
@@ -65,7 +64,7 @@ Check, build if needed, start, report. There is no judgement in this workflow an
 2. Read its first line. `already running on <url>` means an instance was reused and there is nothing more to start. `Port … is taken by something that is not firehorse-graph` means stop and tell the user.
 3. If the app has never been built, the server answers `404` with `No built app found. Run pnpm build first.` Run `pnpm --filter firehorse-graph build` and start it again.
 4. Confirm `GET /api/health` returns `ok`. A `503` means supermemory itself is not running — report that, and that the store is expected at `SUPERMEMORY_API_URL`, rather than opening a browser onto an empty graph.
-5. Open the URL in the user's browser unless `--no-open` was passed.
+5. Open the URL in the user's browser.
 6. Report the URL and the project count the health check returned. One line. The user is going to look at the app, not read about it.
 
 ## Projection Notes

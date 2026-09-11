@@ -95,6 +95,55 @@ describe("listDocuments", () => {
   });
 });
 
+describe("document payload", () => {
+  it("drops content, which is the whole session transcript and nothing renders", async () => {
+    const fetchImpl = vi.fn<FetchLike>().mockResolvedValue(
+      jsonResponse({
+        documents: [
+          {
+            id: "doc-1",
+            title: "A session",
+            summary: "What it was about",
+            content: "…80 KB of transcript…",
+          },
+        ],
+      }),
+    );
+
+    const { documents } = await client(fetchImpl).listDocuments({});
+
+    expect(documents[0]).not.toHaveProperty("content");
+    // Everything the browser actually reads survives.
+    expect(documents[0]).toMatchObject({
+      id: "doc-1",
+      title: "A session",
+      summary: "What it was about",
+    });
+  });
+
+  it("leaves a document without content untouched", async () => {
+    const fetchImpl = vi
+      .fn<FetchLike>()
+      .mockResolvedValue(jsonResponse({ documents: [{ id: "doc-1", title: "t" }] }));
+
+    const { documents } = await client(fetchImpl).listDocuments({});
+
+    expect(documents[0]).toEqual({ id: "doc-1", title: "t" });
+  });
+
+  it("keeps memoryEntries, which is the thing being drawn", async () => {
+    const fetchImpl = vi.fn<FetchLike>().mockResolvedValue(
+      jsonResponse({
+        documents: [{ id: "d", content: "big", memoryEntries: [{ id: "m", memory: "x" }] }],
+      }),
+    );
+
+    const { documents } = await client(fetchImpl).listDocuments({});
+
+    expect(documents[0]?.memoryEntries).toHaveLength(1);
+  });
+});
+
 describe("authorization", () => {
   it("sends no Authorization header when there is no key", async () => {
     const fetchImpl = vi.fn<FetchLike>().mockResolvedValue(jsonResponse([]));

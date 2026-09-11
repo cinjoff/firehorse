@@ -70,6 +70,21 @@ function asCount(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
+/**
+ * `content` is the document's full text — a whole session transcript — and the
+ * server sends it whether or not you ask (#87 measured 81 KB for 8 documents,
+ * and `includeContent: false` does not suppress it). Nothing in the browser
+ * renders it: the graph draws memories, and the detail panel reads `summary`.
+ * So it is dropped here rather than shipped and ignored.
+ */
+function stripContent(document: DocumentWithMemories): DocumentWithMemories {
+  if (document.content === undefined) return document;
+
+  const { content: _content, ...rest } = document;
+
+  return rest;
+}
+
 export function createSupermemoryClient(
   config: ServerConfig,
   fetchImpl: FetchLike = fetch,
@@ -142,7 +157,7 @@ export function createSupermemoryClient(
 
       const documents =
         isRecord(body) && Array.isArray(body["documents"])
-          ? (body["documents"] as DocumentWithMemories[])
+          ? (body["documents"] as DocumentWithMemories[]).map(stripContent)
           : [];
 
       const raw = isRecord(body) && isRecord(body["pagination"]) ? body["pagination"] : {};
