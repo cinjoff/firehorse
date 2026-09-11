@@ -2942,3 +2942,36 @@ constraint moves from length to whether a line would change what a session does.
   charting` is what that already produced, and wayfinder's template has no
   section for it.
 
+## D-154 — The provider and orchestrator adapter trees are deleted
+
+**Date:** 2026-09-11
+**Decision:** `packages/firehorse-core/src/providers/`,
+`packages/firehorse-core/src/orchestrators/` and the root
+`packages/firehorse-core/src/types.ts` are deleted — 315 lines — along with
+their `tsup` entries, their `./providers` and `./orchestrators` export
+subpaths, their `keywords`, and the `src/index.ts` re-exports. The
+cross-provider seam moves to the projector: per-provider output paths and
+frontmatter renderers in `projection.ts` and `manifests.ts`. This partly
+supersedes D-04: its separability principle stands, its location changes.
+**Rationale:** Zero consumers outside their own directories and zero tests.
+`findProvider()` and `detectOrchestrator()` had no callers anywhere;
+`readEnvironment()` was implemented four times and never called, not even
+internally. `packages/firehorse-claude` does not depend on `firehorse-core` at
+all. Decisively, adding a second provider requires no change to any of it — what
+a second projection target needs is per-provider output paths and frontmatter,
+which live in the projector. The property `docs/ARCHITECTURE.md` credited to the
+adapters — that a definition never names a vendor SDK — is actually held by the
+`requires` / `optional` capability vocabulary in `definitions/types.ts`, which
+survives. This also closes the migration map's open question about
+`CodexProvider`.
+**Alternatives considered:**
+
+- Keep them as scaffolding for a second provider — rejected: they are a design
+  for a transport the migration deleted, and the second provider would not use
+  them.
+- Keep the orchestrator chain for environment detection — rejected: nothing
+  reads it, and a workflow that needs the orchestrator can read the env var it
+  names.
+- Delete the capability vocabulary too — rejected: it is what keeps a definition
+  from naming a vendor SDK, and the schema validates it across every definition.
+

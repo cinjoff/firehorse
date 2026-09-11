@@ -29,12 +29,10 @@ can `/plugin marketplace add cinjoff/firehorse`.
 
 ## Architecture
 
-- `packages/firehorse-core/src/providers/` — provider adapters (Claude, Codex).
-  Add new providers by implementing `Provider` from `provider.ts`.
-- `packages/firehorse-core/src/orchestrators/` — orchestrator adapters
-  (Superset, Conductor, tmux, terminal). Detection via env vars only; no side
-  effects.
-- `packages/firehorse-core/src/types.ts` — shared types.
+- `packages/firehorse-core/src/definitions/` — the definition format: schema,
+  parser, validator, projector, manifest merge.
+- `packages/firehorse-core/src/upstreams/` — the lockfile and drift check.
+- `packages/firehorse-core/src/setup/` — the `.firehorse/manifest.json` schema.
 
 See `docs/ARCHITECTURE.md` for design rationale.
 
@@ -42,9 +40,8 @@ See `docs/ARCHITECTURE.md` for design rationale.
 
 - No default exports. Named exports only — except tool config files whose
   loader requires one (`tsup.config.ts`, `vite.config.ts`).
-- Adapter classes extend `BaseProvider` / `BaseOrchestrator`.
-- Provider-specific quirks stay inside the provider adapter or the matching
-  distribution package.
+- Provider-specific quirks stay in the projector or the matching distribution
+  package, never in shared modules.
 - Claude-adapted commands, agents, skills, and hooks live in
   `packages/firehorse-claude/` — **never** in `firehorse-core`.
 

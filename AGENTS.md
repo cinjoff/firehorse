@@ -10,8 +10,8 @@ Personal Claude-only tooling, packaged as a Claude Code plugin (D-136), shipped
 as a pnpm monorepo with three packages:
 
 - **`packages/firehorse-core`** (`firehorse` on npm) — TypeScript core library.
-  Canonical definitions, the projection generator, provider and orchestrator
-  adapters. No skill runtime.
+  Canonical definitions, the projection generator, the manifest schema, and the
+  upstream drift check. No skill runtime.
 - **`packages/firehorse-claude`** — Claude Code plugin. `.claude-plugin/plugin.json`
   manifest plus `commands/`, `skills/`, `hooks/` directories. Discovered via the
   repo-level `.claude-plugin/marketplace.json`.
@@ -29,19 +29,17 @@ Firehorse depends on upstream plugins and vendors nothing (D-137).
   generated mirrors (Claude commands and skills) must come from canonical
   definitions and checked provenance. Do not add a runtime, prompt loader, provider transport,
   autonomous execution loop, or hook until that work is explicitly scoped.
-- **Provider and orchestrator code stays adapter-shaped.** Logic that depends
-  on a specific vendor goes inside that vendor's adapter file — never in
-  shared modules.
-- **Detection is env-driven and side-effect-free.** Orchestrator `detect()` and
-  `readEnvironment()` must not spawn processes, write files, or hit the
-  network.
-- **Provider-specific behavior stays out of the core lib.** If a feature only
-  works on one provider, it lives in that provider's adapter or in
-  `firehorse-claude` — never in the core lib.
+- **A definition never names a vendor SDK.** It declares capabilities from the
+  `requires` / `optional` vocabulary in `definitions/types.ts`; anything a
+  definition needs that only one provider offers is an extension-prefixed
+  capability, not a vendor call.
+- **Provider-specific behaviour stays out of the core lib.** Where a target
+  needs its own output paths or frontmatter, that belongs to the projector or to
+  the matching distribution package — never to shared modules.
 - **The distribution owns its idioms.** Claude conventions (`.claude-plugin/`,
   `commands/`, `skills/`, `hooks/`) live in `firehorse-claude`.
   Firehorse-authored definition sources live in `firehorse-core/definitions/`.
-  Adapter copies are generated mirrors, not shared runtime code. Projection
+  Generated mirrors are outputs, not shared runtime code. Projection
   functions belong in core; repo scripts own file writes and must not overwrite
   non-generated files.
 
@@ -94,10 +92,9 @@ pnpm --filter firehorse typecheck
 ## Code style
 
 - TypeScript strict mode, ESM-first, `NodeNext` resolution.
-- Prefer `interface` for adapter contracts, `type` for unions / shapes.
+- Prefer `interface` for contracts, `type` for unions / shapes.
 - No default exports, except in tool config files whose loader requires one
   (`tsup.config.ts`, `vite.config.ts`).
-- Adapter classes extend the matching `Base*` to inherit the contract.
 
 ## When in doubt
 

@@ -1,16 +1,14 @@
 # Architecture
 
 Firehorse is personal tooling packaged as one Claude Code plugin (D-136). It
-holds a small set of workflow definitions, a projector that turns them into
-Claude-native commands, and two adapter families that tell a definition what
-provider and orchestrator it is running under. Everything a user invokes is a
-generated slash command.
+holds a small set of workflow definitions and a projector that turns them into
+Claude-native commands. Everything a user invokes is a generated slash command.
 
 The repo carries two packages:
 
 - `packages/firehorse-core` — the `firehorse` npm library. It owns the
   definition format (schema, parser, validator, projector, manifest merge), the
-  provider and orchestrator adapters, the `.firehorse/manifest.json` schema, and
+  upstream lockfile and drift check, the `.firehorse/manifest.json` schema, and
   the canonical definitions under `definitions/`.
 - `packages/firehorse-claude` — the Claude Code plugin. It owns
   `.claude-plugin/plugin.json`, the generated `commands/firehorse/` and
@@ -95,33 +93,20 @@ standing preferences (D-140).
   workflows whose `upstreamSkills` reference a moved skill and the body steps at
   risk.
 
-## Providers and orchestrators
+## How a definition stays vendor-neutral
 
-The adapters stay because a definition should not name a vendor SDK. They
-declare capabilities and detect their environment; neither family executes
-anything.
+A definition never names a vendor SDK. It declares what it needs from the
+`requires` / `optional` capability vocabulary in
+`packages/firehorse-core/src/definitions/types.ts` — `tools`, `orchestration`,
+`modalities`, `environment`, with anything outside the documented values
+extension-prefixed, as in `mcp:github`. That vocabulary is what keeps a
+definition portable; the schema validates it across every definition.
 
-A provider (`packages/firehorse-core/src/providers/provider.ts`) exposes `id`,
-`displayName`, `capabilities` (streaming, tool use, vision, parallel tool calls),
-and `isAvailable()`, a pure read of env vars and installed CLIs. `index.ts`
-registers `ClaudeProvider` and `CodexProvider`. Add one by extending
-`BaseProvider` and adding it to `builtinProviders`. Only Claude has a
-distribution package; the Pi provider and its package went with D-138, and you
-can recover them from the `pi-v0.3.0` tag.
-
-An orchestrator (`orchestrators/orchestrator.ts`) exposes `id`, `displayName`,
-`capabilities` (worktrees, parallel agents, port assignment, shared filesystem),
-a synchronous `detect(env)`, and `readEnvironment(env)`, which extracts
-`rootPath`, `workspacePath`, `workspaceName`, and `port` when the env carries
-them. `detect.ts` walks `orchestratorChain` in order and takes the first adapter
-whose `detect()` returns true:
-
-1. Superset — `SUPERSET_WORKSPACE_NAME` / `SUPERSET_ROOT_PATH`.
-2. Conductor — `CONDUCTOR_WORKSPACE_NAME` / `CONDUCTOR_ROOT_PATH`.
-3. tmux — `TMUX`.
-4. Terminal — always matches, so the chain always resolves.
-
-Detection reads env vars only. It makes no network calls and writes nothing.
+Cross-provider support, when a second target is real, belongs to the projector:
+per-provider output paths and frontmatter renderers in `projection.ts` and
+`manifests.ts`. It is not an adapter tree. The transport-shaped
+`src/providers/`, `src/orchestrators/` and root `src/types.ts` were deleted
+once it was clear a second provider would need no change to any of them.
 
 ## Upstream skills
 
