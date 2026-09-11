@@ -10,6 +10,16 @@ export const definitionKindDirectories = {
   skill: "skills",
 } as const satisfies Record<DefinitionKind, string>;
 
+/**
+ * Who a definition is offered to. `user` definitions are the shipped surface and
+ * project into the plugin; `maintainer` definitions project into this repo's own
+ * `.claude/` and never reach the plugin manifest.
+ */
+export const definitionAudiences = ["user", "maintainer"] as const;
+export type DefinitionAudience = (typeof definitionAudiences)[number];
+
+export const DEFAULT_DEFINITION_AUDIENCE: DefinitionAudience = "user";
+
 export const definitionIdSchema = z
   .string()
   .min(1)
@@ -119,6 +129,7 @@ const commonDefinitionFrontmatterSchema = z.object({
   title: z.string().min(1),
   description: z.string().min(1).max(1024),
   aliases: z.array(definitionIdSchema).optional(),
+  audience: z.enum(definitionAudiences).optional(),
   deprecated: z.boolean().optional(),
   replacedBy: definitionIdSchema.optional(),
   requires: capabilityDeclarationSchema.optional(),

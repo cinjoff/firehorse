@@ -2,6 +2,7 @@
 schemaVersion: 1
 id: ship
 kind: workflow
+audience: maintainer
 title: Ship
 description: Take verified work from branch to release — review the diff, open and merge the PR, write the changelog entry, bump every version site in step, tag the plugin, publish the release, and close the issues it resolved.
 argumentHint: "[base branch | release version] [issue numbers]"

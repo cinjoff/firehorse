@@ -2,6 +2,7 @@
 schemaVersion: 1
 id: upstreams-check
 kind: workflow
+audience: maintainer
 title: Upstreams Check
 description: Report upstream skill drift and what it costs — which workflow definitions reference a moved skill, which body steps depend on the part that moved, and whether the drift is breaking or advisory.
 argumentHint: "[--write]"
@@ -30,7 +31,7 @@ optional:
 
 Use this workflow to find out what changed in the upstream skills and what it costs here. `pnpm upstreams:check` reports the mechanical facts — a version moved, a `sha256` changed, a skill ID vanished. This workflow adds the **impact**: for every skill that moved, which workflow definitions reference it, which body steps depend on the part that moved, and whether those steps still make sense against the new `SKILL.md`.
 
-A hash diff tells you something changed. This workflow tells you which of the seven workflows is now wrong.
+A hash diff tells you something changed. This workflow tells you which of your definitions is now wrong.
 
 ## Usage
 
@@ -53,7 +54,7 @@ Invoke the generated command with no arguments to report. `$ARGUMENTS` may carry
 
 ## Supporting Capabilities
 
-- `pnpm upstreams:check` supplies the mechanical comparison; `gh` is optional, for the issue a breaking drift warrants.
+- `pnpm upstreams:check` supplies the mechanical comparison; `gh` is optional, for the maintainer ticket a breaking drift warrants.
 - This workflow orchestrates no upstream skill. It reads them as data, so `upstreamSkills` is empty by design — a reference here would claim an orchestration that does not happen.
 
 ## Orchestration Intent
@@ -62,7 +63,9 @@ You run the script, then do the part the script cannot: read the changed `SKILL.
 
 ## Classification
 
-**Breaking** — fails `pnpm definitions:check`, so it blocks every workflow in this repo until resolved:
+Both severities are maintainer-facing, and only ever that. Firehorse defines the surface it offers; which upstream skill implements a step is an implementation detail, so an upstream that moves is never a user-facing break. **Breaking** means this repo's gate is red and a definition needs editing — by whoever maintains Firehorse, before the next release.
+
+**Breaking** — fails `pnpm definitions:check`, so nothing ships from this repo until a definition is edited:
 
 - A skill ID named by an `upstreamSkills` entry is absent from the installed plugin.
 - A declared plugin is installed with no lockfile entry.
@@ -101,8 +104,8 @@ You run the script, then do the part the script cannot: read the changed `SKILL.
 4. **Judge each step against the new `SKILL.md`** on disk. Per step: whether it still holds, and when it does not, what in the skill moved and what the step would have to become.
    → Done when: every step from step 3 has a holds-or-not verdict.
 
-5. **Name the consequence for the gate.** Say which workflows a breaking finding blocks.
-   → Done when: each breaking finding names the workflows it blocks.
+5. **Name the consequence for the gate.** Say which definitions a breaking finding stops the gate on, and say it as maintenance work — no user's workflow is broken by an upstream that moved.
+   → Done when: each breaking finding names the definitions it blocks, in maintainer terms.
 
 6. **File tickets for breaking findings** with `gh issue create`, referencing the workflow definitions by path.
    → Done when: every breaking finding has an open ticket. Advisory findings stay in the report unless a step-4 verdict failed.

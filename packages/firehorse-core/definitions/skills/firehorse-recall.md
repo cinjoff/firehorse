@@ -13,11 +13,11 @@ compatibility: Requires the supermemory CLI on npx and a reachable supermemory s
 
 Use this skill to reach memory on purpose. The supermemory plugin's hooks already capture every session and inject what they judge relevant; this skill is the other half — the deliberate query you run when you suspect a question has been answered before, and the deliberate note you write when this session answers one.
 
-It is a CLI wrapper, not an MCP surface (D-144). The `npx supermemory` CLI talks to the same self-hosted server the hooks use, so nothing here depends on the hosted service.
+It is a CLI wrapper, not an MCP surface. The `npx supermemory` CLI talks to the same self-hosted server the hooks use, so nothing here depends on the hosted service.
 
 ## Usage
 
-Invoke by name or intent: "recall what we decided about X", "search memory for Y", "remember that Z". Automatic recall is the hooks' job; running both spends context twice on the same store (D-145).
+Invoke by name or intent: "recall what we decided about X", "search memory for Y", "remember that Z". Automatic recall is the hooks' job; running both spends context twice on the same store.
 
 This is procedure, not command reference. For syntax read `npx supermemory <command> --help`, or `npx supermemory help --json` for the machine-readable inventory — both come from the installed version rather than from a copy that can drift.
 

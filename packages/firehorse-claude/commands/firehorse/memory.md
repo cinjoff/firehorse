@@ -4,7 +4,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "memory"
 firehorseSource: "packages/firehorse-core/definitions/workflows/memory.md"
-firehorseSourceSha256: "ddb19a0d1cd798055866875eb8c5a1ba40c28782fba150105fe2abf949858a74"
+firehorseSourceSha256: "6090c43b68aac6bdfdfefec7b911354a542bad2de911506db11a262d6ac6044c"
 firehorseSchemaVersion: 1
 ---
 
@@ -14,14 +14,14 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/memory.md
 Definition ID: memory
 Definition kind: workflow
-Source SHA-256: ddb19a0d1cd798055866875eb8c5a1ba40c28782fba150105fe2abf949858a74
+Source SHA-256: 6090c43b68aac6bdfdfefec7b911354a542bad2de911506db11a262d6ac6044c
 -->
 
 # Memory
 
 ## Purpose
 
-Use this workflow to look at what supermemory has stored, rather than to query it. `firehorse-recall` is the deliberate-recall path and answers a question you can already phrase (D-144); this one is for the case where you cannot phrase it yet — you want to see the shape of a project's memory, scan what extraction produced, or find the memory you half-remember.
+Use this workflow to look at what supermemory has stored, rather than to query it. `firehorse-recall` is the deliberate-recall path and answers a question you can already phrase; this one is for the case where you cannot phrase it yet — you want to see the shape of a project's memory, scan what extraction produced, or find the memory you half-remember.
 
 It is the only Firehorse workflow that leaves something running. Every other command finishes; this one starts a local server and hands back a URL.
 

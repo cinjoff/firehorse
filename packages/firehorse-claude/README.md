@@ -74,7 +74,7 @@ and the projection generator live in [`firehorse`](../firehorse-core) (the core
 lib); `pnpm definitions:write` projects them into `commands/` and `skills/` here
 and lists them in `.claude-plugin/plugin.json`.
 
-Firehorse depends on upstream plugins and vendors nothing (D-137). Upstream
+Firehorse depends on upstream plugins and vendors nothing (D-156). Upstream
 skills are declared as plugin dependencies, not copied into this package.
 
 ## Update checks

@@ -1,6 +1,7 @@
 {
   "name": "firehorse",
   "version": "0.6.0",
+  "private": true,
   "description": "Lightweight, cross-provider agentic skills framework — core library.",
   "license": "MIT",
   "author": {
@@ -20,9 +21,7 @@
     "firehorse",
     "agentic",
     "skills",
-    "llm",
-    "providers",
-    "orchestrators"
+    "llm"
   ],
   "type": "module",
   "main": "./dist/index.cjs",
@@ -33,16 +32,6 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    },
-    "./providers": {
-      "types": "./dist/providers/index.d.ts",
-      "import": "./dist/providers/index.js",
-      "require": "./dist/providers/index.cjs"
-    },
-    "./orchestrators": {
-      "types": "./dist/orchestrators/index.d.ts",
-      "import": "./dist/orchestrators/index.js",
-      "require": "./dist/orchestrators/index.cjs"
     },
     "./definitions": {
       "types": "./dist/definitions/index.d.ts",

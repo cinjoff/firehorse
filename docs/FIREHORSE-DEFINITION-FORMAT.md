@@ -13,10 +13,9 @@ implementation, hook, or autonomous execution engine.
 schema. This document describes what that schema accepts; where the two
 disagree, the schema wins.
 
-`definitions/workflows/` is empty at the moment and there is no
-`definitions/skills/` directory yet, so this document carries no excerpt from a
-checked-in file. Phase 3 of [the migration plan](./MIGRATION-PLAN.md) authors the
-seven workflows.
+`definitions/workflows/` holds the eight shipped workflows and
+`definitions/skills/` holds `firehorse-recall`. Read any of them for a worked
+example; this document describes the contract they satisfy.
 
 ## Layout
 
@@ -36,18 +35,19 @@ kinds and are stable public API. A rename needs `aliases`, `deprecated`, and
 Both kinds share this field set. The schema is strict — an unrecognized
 frontmatter key fails validation.
 
-| Field           | Type     | Notes                                                             |
-| --------------- | -------- | ----------------------------------------------------------------- |
-| `schemaVersion` | integer  | Required, currently `1`.                                          |
-| `id`            | slug     | Required. Lowercase letters, numbers, single hyphens; 1-64 chars. |
-| `kind`          | enum     | Required. `workflow` or `skill`.                                  |
-| `title`         | string   | Required, non-empty. Human-readable title.                        |
-| `description`   | string   | Required, 1-1024 chars. Provider-facing summary.                  |
-| `requires`      | object   | Optional. Provider-neutral required capabilities.                 |
-| `optional`      | object   | Optional. Provider-neutral optional capabilities.                 |
-| `aliases`       | string[] | Optional. Historical IDs, each a slug.                            |
-| `deprecated`    | boolean  | Optional deprecation marker.                                      |
-| `replacedBy`    | slug     | Optional replacement ID. Requires `deprecated: true`.             |
+| Field           | Type     | Notes                                                                    |
+| --------------- | -------- | ------------------------------------------------------------------------ |
+| `schemaVersion` | integer  | Required, currently `1`.                                                 |
+| `id`            | slug     | Required. Lowercase letters, numbers, single hyphens; 1-64 chars.        |
+| `kind`          | enum     | Required. `workflow` or `skill`.                                         |
+| `title`         | string   | Required, non-empty. Human-readable title.                               |
+| `description`   | string   | Required, 1-1024 chars. Provider-facing summary.                         |
+| `requires`      | object   | Optional. Provider-neutral required capabilities.                        |
+| `optional`      | object   | Optional. Provider-neutral optional capabilities.                        |
+| `audience`      | enum     | Optional. `user` (default) or `maintainer`. Picks the projection target. |
+| `aliases`       | string[] | Optional. Historical IDs, each a slug.                                   |
+| `deprecated`    | boolean  | Optional deprecation marker.                                             |
+| `replacedBy`    | slug     | Optional replacement ID. Requires `deprecated: true`.                    |
 
 ### Capability declarations
 
@@ -87,10 +87,16 @@ Required body sections, each as a `##` heading spelled exactly:
 6. `## Orchestration Intent`
 7. `## Safety Gates`
 8. `## Procedure`
-9. `## Projection Notes`
+9. `## Projection Notes` — required to author, never shipped: the projector
+   strips it, because the running agent is told by the generated notice that the
+   file is generated.
 
-Each workflow projects to one Claude command at
-`packages/firehorse-claude/commands/firehorse/<id>.md`.
+Each workflow projects to one Claude command. `audience: user` — the default —
+sends it to `packages/firehorse-claude/commands/firehorse/<id>.md`, where the
+plugin ships it as `/firehorse:<id>`. `audience: maintainer` sends it to this
+repo's own `.claude/commands/<id>.md`, invoked as `/<id>`; the `plugin:command`
+colon namespace is reserved for plugins, so a maintainer command cannot carry
+the `firehorse:` prefix.
 
 ## Skill definitions
 
@@ -110,11 +116,12 @@ Required body sections:
 5. `## Instructions`
 6. `## Boundaries`
 7. `## Examples`
-8. `## Projection Notes`
+8. `## Projection Notes` — required to author, never shipped, as above.
 
 Each skill projects to
 `packages/firehorse-claude/skills/firehorse/<id>/SKILL.md`, whose `name`
-frontmatter is the bare `<id>`.
+frontmatter is the bare `<id>`. `audience: maintainer` sends it to
+`.claude/skills/<id>/SKILL.md` instead.
 
 Upstream skills are a different thing: Firehorse references them from a
 workflow's `upstreamSkills` and leaves them in the plugin that ships them. They
@@ -171,6 +178,13 @@ pnpm definitions:write
 pnpm definitions:check
 ```
 
+`projectDefinitions(definitions, options)` takes a `ProjectionOptions`:
+`repoRoot`, which makes the recorded source path relative, and
+`upstreamResolutions`, the parsed `upstreams.lock.json`. Supplied, every
+workflow mirror carries the resolved upstream-skill table; omitted, the mirror
+falls back to the names the definition body already uses. `scripts/definitions.ts`
+always supplies both, so the generated paths are identical on CI and locally.
+
 `definitions:write` parses the canonical definitions, validates
 cross-definition references, regenerates the Claude mirrors, updates the
 manifest, and removes stale generated mirrors — but only those carrying valid
@@ -189,7 +203,14 @@ Every generated mirror carries:
   and `firehorseSchemaVersion`.
 - A visible HTML `Generated by Firehorse. DO NOT EDIT.` comment naming the
   source path and its SHA-256.
-- The rendered instruction body with canonical headings preserved.
+- The instruction body, with two deliberate differences from the source:
+  `## Projection Notes` is stripped, and `## Supporting Capabilities` gains a
+  generated table resolving each `upstreamSkills` entry to its invocation and
+  its `SKILL.md` path. Every other heading is preserved verbatim.
+
+Only `audience: user` definitions reach the plugin manifest. A maintainer
+definition is a full mirror with provenance; it lands under `.claude/` and stays
+out of the shipped surface.
 
 Projection also rewrites the `commands` and `skills` arrays of
 `packages/firehorse-claude/.claude-plugin/plugin.json`. It replaces the entries

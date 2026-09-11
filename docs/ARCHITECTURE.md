@@ -1,21 +1,23 @@
 # Architecture
 
-Firehorse is personal tooling packaged as one Claude Code plugin (D-136). It
-holds a small set of workflow definitions, a projector that turns them into
-Claude-native commands, and two adapter families that tell a definition what
-provider and orchestrator it is running under. Everything a user invokes is a
-generated slash command.
+Firehorse is a thin layer over installed agent skills, for anyone building
+software (D-170), packaged as one Claude Code plugin (D-155). It
+holds a small set of workflow definitions and a projector that turns them into
+Claude-native commands. Everything a user invokes is a generated slash command.
 
-The repo carries two packages:
+The repo carries three packages:
 
 - `packages/firehorse-core` — the `firehorse` npm library. It owns the
   definition format (schema, parser, validator, projector, manifest merge), the
-  provider and orchestrator adapters, the `.firehorse/manifest.json` schema, and
+  upstream lockfile and drift check, the `.firehorse/manifest.json` schema, and
   the canonical definitions under `definitions/`.
 - `packages/firehorse-claude` — the Claude Code plugin. It owns
   `.claude-plugin/plugin.json`, the generated `commands/firehorse/` and
   `skills/firehorse/` trees, the hand-authored `skills/firehorse-setup/` skill,
   and the `hooks/` scripts.
+- `packages/firehorse-graph` — the local app `/firehorse:memory` opens on a
+  self-hosted supermemory store. It is `private: true` and built by Vite rather
+  than tsup; nothing imports from it.
 
 `.claude-plugin/marketplace.json` at the repo root exposes the plugin, so you
 add the marketplace once and install `firehorse` from it.
@@ -40,12 +42,22 @@ Purpose, Usage, Inputs, Outputs, Supporting Capabilities, Orchestration Intent,
 Safety Gates, Procedure, Projection Notes. IDs are globally unique across kinds,
 and `validation.ts` enforces that plus alias collisions and `replacedBy` targets.
 
-`projection.ts` emits one file per definition:
+`projection.ts` emits one file per definition, to a root chosen by the
+definition's `audience` — `user` by default, into the plugin; `maintainer` into
+this repo's own `.claude/`, where a command resolves as `/<id>` and never ships:
 
 ```
-definitions/workflows/<id>.md  →  packages/firehorse-claude/commands/firehorse/<id>.md
-definitions/skills/<id>.md     →  packages/firehorse-claude/skills/firehorse/<id>/SKILL.md
+audience: user        definitions/workflows/<id>.md  →  packages/firehorse-claude/commands/firehorse/<id>.md
+                      definitions/skills/<id>.md     →  packages/firehorse-claude/skills/firehorse/<id>/SKILL.md
+audience: maintainer  definitions/workflows/<id>.md  →  .claude/commands/<id>.md
+                      definitions/skills/<id>.md     →  .claude/skills/<id>/SKILL.md
 ```
+
+The body is not copied verbatim: `## Projection Notes` is stripped, and
+`## Supporting Capabilities` gains a table resolving each `upstreamSkills` entry
+to its invocation and `SKILL.md` path, read from `upstreams.lock.json`. So the
+lockfile is a projection input as well as the drift check's baseline, and
+`definitions:check` fails when the two disagree.
 
 Generated files are not hand-editable. Each one opens with provenance —
 `firehorseGenerated`, `firehorseKind`, `firehorseId`, `firehorseSource`,
@@ -70,7 +82,7 @@ prefixes and sorts them, so hand-maintained entries such as
 Seven workflow definitions sit under `definitions/workflows/`, and their
 generated commands are the user-facing surface. They orchestrate upstream skills
 rather than restating them, and a workflow is the only carrier Firehorse uses for
-standing preferences (D-140).
+standing preferences (D-159).
 
 - `new-project` — stands a repo up for Firehorse: remote, tracker, the label
   vocabulary created in the tracker, `setup-matt-pocock-skills`,
@@ -79,7 +91,7 @@ standing preferences (D-140).
 - `index` — indexes the repo into `codebase-memory-mcp` and supermemory, writes
   `docs/codebase/ARCHITECTURE.md`, `STRUCTURE.md`, and `CONVENTIONS.md` from the
   graph, and records freshness in the manifest by commit ancestry. It never
-  writes `DESIGN.md` (D-146).
+  writes `DESIGN.md` (D-165).
 - `map` — charts a wayfinder map from a loose idea, or works through an existing
   one, and fills the map's `## Notes` from what this repo actually has so later
   sessions inherit the preferences.
@@ -95,39 +107,26 @@ standing preferences (D-140).
   workflows whose `upstreamSkills` reference a moved skill and the body steps at
   risk.
 
-## Providers and orchestrators
+## How a definition stays vendor-neutral
 
-The adapters stay because a definition should not name a vendor SDK. They
-declare capabilities and detect their environment; neither family executes
-anything.
+A definition never names a vendor SDK. It declares what it needs from the
+`requires` / `optional` capability vocabulary in
+`packages/firehorse-core/src/definitions/types.ts` — `tools`, `orchestration`,
+`modalities`, `environment`, with anything outside the documented values
+extension-prefixed, as in `mcp:github`. That vocabulary is what keeps a
+definition portable; the schema validates it across every definition.
 
-A provider (`packages/firehorse-core/src/providers/provider.ts`) exposes `id`,
-`displayName`, `capabilities` (streaming, tool use, vision, parallel tool calls),
-and `isAvailable()`, a pure read of env vars and installed CLIs. `index.ts`
-registers `ClaudeProvider` and `CodexProvider`. Add one by extending
-`BaseProvider` and adding it to `builtinProviders`. Only Claude has a
-distribution package; the Pi provider and its package went with D-138, and you
-can recover them from the `pi-v0.3.0` tag.
-
-An orchestrator (`orchestrators/orchestrator.ts`) exposes `id`, `displayName`,
-`capabilities` (worktrees, parallel agents, port assignment, shared filesystem),
-a synchronous `detect(env)`, and `readEnvironment(env)`, which extracts
-`rootPath`, `workspacePath`, `workspaceName`, and `port` when the env carries
-them. `detect.ts` walks `orchestratorChain` in order and takes the first adapter
-whose `detect()` returns true:
-
-1. Superset — `SUPERSET_WORKSPACE_NAME` / `SUPERSET_ROOT_PATH`.
-2. Conductor — `CONDUCTOR_WORKSPACE_NAME` / `CONDUCTOR_ROOT_PATH`.
-3. tmux — `TMUX`.
-4. Terminal — always matches, so the chain always resolves.
-
-Detection reads env vars only. It makes no network calls and writes nothing.
+Cross-provider support, when a second target is real, belongs to the projector:
+per-provider output paths and frontmatter renderers in `projection.ts` and
+`manifests.ts`. It is not an adapter tree. The transport-shaped
+`src/providers/`, `src/orchestrators/` and root `src/types.ts` were deleted
+once it was clear a second provider would need no change to any of them.
 
 ## Upstream skills
 
-Firehorse depends on upstream plugins and vendors nothing (D-137). A workflow
+Firehorse depends on upstream plugins and vendors nothing (D-156). A workflow
 names a skill in its frontmatter as a flat `upstreamSkills` list of
-`{upstream, id}` entries (D-142), where `upstream` is the plugin name and `id` is
+`{upstream, id}` entries (D-161), where `upstream` is the plugin name and `id` is
 the skill's frontmatter `name`; ordering lives in the workflow body.
 
 `packages/firehorse-claude/.claude-plugin/plugin.json` and the repo-root
@@ -136,21 +135,21 @@ the skill's frontmatter `name`; ordering lives in the workflow body.
 Firehorse pulls them in. The skill itself stays in the plugin that ships it.
 
 Upstream plugins ship continuously, so a skill can be renamed or rewritten under
-a workflow without any version changing. The planned drift mechanism is a
-root-level `upstreams.lock.json` baseline plus a `pnpm upstreams:check` that
-compares it against the plugins installed on disk. **Neither exists yet**; Phase 4
-of [the migration plan](./MIGRATION-PLAN.md) builds them, and
-[the upstream skills doc](./UPSTREAM-SKILLS.md) records the lockfile design. The
-`upstreams-check` workflow is written against that mechanism, so its command is
-installed ahead of the script it calls.
+a workflow without any version changing. The drift mechanism is a root-level
+`upstreams.lock.json` baseline at `schemaVersion: 2` plus `pnpm upstreams:check`,
+which compares it against the plugins installed under `~/.claude/plugins/`.
+[The upstream skills doc](./UPSTREAM-SKILLS.md) carries the lockfile format, the
+severity lists, and the CI behaviour. The `upstreams-check` workflow adds the
+impact judgement the script cannot make; it is maintainer-only, so it projects
+to `.claude/commands/` rather than into the plugin.
 
 ## Per-project state
 
 `.firehorse/manifest.json` records what setup and indexing have done in a repo.
 `packages/firehorse-core/src/setup/index.ts` owns its Zod schema at
 `schemaVersion: 2`: `setup.mattPocockSkills` (version and timestamp),
-`index` (`commit`, `at`, `graph`, `supermemory`), `anchors` (`design`,
-`codebase`), and `upstreams.checkedAt`. The same module computes index staleness
+`index` (`commit`, `at`, `graph`, `supermemory`), `anchors` (`context`,
+`agents`, `design`, `adr`, and `codebase`), and `upstreams.checkedAt`. The same module computes index staleness
 from git facts a caller supplies — `computeFirehorseIndexStaleness` never shells
 out itself.
 
@@ -159,7 +158,7 @@ five-second timeout. `check-setup.mjs` reads the manifest, runs at most three gi
 commands, prints at most one `firehorse:` line, and exits 0 on every path —
 malformed JSON, absent git, absent manifest, unknown `schemaVersion`. Silence is
 the healthy state. It reports state and never injects rules, which keeps it clear
-of D-145. `check-update.mjs` checks the latest GitHub release for
+of D-164. `check-update.mjs` checks the latest GitHub release for
 `cinjoff/firehorse` on a throttle and honours `FIREHORSE_SKIP_UPDATE_CHECK`,
 `FIREHORSE_OFFLINE`, `CLAUDE_OFFLINE`, and `CI`.
 
@@ -169,14 +168,14 @@ before anything in the workspace is built, so it must not import from it.
 ## Memory
 
 Memory is self-hosted supermemory, reached through `npx supermemory` rather than
-an MCP shim (D-143, D-144). A local server on 6767, local embeddings, and Ollama
+an MCP shim (D-162, D-163). A local server on 6767, local embeddings, and Ollama
 for extraction keep it offline.
 
 Two halves reach it. The supermemory plugin's four REST hooks capture each
 session and inject what they judge relevant; they are a declared dependency, so
 Claude Code installs them with Firehorse. The `firehorse-recall` skill
 (`definitions/skills/firehorse-recall.md`) wraps `npx supermemory search|add`
-for deliberate recall, invoked explicitly and never as a reflex (D-145).
+for deliberate recall, invoked explicitly and never as a reflex (D-164).
 
 The server itself is not a repo artifact — it is machine setup, and
 [`MEMORY.md`](./MEMORY.md) is its runbook. The `index` and `map` workflows read
@@ -191,7 +190,7 @@ absent, so they run without it.
 - No provider transport. Capabilities are declared; nothing connects.
 - No CLI. `firehorse-core` is a library, and `scripts/definitions.ts` is a repo
   script rather than a published binary.
-- No agent definitions. `kind: agent-role` and the nine agents went with D-141;
+- No agent definitions. `kind: agent-role` and the nine agents went with D-160;
   workflows run their steps inline.
 - No vendored upstream content, and no second copy of a plugin you already
-  install (D-137).
+  install (D-156).

@@ -1,6 +1,6 @@
 # Upstream skills
 
-Firehorse depends on upstream plugins and vendors nothing (D-137). An upstream
+Firehorse depends on upstream plugins and vendors nothing (D-156). An upstream
 skill stays in the plugin that ships it; Firehorse references it from a workflow
 and orchestrates it.
 
@@ -44,13 +44,20 @@ a Firehorse workflow without any version changing. The lockfile records a
 baseline that a check can compare against what is installed on disk.
 
 `upstreams.lock.json` lives at the repo root, beside `pnpm-lock.yaml` — not
-under `packages/firehorse-core/`, which is published to npm and has no business
-carrying a repo-local baseline. It records, per declared plugin: the marketplace,
-the version, and every skill it exposes with that skill's path and a SHA-256.
+under `packages/firehorse-core/`, which is a package rather than a place for a
+repo-local baseline. It records, per declared plugin: the marketplace, the
+version, and every skill it exposes with that skill's path, a SHA-256, where its
+key came from, and whether an agent can invoke it.
+
+The lockfile is not only the drift check's input. Projection reads it too: each
+generated workflow mirror carries a resolved upstream-skill table built from it,
+so `pnpm definitions:check` fails when the lockfile and the mirrors disagree.
+Accepting a new baseline with `--write` therefore changes generated files, and
+the two are committed together.
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "generatedAt": "2026-09-11T09:24:00.000Z",
   "plugins": {
     "mattpocock-skills": {
@@ -60,7 +67,8 @@ the version, and every skill it exposes with that skill's path and a SHA-256.
         "wayfinder": {
           "path": "skills/engineering/wayfinder/SKILL.md",
           "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          "nameSource": "frontmatter"
+          "nameSource": "frontmatter",
+          "modelInvocable": false
         }
       }
     }
@@ -78,6 +86,20 @@ directory name when the frontmatter omits one, because the frontmatter name is
 what an `upstreamSkills` entry references and what a session invokes.
 `nameSource` records which of the two was used, so a name that later appears in
 frontmatter reads as a change rather than a mystery.
+
+`modelInvocable` is `false` when the skill sets `disable-model-invocation`,
+which makes it user-invoked only: an agent cannot reach it through the Skill
+tool at all — trying fails with "skill not found" — so a workflow that depends
+on it has to read its `SKILL.md` at the recorded path and follow the steps
+inline. `wayfinder`, `implement` and `setup-matt-pocock-skills` are all in this
+state today, which is why the workflows referencing them say "read the file and
+follow it inline" and why the generated mirrors carry the path.
+
+Every field is required: the lockfile parses under `strictObject`, so a skill
+entry missing `modelInvocable` fails rather than defaulting. The parser also
+accepts only the current `schemaVersion`. A lockfile written by an older
+Firehorse is not migrated and not read — regenerate it with
+`pnpm upstreams:check --write`.
 
 `plugins` is ordered by name and `skills` by key, both ASCII-sorted, following
 the rule the generated manifests already use. A real change is then the only
@@ -105,18 +127,32 @@ case where the tree is the authority.
 
 ### What breaks the build and what only gets reported
 
-Breaking — the command exits non-zero and `definitions:check` fails:
+Both severities are maintainer-facing. Firehorse defines the surface it offers;
+which upstream skill implements a step is an implementation detail, so an
+upstream that moves never breaks a user's workflow. "Breaking" means this
+repo's gate is red until a maintainer edits a definition.
+
+Breaking — the command exits non-zero and `definitions:check` fails, so nothing
+ships from this repo until a definition is edited:
 
 - A skill named by an `upstreamSkills` entry is absent from the installed
   plugin. The report names every workflow that references it.
 - A declared plugin is installed but has no lockfile entry, or the lockfile
   names a plugin Firehorse no longer declares. The lockfile is stale either way,
   which makes its comparisons worthless.
+- A referenced skill **lost** model invocation — it now sets
+  `disable-model-invocation` (`upstreams.skill_invocation_changed`). The
+  workflows that invoke it can no longer reach it, and their bodies have to
+  switch to reading its `SKILL.md` inline. The same code is advisory when no
+  definition references the skill, or when invocation was gained rather than
+  lost.
 
 Advisory — reported, exit 0:
 
 - A skill's `sha256` changed. The instructions moved under a stable name, so an
   orchestration may drift without breaking.
+- A skill **gained** model invocation, or lost it with no definition referencing
+  it (`upstreams.skill_invocation_changed`). Gaining it only widens the options.
 - A plugin's `version` or `marketplace` changed.
 - A skill ID appeared, or vanished with no definition referencing it.
 

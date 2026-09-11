@@ -1,9 +1,35 @@
 # firehorse
 
-A thin, opinionated layer over the agent skills you already have installed:
-eight workflows that hold the shape of a job — plan it, build it, verify it,
-ship it — and hand the craft to those skills, adding memory, a codebase map, and
-UI critique around them.
+A thin, opinionated layer over the agent skills you already have installed: six
+workflows that hold the shape of a job — plan it, build it, verify it — and hand
+the craft to those skills, adding memory, a codebase map, and UI critique around
+them.
+
+It runs in Claude Code today. The definition format and the projector are
+provider-neutral by design, so a second target is a projection change rather
+than a rewrite; [the architecture doc](./docs/ARCHITECTURE.md) has the reasoning.
+
+## The skills it builds on
+
+The craft comes from plugins you install alongside it, and Firehorse never
+copies them:
+
+- **[`mattpocock-skills`](https://github.com/mattpocock/skills)** — Matt
+  Pocock's engineering skills, installed from the official Claude Code plugin
+  marketplace. They teach an agent one discipline each: write the failing test
+  first (`tdd`), build a reproducing loop before hypothesising
+  (`diagnosing-bugs`), chart work too big for one session as a map of decision
+  tickets (`wayfinder`), review a diff against the repo's own standards
+  (`code-review`). Firehorse's workflows invoke them at the step where each one
+  earns its place.
+- **[`impeccable`](https://github.com/pbakaus/impeccable)** — interface critique
+  and design system work, for any workflow step that touches a UI surface.
+- **[`supermemory`](https://github.com/supermemoryai/claude-supermemory)** — the
+  memory store, run on your own machine, that holds what past sessions decided.
+
+Firehorse adds three things around them: **memory** you can ask questions of, a
+**codebase map** an agent queries before it opens a file, and **UI critique**
+wired into the steps where a surface changes.
 
 ## Why it exists
 
@@ -17,11 +43,15 @@ parts around that thing:
   condition, and a ticket closes on pasted command output rather than on "done".
 - **What does this repo already have?** Setup runs once and records it, so later
   sessions read a manifest instead of re-probing the tree.
-- **What happens when an upstream skill moves?** A drift check names which
-  workflows a rename broke, and which of their steps no longer hold.
+- **What did the last six sessions decide?** Memory is a local supermemory
+  store, and `firehorse-recall` searches it before a decision gets relitigated.
+- **Does this screen actually work?** A UI change routes through `impeccable`
+  against the repo's own `DESIGN.md`, so the critique has something to measure
+  against.
 
 Firehorse owns that spine and vendors nothing. The skills stay upstream, where
-their authors maintain them.
+their authors maintain them — and which skills those are is an implementation
+detail Firehorse can change without changing what you invoke.
 
 ## Setup
 
@@ -98,12 +128,14 @@ so and carries on rather than failing.
 | `/firehorse:map`             | Chart or work a wayfinder map, carrying this repo's standing preferences into its Notes. |
 | `/firehorse:build`           | Take one ticket to a committed, verified change.                                         |
 | `/firehorse:fix-bug`         | Go from a bug report to a fix proven to have changed the behaviour.                      |
-| `/firehorse:ship`            | Review, PR, merge, changelog, version bump, tags, release, issue closures.               |
 | `/firehorse:memory`          | Open the supermemory store as an interactive graph to see what it holds.                 |
-| `/firehorse:upstreams-check` | Report upstream skill drift and which workflow steps it breaks.                          |
 
 Plus two skills: `firehorse-recall`, for asking what past sessions decided, and
 `firehorse-setup`, for checking this machine's setup.
+
+Two more workflows exist and are not shipped: `ship` and `upstreams-check` are
+maintainer tools for this repo, declared `audience: maintainer`, so they project
+into this repo's own `.claude/commands/` rather than into the plugin.
 
 ## How it fits together
 
@@ -129,7 +161,7 @@ flowchart TD
   W["/firehorse:build"]
   W --> U["upstream skills<br/>mattpocock-skills · impeccable"]
   W --> G["codebase-memory-mcp<br/>structure · callers · impact"]
-  W --> T["GitHub Issues<br/>tickets · wayfinder maps"]
+  W --> T["your issue tracker<br/>tickets · wayfinder maps"]
   W --> M[".firehorse/manifest.json<br/>what this repo has"]
   W --> R["supermemory<br/>what past sessions decided"]
 ```
@@ -169,7 +201,7 @@ first.
 - [Architecture](./docs/ARCHITECTURE.md) — why the pieces are split this way
 - [Memory runbook](./docs/MEMORY.md) — what the memory half does, and how it
   fails quietly
-- [Decisions](./docs/DECISIONS.md) — binding, append-only
+- [Decisions](./docs/DECISIONS.md) — the binding decision log
 - [Project vision and scope](./docs/PROJECT.md)
 - [Migration plan](./docs/MIGRATION-PLAN.md) — the settled Claude-only
   migration; the Pi distribution and vendored mirrors are recoverable from the

@@ -1,9 +1,9 @@
 # Memory
 
 Firehorse recalls past sessions from a self-hosted supermemory server that runs
-entirely on your machine (D-143). Two halves reach it: the supermemory plugin's
+entirely on your machine (D-162). Two halves reach it: the supermemory plugin's
 hooks capture and inject automatically, and the `firehorse-recall` skill queries
-it on purpose (D-144).
+it on purpose (D-163).
 
 Nothing leaves the machine. Embeddings run locally and extraction runs against
 a local Ollama model.
@@ -238,7 +238,7 @@ prefix. Do not recompute the hash.
 
 `firehorse-recall`
 (`packages/firehorse-core/definitions/skills/firehorse-recall.md`) wraps the CLI
-for explicit recall, per D-144. It searches wide and shallow first and fetches
+for explicit recall, per D-163. It searches wide and shallow first and fetches
 full documents only for the hits you chose.
 
 The supermemory plugin is a declared dependency in both manifests and baselined
@@ -276,7 +276,7 @@ an `Authorization` header to `mcp.supermemory.ai` at every session start.
 server has no such endpoint, so the proxy fails locally instead. The residue is
 then one red line in `/mcp` and a `context-gatherer` agent that cannot run.
 
-That is tolerable, so D-143 stands. It would not be if the proxy were the only
+That is tolerable, so D-162 stands. It would not be if the proxy were the only
 way to reach memory — but the hooks and the CLI both speak REST and both honour
 `SUPERMEMORY_API_URL`, so nothing depends on it.
 
@@ -304,7 +304,7 @@ factual document. Where a memory and the repo disagree, the repo wins.
 
 Both `claude-mem@thedotmack` and `claude-mem@firehorse` are disabled, not
 uninstalled. Their 2.6 GB store under `~/.claude-mem` is untouched. No migration
-(D-143); re-indexing selected history stays optional and separate.
+(D-162); re-indexing selected history stays optional and separate.
 
 ## Provenance
 

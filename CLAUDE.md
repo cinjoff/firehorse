@@ -29,12 +29,10 @@ can `/plugin marketplace add cinjoff/firehorse`.
 
 ## Architecture
 
-- `packages/firehorse-core/src/providers/` — provider adapters (Claude, Codex).
-  Add new providers by implementing `Provider` from `provider.ts`.
-- `packages/firehorse-core/src/orchestrators/` — orchestrator adapters
-  (Superset, Conductor, tmux, terminal). Detection via env vars only; no side
-  effects.
-- `packages/firehorse-core/src/types.ts` — shared types.
+- `packages/firehorse-core/src/definitions/` — the definition format: schema,
+  parser, validator, projector, manifest merge.
+- `packages/firehorse-core/src/upstreams/` — the lockfile and drift check.
+- `packages/firehorse-core/src/setup/` — the `.firehorse/manifest.json` schema.
 
 See `docs/ARCHITECTURE.md` for design rationale.
 
@@ -42,11 +40,28 @@ See `docs/ARCHITECTURE.md` for design rationale.
 
 - No default exports. Named exports only — except tool config files whose
   loader requires one (`tsup.config.ts`, `vite.config.ts`).
-- Adapter classes extend `BaseProvider` / `BaseOrchestrator`.
-- Provider-specific quirks stay inside the provider adapter or the matching
-  distribution package.
+- Provider-specific quirks stay in the projector or the matching distribution
+  package, never in shared modules.
 - Claude-adapted commands, agents, skills, and hooks live in
   `packages/firehorse-claude/` — **never** in `firehorse-core`.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues for `cinjoff/firehorse`, reached with the `gh` CLI;
+the wayfinding operations — sub-issues, dependencies, the frontier query — are
+recorded there too. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical triage roles, each label string equal to its name. See
+`docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` at the repo root, no `docs/adr/` yet. See
+`docs/agents/domain.md`.
 
 ## Planning refs
 
@@ -56,5 +71,5 @@ See `docs/ARCHITECTURE.md` for design rationale.
   `docs/PROJECT.md` (vision and scope).
 - **Memory:** `docs/MEMORY.md` is the runbook for the self-hosted supermemory
   server and the `firehorse-recall` skill. Recall is local-only by design.
-- `docs/prds/` stages the six parked PRDs (D-150). Treat as read-only — moving
+- `docs/prds/` stages the six parked PRDs (D-169). Treat as read-only — moving
   them into the tracker is a separate effort.

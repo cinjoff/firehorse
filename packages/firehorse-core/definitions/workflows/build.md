@@ -15,7 +15,6 @@ requires:
   environment:
     - filesystem
     - git
-    - github
 optional:
   tools:
     - grep
@@ -27,6 +26,7 @@ optional:
   modalities:
     - vision
   environment:
+    - github
     - node
     - pnpm
 upstreamSkills:
@@ -56,12 +56,13 @@ Use this workflow to take one ticket from the tracker to a committed, verified c
 
 ## Usage
 
-Invoke the generated command with a GitHub issue URL or number, or a path to a spec. `$ARGUMENTS` carries it. One ticket per invocation.
+Invoke the generated command with a ticket reference — whatever this repo's tracker uses, an issue URL or number where that tracker is GitHub — or a path to a spec. `$ARGUMENTS` carries it. One ticket per invocation.
 
 ## Inputs
 
 - `$ARGUMENTS`: the issue reference or spec path.
-- The issue body, labels, and comments, from `gh issue view <number> --comments`.
+- The ticket's body, labels, and comments, read with the verb `docs/agents/issue-tracker.md` records for it.
+- `docs/agents/issue-tracker.md` — which tracker this repo uses and the verbs that reach it. Every tracker action below goes through what it records. Absent → say so and ask, rather than assuming GitHub.
 - The codebase graph for this repo, through `codebase-memory-mcp`.
 - `CONTEXT.md` for the repo's vocabulary, and `DESIGN.md` when the change has a UI surface.
 
@@ -90,8 +91,8 @@ You drive the sequence; `implement` and `tdd` run inline. `prototype` produces a
 - **Shape before pixels.** While "what should this look like" is still open, the artifact is a prototype.
 - **Cite only what you opened.** `check_index_coverage` confirms every path the graph returns before you quote it.
 - **Evidence closes work, claims do not.** The gate output goes on the issue; a red gate is the result of the run.
-- **Planning lives in the tracker** (D-149) — issues and their comments, never a draft under `docs/prds/` or `docs/issues/`.
-- **Generated mirrors come from `pnpm definitions:write`.** Edit the definition under `packages/firehorse-core/definitions/`, never the mirror under `packages/firehorse-claude/`.
+- **Planning lives in the tracker** — issues and their comments, the way the tracker doc records them, never a markdown draft committed beside the code.
+- **Generated files come from their generator.** Where this repo generates a file from a source of truth, edit the source and re-run the generator; a hand-edit to the output is lost at the next run.
 
 ## Gotchas
 
@@ -101,7 +102,7 @@ You drive the sequence; `implement` and `tdd` run inline. `prototype` produces a
 
 ## Procedure
 
-1. **Read the ticket.** `gh issue view <number> --comments`. Name the behaviour that must change. A wayfinder child issue also means loading its map's `## Notes` and obeying what it says.
+1. **Read the ticket** through the tracker `docs/agents/issue-tracker.md` records — `gh issue view <number> --comments` where that is GitHub. Name the behaviour that must change. A wayfinder child issue also means loading its map's `## Notes` and obeying what it says.
    → Done when: the behaviour under change is written in one sentence.
 
 2. **Query the graph.** The graph is how you learn this codebase's architecture and the impact of the change before touching it. For every symbol the ticket names, `search_graph`; for each hit, `trace_path` for its callers; `get_architecture` when the ticket crosses modules. Then `index_status` for freshness and `check_index_coverage` on every path you intend to cite.
@@ -119,13 +120,13 @@ You drive the sequence; `implement` and `tdd` run inline. `prototype` produces a
 6. **Implement.** `mattpocock-skills:implement` is user-invoked only, so read its `SKILL.md` at the path in [Supporting Capabilities](#supporting-capabilities) and follow its loop yourself; invoke `mattpocock-skills:tdd` at the step-3 seams.
    → Done when: the behaviour from step 1 is in place and its tests pass.
 
-7. **Run the gate.** `pnpm typecheck`, `pnpm test`, and `pnpm definitions:check` where that script exists. Keep the output verbatim.
+7. **Run the gate.** Derive it from this repo rather than assuming one: the typecheck, test and check scripts its manifest declares — `package.json` `scripts` for a Node repo — run through the package manager its lockfile names. No gate script, no gate: say so in one line. Keep the output verbatim.
    → Done when: every gate is green, or a red gate is recorded and the run stops here.
 
 8. **Commit.** Small, reviewable commits on the current branch.
    → Done when: the working tree is clean.
 
-9. **Report on the issue.** Comment with the seam list, the prototype link when there was one, the gate commands with their output, and what you did not verify. Leave the issue open for `/firehorse:ship` to close.
+9. **Report on the ticket.** Comment with the seam list, the prototype link when there was one, the gate commands with their output, and what you did not verify. Leave the issue open for `/firehorse:ship` to close.
    → Done when: the comment is posted and the issue is still open.
 
 ## Projection Notes

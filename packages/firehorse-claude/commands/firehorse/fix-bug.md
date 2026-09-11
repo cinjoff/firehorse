@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "fix-bug"
 firehorseSource: "packages/firehorse-core/definitions/workflows/fix-bug.md"
-firehorseSourceSha256: "2d4e7241ef2af4bc5d18f5418ab27132415bdea61bb4a6998e451a5ae9f13536"
+firehorseSourceSha256: "04504b6d4559500eb76fab1034d7f51bfbcc97e3bac858a58a2e5e84bd01cdfd"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/fix-bug.md
 Definition ID: fix-bug
 Definition kind: workflow
-Source SHA-256: 2d4e7241ef2af4bc5d18f5418ab27132415bdea61bb4a6998e451a5ae9f13536
+Source SHA-256: 04504b6d4559500eb76fab1034d7f51bfbcc97e3bac858a58a2e5e84bd01cdfd
 -->
 
 # Fix Bug
@@ -38,6 +38,7 @@ Invoke the generated command with a bug description, an issue reference, a faili
 - `$ARGUMENTS`: the report or the evidence.
 - The issue body and comments, when the report is a tracker issue.
 - The codebase graph, through `codebase-memory-mcp`.
+- `docs/agents/issue-tracker.md` — which tracker this repo uses and the verbs that reach it. Every tracker action below goes through what it records. Absent → say so and ask, rather than assuming GitHub.
 - `CONTEXT.md` for the repo's vocabulary, and the ADRs covering the area you are touching.
 
 ## Outputs
@@ -78,8 +79,8 @@ You run `diagnosing-bugs` phase by phase and insert the graph trace between Phas
 - **One bug, one patch.** The patch addresses the evidenced cause and stops; a second bug is a second ticket.
 - **Secrets stay out of every artifact.** Write `<REDACTED>` in place of a secret in any command, output, or captured artifact, and build loops against environment variables.
 - **Before-and-after output proves the fix.** The claim without both sides of the loop is not a result.
-- **The diagnosis lives in an issue comment** (D-149), never a draft under `docs/issues/`.
-- **Generated mirrors come from `pnpm definitions:write`**, never an editor.
+- **The diagnosis lives in the tracker**, as a comment on the ticket, never a markdown draft committed beside the code.
+- **Generated files come from their generator**, never an editor.
 
 ## Gotchas
 
@@ -89,7 +90,7 @@ You run `diagnosing-bugs` phase by phase and insert the graph trace between Phas
 
 ## Procedure
 
-1. **Read the report.** Name the claimed failure, the expected behaviour, and the evidence you already have. A tracker issue is read with `gh issue view <number> --comments`.
+1. **Read the report.** Name the claimed failure, the expected behaviour, and the evidence you already have. A ticket is read through the tracker `docs/agents/issue-tracker.md` records — `gh issue view <number> --comments` where that is GitHub.
    → Done when: claimed failure and expected behaviour are written down, separately.
 
 2. **Build the loop.** `mattpocock-skills:diagnosing-bugs` Phase 1, spending disproportionate effort here, then Phase 2 to reproduce and minimise.
@@ -107,11 +108,11 @@ You run `diagnosing-bugs` phase by phase and insert the graph trace between Phas
 6. **Patch and test.** Phase 5: the smallest patch that addresses the confirmed cause, plus a regression test via `mattpocock-skills:tdd` at the seam the loop already reaches.
    → Done when: the loop goes green and the regression test has a path.
 
-7. **Produce regression evidence.** The loop's red output from step 2, the same loop green now, and the regression test failing against the pre-patch code. Then `pnpm typecheck` and `pnpm test`.
+7. **Produce regression evidence.** The loop's red output from step 2, the same loop green now, and the regression test failing against the pre-patch code. Then the repo's own gate — the typecheck and test scripts its manifest declares, run through the package manager its lockfile names; no gate script, no gate.
    → Done when: all three outputs are captured and the gate is green.
 
 8. **Clean up and commit.** Remove the step-5 instrumentation, then commit in small, reviewable commits.
    → Done when: the diff contains no instrumentation and the working tree is clean.
 
-9. **Report on the issue.** Comment with the loop, the call-site list, the confirmed cause, the regression evidence, the test path, and anything you did not verify. Leave the issue open for `/firehorse:ship` to close.
+9. **Report on the ticket.** Comment with the loop, the call-site list, the confirmed cause, the regression evidence, the test path, and anything you did not verify. Leave the issue open for `/firehorse:ship` to close.
    → Done when: the comment is posted and the issue is still open.

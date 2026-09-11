@@ -3,12 +3,31 @@ import path from "node:path";
 import matter from "gray-matter";
 
 import { renderUpstreamSkillTable, type UpstreamSkillResolutions } from "./upstream-resolution.js";
-import type {
-  DefinitionKind,
-  FirehorseDefinition,
-  SkillDefinition,
-  WorkflowDefinition,
+import {
+  DEFAULT_DEFINITION_AUDIENCE,
+  type DefinitionAudience,
+  type DefinitionKind,
+  type FirehorseDefinition,
+  type SkillDefinition,
+  type WorkflowDefinition,
 } from "./types.js";
+
+/**
+ * Where each audience's mirrors land. `user` is the shipped plugin surface;
+ * `maintainer` is this repo's own project-scoped `.claude/`, where commands
+ * resolve as `/<id>` — the `plugin:command` colon namespace is reserved for
+ * plugins, so a maintainer command cannot reproduce `/firehorse:<id>`.
+ */
+export const projectionRoots = {
+  user: {
+    workflow: "packages/firehorse-claude/commands/firehorse",
+    skill: "packages/firehorse-claude/skills/firehorse",
+  },
+  maintainer: {
+    workflow: ".claude/commands",
+    skill: ".claude/skills",
+  },
+} as const satisfies Record<DefinitionAudience, Record<ProjectionResourceKind, string>>;
 
 export type ProjectionProvider = "claude";
 export type ProjectionResourceKind = "workflow" | "skill";
@@ -17,6 +36,7 @@ export interface GeneratedFile {
   readonly path: string;
   readonly provider: ProjectionProvider;
   readonly resourceKind: ProjectionResourceKind;
+  readonly audience: DefinitionAudience;
   readonly definitionId: string;
   readonly sourcePath: string;
   readonly sourceHash: string;
@@ -102,11 +122,14 @@ function projectWorkflow(
     upstreamSkillTableFor(definition, options),
   );
 
+  const audience = audienceOf(definition);
+
   return [
     {
-      path: `packages/firehorse-claude/commands/firehorse/${definition.frontmatter.id}.md`,
+      path: `${projectionRoots[audience].workflow}/${definition.frontmatter.id}.md`,
       provider: "claude",
       resourceKind: "workflow",
+      audience,
       definitionId: definition.frontmatter.id,
       sourcePath,
       sourceHash: definition.sourceHash,
@@ -127,11 +150,14 @@ function projectSkill(definition: SkillDefinition, options: ProjectionOptions): 
   const common = generatedCommonFrontmatter(definition, sourcePath);
   const body = renderGeneratedBody(definition, sourcePath);
 
+  const audience = audienceOf(definition);
+
   return [
     {
-      path: `packages/firehorse-claude/skills/firehorse/${definition.frontmatter.id}/SKILL.md`,
+      path: `${projectionRoots[audience].skill}/${definition.frontmatter.id}/SKILL.md`,
       provider: "claude",
       resourceKind: "skill",
+      audience,
       definitionId: definition.frontmatter.id,
       sourcePath,
       sourceHash: definition.sourceHash,
@@ -147,6 +173,10 @@ function projectSkill(definition: SkillDefinition, options: ProjectionOptions): 
       ),
     },
   ];
+}
+
+function audienceOf(definition: FirehorseDefinition): DefinitionAudience {
+  return definition.frontmatter.audience ?? DEFAULT_DEFINITION_AUDIENCE;
 }
 
 function generatedCommonFrontmatter(

@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "new-project"
 firehorseSource: "packages/firehorse-core/definitions/workflows/new-project.md"
-firehorseSourceSha256: "9c96b952f6e61689800ce1912480aebd067d2c4f675fdbdb8075d66ec4debebb"
+firehorseSourceSha256: "975837ca3b02c0d5ac197af5e7773d5e388d40ff6afd405d978c605599eae33b"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/new-project.md
 Definition ID: new-project
 Definition kind: workflow
-Source SHA-256: 9c96b952f6e61689800ce1912480aebd067d2c4f675fdbdb8075d66ec4debebb
+Source SHA-256: 975837ca3b02c0d5ac197af5e7773d5e388d40ff6afd405d978c605599eae33b
 -->
 
 # New Project
@@ -24,7 +24,7 @@ Source SHA-256: 9c96b952f6e61689800ce1912480aebd067d2c4f675fdbdb8075d66ec4debebb
 
 Use this workflow once per repo, before any other Firehorse workflow runs. `setup-matt-pocock-skills` writes the tracker, label, and domain-doc configuration the engineering skills assume. This workflow adds what Firehorse needs on top: the label vocabulary actually created in the tracker, `.firehorse/manifest.json` at schema version 2, an **interviewed** `DESIGN.md`, and a first index.
 
-`DESIGN.md` is the reason the interview exists. It is the one anchor `/firehorse:index` must not write (D-146): inferring direction from the components that already exist describes what the UI is, not what it should be. A human states it, or it stays absent.
+`DESIGN.md` is the reason the interview exists. It is the one anchor `/firehorse:index` must not write: inferring direction from the components that already exist describes what the UI is, not what it should be. A human states it, or it stays absent.
 
 ## Usage
 
@@ -40,9 +40,9 @@ Invoke the generated command with the project name, a repo path, or a remote URL
 
 ## Outputs
 
-- A git repo with a GitHub remote.
+- A git repo, with a remote where the recorded tracker needs one.
 - `docs/agents/issue-tracker.md`, `docs/agents/triage-labels.md`, and `docs/agents/domain.md`, written by `setup-matt-pocock-skills`.
-- The label vocabulary created in the tracker: the five triage labels, `wayfinder:map`, and `wayfinder:research`, `wayfinder:prototype`, `wayfinder:grilling`, `wayfinder:task`.
+- The label vocabulary created through the recorded tracker, under whatever names `docs/agents/triage-labels.md` maps them to: the five triage labels, `wayfinder:map`, and `wayfinder:research`, `wayfinder:prototype`, `wayfinder:grilling`, `wayfinder:task`.
 - `.firehorse/manifest.json` with `schemaVersion: 2`, `setup.mattPocockSkills`, and the `anchors` record every later workflow reads instead of re-probing this repo.
 - `DESIGN.md`, written from the interview, or recorded as absent.
 - The `/firehorse:index` output for the first commit.
@@ -68,16 +68,16 @@ path below and carry out its steps yourself.
 
 ## Orchestration Intent
 
-You follow `setup-matt-pocock-skills` first and take its output as given — tracker and label conventions live in `docs/agents/` under D-145, and nothing here duplicates them into the manifest. Then you create the labels, write the manifest, interview for `DESIGN.md`, and call `/firehorse:index` last, so the index records a commit that already contains the anchors and the manifest.
+You follow `setup-matt-pocock-skills` first and take its output as given — tracker and label conventions live in `docs/agents/`, and nothing here duplicates them into the manifest. Then you create the labels, write the manifest, interview for `DESIGN.md`, and call `/firehorse:index` last, so the index records a commit that already contains the anchors and the manifest.
 
 ## Safety Gates
 
 - **The manifest records what a later workflow would otherwise re-derive every run** — which anchors exist — and nothing a single command already answers. Project name, GitHub owner and repo come from `git remote`; a second copy is a thing that can disagree.
-- **`DESIGN.md` comes from the interview** or it does not exist (D-146).
-- **Tracker and label conventions live in `docs/agents/`** (D-145), not in the manifest.
+- **`DESIGN.md` comes from the interview** or it does not exist.
+- **Tracker and label conventions live in `docs/agents/`**, not in the manifest.
 - **The manifest is committed**, so it carries no secret and no id.
 - **An existing `CONTEXT.md`, `AGENTS.md`, `CLAUDE.md`, or `docs/agents/` file changes only after the human sees the diff.**
-- **Planning lives in the tracker** (D-149), never a draft under `docs/prds/` or `docs/issues/`.
+- **Planning lives in the tracker** the tracker doc records, never a markdown draft committed beside the code.
 
 ## Manifest shape
 
@@ -104,20 +104,20 @@ Machine-specific facts stay out. Whether supermemory or the graph is reachable o
 
 ## Gotchas
 
-- No remote means the tracker cannot work. That is a stop-and-ask, not a warning to carry past.
-- `gh label create` fails on a label that already exists. An existing label is left alone, and its name still belongs in the report.
+- A hosted tracker needs a remote; a local-markdown tracker does not. Which one this is comes from step 2, so a missing remote is a stop-and-ask only once the tracker is known.
+- Label creation fails on a label that already exists. An existing label is left alone, and its name still belongs in the report. A tracker with no label mechanism creates none, and the report says so instead.
 - A project with no UI surface has no `DESIGN.md` to write. Absent is a valid outcome, recorded in one line.
 
 ## Procedure
 
-1. **Establish the repo.** Initialise it when the path has no `.git`, and confirm the GitHub remote with `git remote -v`. No remote → create it with `gh repo create`, or stop and ask.
-   → Done when: `git remote -v` names a GitHub remote.
+1. **Establish the repo.** Initialise it when the path has no `.git`, and read `git remote -v`. A remote is not required yet — step 2 settles which tracker this repo uses, and whether it needs one — so record what is there and carry it into that step.
+   → Done when: the path is a git repo and its remotes are written down.
 
 2. **Follow `mattpocock-skills:setup-matt-pocock-skills`.** It is user-invoked only, so read its `SKILL.md` at the path in [Supporting Capabilities](#supporting-capabilities) and carry out its steps: explore, present, and confirm with the human as it specifies, then write `docs/agents/` and the `## Agent skills` pointer block.
    → Done when: all three `docs/agents/` files exist and the human confirmed them.
 
-3. **Create the labels** with `gh label create`, from the table in `docs/agents/triage-labels.md`, plus `wayfinder:map` and the four `wayfinder:<type>` labels.
-   → Done when: every label in that set exists in the tracker, and you know which ones you created versus found.
+3. **Create the labels** through the tracker `docs/agents/issue-tracker.md` now records, under the names `docs/agents/triage-labels.md` maps them to, plus `wayfinder:map` and the four `wayfinder:<type>` labels. GitHub → `gh label create`; GitLab → `glab label create`; local markdown or a freeform tracker → there is no label command, and the labels are the body convention that tracker doc describes. A hosted tracker with no remote is the stop-and-ask step 1 deferred.
+   → Done when: every label in that set exists in the tracker, and you know which you created, which you found, and which the tracker expresses without a command.
 
 4. **Write `.firehorse/manifest.json`** in the shape under [Manifest shape](#manifest-shape), with `anchors.context`, `anchors.agents`, `anchors.design`, and `anchors.adr` set from what now exists on disk.
    → Done when: the file parses, `setup.mattPocockSkills.version` matches the installed plugin, and all four `anchors` booleans are present.

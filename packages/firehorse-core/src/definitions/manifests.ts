@@ -12,6 +12,13 @@ export function generatedManifestEntries(
   const claudeSkills = new Set<string>();
 
   for (const file of files) {
+    // The manifest is the shipped surface. A maintainer definition projects
+    // into this repo's own `.claude/`, so listing it here would offer users a
+    // command they cannot run.
+    if (file.audience !== "user") {
+      continue;
+    }
+
     if (file.resourceKind === "workflow") {
       claudeCommands.add(`./${file.path.replace("packages/firehorse-claude/", "")}`);
     }
@@ -33,9 +40,7 @@ export function mergeGeneratedManifestEntries(
   generated: readonly string[],
   generatedPathPrefix: string,
 ): string[] {
-  const retained = (existing ?? []).filter(
-    (entry) => !entry.startsWith(generatedPathPrefix),
-  );
+  const retained = (existing ?? []).filter((entry) => !entry.startsWith(generatedPathPrefix));
   return [...retained, ...generated].filter(uniqueByValue);
 }
 

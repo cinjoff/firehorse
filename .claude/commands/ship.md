@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "ship"
 firehorseSource: "packages/firehorse-core/definitions/workflows/ship.md"
-firehorseSourceSha256: "d8ed8a310bc0be95c2201f5f3a647e33dfd72c9f5d8f3dbcdf13b4f2df5e6213"
+firehorseSourceSha256: "47ccd1247b684387ddd872990328b9ec365f438be3f443bde2c8b97eff1b9103"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/ship.md
 Definition ID: ship
 Definition kind: workflow
-Source SHA-256: d8ed8a310bc0be95c2201f5f3a647e33dfd72c9f5d8f3dbcdf13b4f2df5e6213
+Source SHA-256: 47ccd1247b684387ddd872990328b9ec365f438be3f443bde2c8b97eff1b9103
 -->
 
 # Ship

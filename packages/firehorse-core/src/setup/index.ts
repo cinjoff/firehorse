@@ -176,7 +176,7 @@ export function checkFirehorseSetup(
         {
           code: "setup_manifest.missing",
           severity: "warning",
-          message: `no ${FIREHORSE_SETUP_MANIFEST_PATH} — run /new-project`,
+          message: `no ${FIREHORSE_SETUP_MANIFEST_PATH} — run /firehorse:new-project`,
           path: manifestPath,
         },
       ],
@@ -211,7 +211,7 @@ export function checkFirehorseSetup(
 /**
  * Reports manifest state in the order the SessionStart hook reports it, so the
  * first diagnostic is the line the hook prints. State only — never conventions
- * or preferences (D-145).
+ * or preferences (D-164).
  */
 export function validateFirehorseSetupManifest(
   manifest: FirehorseSetupManifest,
@@ -222,7 +222,7 @@ export function validateFirehorseSetupManifest(
       {
         code: "setup.not_run",
         severity: "warning",
-        message: "setup has not run — run /new-project",
+        message: "setup has not run — run /firehorse:new-project",
         field: "setup.mattPocockSkills",
       },
     ];
@@ -236,7 +236,7 @@ export function validateFirehorseSetupManifest(
         {
           code: "index.diverged",
           severity: "warning",
-          message: "index was recorded on a different history line — run /index",
+          message: "index was recorded on a different history line — run /firehorse:index",
           field: "index.commit",
         },
       ];
@@ -247,7 +247,7 @@ export function validateFirehorseSetupManifest(
           severity: "warning",
           message: `index is ${staleness.commitsBehind ?? 0} commit${
             staleness.commitsBehind === 1 ? "" : "s"
-          } behind HEAD — run /index`,
+          } behind HEAD — run /firehorse:index`,
           field: "index.commit",
         },
       ];
@@ -256,7 +256,7 @@ export function validateFirehorseSetupManifest(
         {
           code: "index.missing",
           severity: "warning",
-          message: "repo has not been indexed — run /index",
+          message: "repo has not been indexed — run /firehorse:index",
           field: "index",
         },
       ];

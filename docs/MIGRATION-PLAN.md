@@ -3,12 +3,17 @@
 Turn Firehorse from a cross-provider skill distribution into a Claude-only
 workflow spine that depends on upstream plugins instead of copying them.
 
+This is a historical plan, kept for its reasoning. Where a decision here has
+since been reversed, the promoted entry in [`DECISIONS.md`](./DECISIONS.md)
+says so.
+
 Settled by a grilling session on 2026-09-10/11. Written against `e36d96a`
 (v0.3.0) plus the uncommitted work in the `workflows-shared-adapters` worktree.
 
 ## The shape
 
-Firehorse becomes personal tooling, packaged as a Claude Code plugin. It keeps
+Firehorse becomes a Claude Code plugin. (It was settled here as *personal*
+tooling; D-170 later reversed that — the audience is anyone building software.) It keeps
 the core→claude build structure: `firehorse-core` owns canonical definitions and
 the projection generator, `firehorse-claude` is the generated distribution. It
 drops Pi, drops vendoring, drops the agent roster, and adds no runtime.
@@ -25,26 +30,31 @@ Everything else comes from plugins you install.
 
 ## Decisions
 
-Continuing the `D-NN` sequence from `DECISIONS.md`. Append-only; do not
-relitigate.
+These fifteen decisions were settled here and are now recorded in
+[`DECISIONS.md`](./DECISIONS.md), which is the only `D-NN` sequence (D-178).
+This file keeps the mapping, because commits, issues and older docs cite the
+numbers on the left.
 
-| ID | Decision | Rationale |
-| --- | --- | --- |
-| D-136 | Firehorse is personal tooling, packaged as a plugin | The "one source across ecosystems" premise dies with Pi. Release ceremony, version parity, and the external-user framing go with it. |
-| D-137 | Depend on upstream plugins; vendor nothing | The vendored `mattpocock-skills` pin went stale and upstream renamed most of it. A second, older copy of a plugin you already install is a liability. |
-| D-138 | Drop the Pi distribution | Claude-only focus. Recoverable from the `pi-v0.3.0` tag. |
-| D-139 | Keep the definition format and projector | Not for multi-provider reasons, which are gone, but for schema enforcement, provenance checking, and upstream reference validation. |
-| D-140 | Workflows orchestrate upstream skills (the only carrier for preferences) | CLAUDE.md rules and hooks were both rejected as carriers. A preference that is not inside a command does not reliably happen. |
-| D-141 | Drop `kind: agent-role` and all nine agents | The six mirrors lose their origin with Pi; the three canonical roles are unused once workflows run inline. The frontmatter schema was Pi-shaped throughout. |
-| D-142 | Upstream references are a flat `upstreamSkills: [{plugin, id}]` list | Phase-bound references are a schema redesign in service of a validator that does not exist yet. Ordering stays in the body. |
-| D-143 | Memory is self-hosted supermemory, fully offline | Local graph engine, local embeddings, Ollama for extraction. Replaces claude-mem entirely. |
-| D-144 | Deliberate memory search comes from the `npx supermemory` CLI, not an MCP shim | The CLI already does this against a self-hosted server. A shim would be 150 lines of runtime for capability that already exists. |
-| D-145 | Follow Matt Pocock's persistence conventions exactly | `docs/agents/*` written by setup and read by skills at run time, plus an `## Agent skills` pointer block in `AGENTS.md`. Explicit invocation only; no auto-triggering skills. |
-| D-146 | `/index` writes only derivable anchors | `ARCHITECTURE.md`, `STRUCTURE.md`, `CONVENTIONS.md` come from code and the graph. `DESIGN.md` is a human statement of direction; inferring it from existing components describes what the UI is, not what it should be. |
-| D-147 | Drop shadcn, `plan-review`, and `feedback-loop` for now | Each is either replaceable, unproven, or unexamined. Shadcn may return once a non-vendored route exists; the other two return only if their absence is felt. |
-| D-148 | Memory is the last phase, not the fifth | Structure first, then cleanup, then memory. Standing supermemory up before the surface it serves has settled would mean configuring against a moving target. |
-| D-149 | GitHub Issues is the only tracker; local planning docs are staging, never a store | PRDs, plans, and issue drafts under `docs/` drift from the tracker and get read by nobody. A planning artifact is published as an issue or it does not exist. `docs/agents/*` stays — it is skill config, not planning. |
-| D-150 | The six existing PRDs are kept, published as parked issues | They carry reasoning worth revisiting. Their derived implementation tickets are still closed — the ideas survive, the stale tickets do not. |
+| Recorded here as | Now |
+| --- | --- |
+| D-155 | D-155 |
+| D-156 | D-156 |
+| D-157 | D-157 |
+| D-158 | D-158 |
+| D-159 | D-159 |
+| D-160 | D-160 |
+| D-161 | D-161 |
+| D-162 | D-162 |
+| D-163 | D-163 |
+| D-164 | D-164 |
+| D-165 | D-165 |
+| D-166 | D-166 |
+| D-167 | D-167 |
+| D-168 | D-168 |
+| D-150 | D-169 |
+
+Read the promoted entry for the decision and its rationale, and for whether a
+later decision has invalidated it — D-155 and D-168 both carry one.
 
 ## Phase 0 — Rescue
 
@@ -58,7 +68,7 @@ Nothing else is safe while three months of work sits uncommitted.
    - `packages/firehorse-core/src/setup/` (the manifest schema and validation)
    - `docs/PROJECT.md`, `docs/DECISIONS.md`
    - `docs/prds/` — as **staging only**, to be published as issues and deleted
-     in Phase 6 (D-149)
+     in Phase 6 (D-168)
    - `docs/agent-skills/` → renamed to `docs/agents/`
    - `packages/firehorse-claude/hooks/check-setup.mjs`
 4. Delete `.planning/` and point `AGENTS.md` and `CLAUDE.md` at `docs/` instead.
@@ -80,8 +90,8 @@ Delete:
 - `packages/firehorse-core/upstreams/` entirely — all six `UPSTREAM.json` pins
   and every vendored skill copy.
 - `packages/firehorse-claude/skills/mattpocock/`, `skills/pbakaus/`,
-  `skills/shadcn-ui/` — the mirrored copies. Shadcn goes entirely (D-147).
-- The `feedback-loop` skill definition and its generated mirrors (D-147).
+  `skills/shadcn-ui/` — the mirrored copies. Shadcn goes entirely (D-166).
+- The `feedback-loop` skill definition and its generated mirrors (D-166).
 - All nine agents in `packages/firehorse-claude/agents/`.
 - `packages/firehorse-core/src/providers/pi.ts` and its two export lines in
   `providers/index.ts`.
@@ -103,7 +113,7 @@ Trim, do not delete:
 - `src/definitions/projection.ts` — remove the Pi entry from the three return
   arrays in `projectWorkflow`, `projectSkill`, `projectAgentRole`, plus
   `piFrontmatter` and the `ProjectionProvider` union. Roughly 60–70 of 320 lines.
-  `projectAgentRole` goes entirely under D-141.
+  `projectAgentRole` goes entirely under D-160.
 - `src/definitions/manifests.ts` — four of seven fields in
   `GeneratedManifestEntries` are Pi. The file shrinks to near-trivial.
 - `src/types.ts` — delete `agentRoleFrontmatterSchema` (L136-158) wholesale.
@@ -147,7 +157,7 @@ populated `upstreamSkills` list.
 | `/upstreams-check` | Drift and impact report | — |
 
 Dropped: `create-plan` (wayfinder covers it), `review-code`, `diagnose-fix`,
-`update-upstreams`, `plan-review` (D-147).
+`update-upstreams`, `plan-review` (D-166).
 
 `/map` is the key one. Wayfinder's map body defines `## Notes` as "domain; skills
 every session should consult; standing preferences for this effort", and every
@@ -190,17 +200,17 @@ repo was last indexed, whether the codebase anchors predate HEAD, whether
 `check-setup.mjs` stays as a SessionStart hook, hard-bounded: read the manifest,
 compare recorded index commit to HEAD, print at most one line. No analysis, no
 network, never fails startup. It reports state rather than injecting rules, so it
-does not conflict with D-145.
+does not conflict with D-164.
 
 ## Phase 6 — Tracker consolidation
 
-GitHub Issues becomes the only tracker (D-149). Local planning docs move into it
+GitHub Issues becomes the only tracker (D-168). Local planning docs move into it
 and then go.
 
 1. **Publish the six PRDs as issues**, labelled `prd` + `parked` — PRD-0001
    through PRD-0006, bodies lifted from `docs/prds/*/PRD.md` with their
    `DECISIONS.md` and `ASK.md` content folded in as comments. They keep their
-   reasoning where it can be found (D-150).
+   reasoning where it can be found (D-169).
 2. **Close the derived implementation tickets.** #26–#32 (PRD-0006, Pi memory
    over claude-mem) and #33–#42 (PRD-0005, session audit) close with a comment
    pointing at their parked PRD issue. The ideas survive as PRDs; the stale
@@ -210,7 +220,7 @@ and then go.
    surface.
 4. **Delete `docs/prds/` and `docs/issues/`.** Update the "Local files vs GitHub"
    section of `docs/agents/issue-tracker.md`, which currently permits PRDs and
-   issue drafts to live in repo docs — under D-149 they do not.
+   issue drafts to live in repo docs — under D-168 they do not.
 
 Note this contradicts a pattern the rescued worktree leans on heavily: the
 `new-project` and planning workflows there write local drafts first as
@@ -219,7 +229,7 @@ publish straight to the tracker instead.
 
 ## Phase 7 — Memory
 
-Last, deliberately (D-148): the surface supermemory serves is settled by now.
+Last, deliberately (D-167): the surface supermemory serves is settled by now.
 
 1. `npx supermemory local`. Note the API key printed on first boot.
    **Verify the port** — the self-hosting docs say `6767`, the CLI's own
@@ -255,5 +265,5 @@ it proves noisy.
 | The plugin's dead MCP registration | Parked; revisit after Phase 7 if noisy |
 | Local server port: 6767 or 8787 | Phase 7 |
 | Re-indexing claude-mem history into supermemory | After Phase 7, optional |
-| Re-introducing shadcn by a non-vendored route | Deferred (D-147) |
+| Re-introducing shadcn by a non-vendored route | Deferred (D-166) |
 | Whether `docs/PROJECT.md` and `docs/DECISIONS.md` also belong in the tracker | Phase 6 — they are anchors, not planning artifacts, so they likely stay |
