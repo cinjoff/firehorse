@@ -16,7 +16,14 @@ from the `pi-v0.3.0` tag.
 
 ## Install
 
+Firehorse depends on two upstream plugins, `mattpocock-skills` from the official
+`claude-plugins-official` marketplace and `impeccable` from `pbakaus/impeccable`.
+Claude Code installs both along with Firehorse. Add the `impeccable` marketplace
+first, because Claude Code cannot resolve a dependency from a marketplace it does
+not know about yet.
+
 ```text
+/plugin marketplace add pbakaus/impeccable
 /plugin marketplace add cinjoff/firehorse
 /plugin install firehorse@firehorse
 ```
@@ -28,6 +35,17 @@ firehorse-setup
 ```
 
 Use `firehorse-setup --check` for a read-only status report.
+
+### codebase-memory-mcp
+
+The workflows query a codebase knowledge graph through `codebase-memory-mcp`.
+That is an MCP server, not a plugin, so Firehorse does not bundle it and
+`/plugin install` does not pull it in. Install the server from its own upstream,
+then register it at user scope so every project sees it:
+
+```sh
+claude mcp add --scope user codebase-memory-mcp <path-to-codebase-memory-mcp>
+```
 
 The core library is published separately for adapter contracts and the
 definition format. It is not a skill runtime.

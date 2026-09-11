@@ -9,8 +9,9 @@ Plugin manifest is in place. The package exposes `firehorse-setup` for
 first-time checks and user-scoped Superset MCP registration in Claude Code, and
 ships a `SessionStart` hook that checks GitHub releases and suggests
 `/plugin update firehorse@firehorse` when a newer Firehorse plugin version is
-available. `commands/` is a placeholder until Phase 3 adds the workflow set, and
-the plugin declares no upstream dependencies until Phase 2 adds them.
+available. `commands/` is a placeholder until Phase 3 adds the workflow set. The
+plugin declares `mattpocock-skills` and `impeccable` as dependencies, so Claude
+Code installs both alongside Firehorse.
 
 ## Install
 
@@ -19,13 +20,18 @@ Two paths.
 **Via marketplace** (recommended):
 
 ```text
+/plugin marketplace add pbakaus/impeccable
 /plugin marketplace add cinjoff/firehorse
 /plugin install firehorse@firehorse
 ```
 
 The repo root contains `.claude-plugin/marketplace.json`; its Firehorse plugin
 entry uses a relative source (`./packages/firehorse-claude`) so Claude Code can
-install the plugin from the same GitHub repo.
+install the plugin from the same GitHub repo. The same entry declares the two
+upstream dependencies and allowlists their marketplaces through
+`allowCrossMarketplaceDependenciesOn`. `mattpocock-skills` comes from the
+built-in `claude-plugins-official` marketplace; add `pbakaus/impeccable` first so
+Claude Code can resolve `impeccable`.
 
 After install, run the setup skill once:
 

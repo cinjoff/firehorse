@@ -16,6 +16,16 @@
     "claude-code",
     "claude-plugin"
   ],
+  "dependencies": [
+    {
+      "name": "mattpocock-skills",
+      "marketplace": "claude-plugins-official"
+    },
+    {
+      "name": "impeccable",
+      "marketplace": "impeccable"
+    }
+  ],
   "hooks": "./hooks/hooks.json",
   "skills": [
     "./skills/firehorse-setup"
