@@ -43,7 +43,7 @@ and `validation.ts` enforces that plus alias collisions and `replacedBy` targets
 `projection.ts` emits one file per definition:
 
 ```
-definitions/workflows/<id>.md  →  packages/firehorse-claude/commands/firehorse/horse-<id>.md
+definitions/workflows/<id>.md  →  packages/firehorse-claude/commands/firehorse/<id>.md
 definitions/skills/<id>.md     →  packages/firehorse-claude/skills/firehorse/<id>/SKILL.md
 ```
 

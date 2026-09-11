@@ -35,12 +35,12 @@
     "./skills/firehorse/firehorse-recall"
   ],
   "commands": [
-    "./commands/firehorse/horse-build.md",
-    "./commands/firehorse/horse-fix-bug.md",
-    "./commands/firehorse/horse-index.md",
-    "./commands/firehorse/horse-map.md",
-    "./commands/firehorse/horse-new-project.md",
-    "./commands/firehorse/horse-ship.md",
-    "./commands/firehorse/horse-upstreams-check.md"
+    "./commands/firehorse/build.md",
+    "./commands/firehorse/fix-bug.md",
+    "./commands/firehorse/index.md",
+    "./commands/firehorse/map.md",
+    "./commands/firehorse/new-project.md",
+    "./commands/firehorse/ship.md",
+    "./commands/firehorse/upstreams-check.md"
   ]
 }

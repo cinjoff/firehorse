@@ -277,7 +277,7 @@ describe("Firehorse definitions", () => {
     const generated = projectDefinitions(definitions, { repoRoot });
 
     expect(generated.map((file) => file.path)).toEqual([
-      "packages/firehorse-claude/commands/firehorse/horse-diagnose-fix.md",
+      "packages/firehorse-claude/commands/firehorse/diagnose-fix.md",
       "packages/firehorse-claude/skills/firehorse/feedback-loop/SKILL.md",
     ]);
     expect(generated.map((file) => file.provider)).toEqual(["claude", "claude"]);
@@ -290,7 +290,7 @@ describe("Firehorse definitions", () => {
     expect(generated[1]?.content).toContain("## Instructions");
 
     expect(generatedManifestEntries(generated)).toEqual({
-      claudeCommands: ["./commands/firehorse/horse-diagnose-fix.md"],
+      claudeCommands: ["./commands/firehorse/diagnose-fix.md"],
       claudeSkills: ["./skills/firehorse/feedback-loop"],
     });
 
@@ -349,8 +349,8 @@ describe("Firehorse definitions", () => {
 
     const sortedEntries = {
       claudeCommands: [
-        "./commands/firehorse/horse-alpha-workflow.md",
-        "./commands/firehorse/horse-zeta-workflow.md",
+        "./commands/firehorse/alpha-workflow.md",
+        "./commands/firehorse/zeta-workflow.md",
       ],
       claudeSkills: ["./skills/firehorse/alpha-loop", "./skills/firehorse/zeta-loop"],
     };

@@ -12,7 +12,7 @@ const definitionsScript = nodePath.join(repoRoot, "scripts/definitions.ts");
 const tsxBin = nodePath.join(repoRoot, "node_modules/.bin/tsx");
 
 const workflowCommandPath =
-  "packages/firehorse-claude/commands/firehorse/horse-diagnose-fix.md";
+  "packages/firehorse-claude/commands/firehorse/diagnose-fix.md";
 const skillMirrorPath =
   "packages/firehorse-claude/skills/firehorse/feedback-loop/SKILL.md";
 const pluginManifestPath = "packages/firehorse-claude/.claude-plugin/plugin.json";
@@ -94,8 +94,8 @@ describe("definitions repository scripts", () => {
       readJson(nodePath.join(fixture, pluginManifestPath)),
     ).resolves.toMatchObject({
       commands: [
-        "./commands/firehorse/horse-alpha-fix.md",
-        "./commands/firehorse/horse-diagnose-fix.md",
+        "./commands/firehorse/alpha-fix.md",
+        "./commands/firehorse/diagnose-fix.md",
       ],
       skills: ["./skills/firehorse/alpha-loop", "./skills/firehorse/feedback-loop"],
     });
@@ -127,7 +127,7 @@ describe("definitions repository scripts", () => {
     expect(repairResult.exitCode).toBe(0);
     expect(commandOutput(repairResult)).toContain(`updated manifest ${pluginManifestPath}`);
     await expect(readJson(manifestPath)).resolves.toMatchObject({
-      commands: ["./commands/firehorse/horse-diagnose-fix.md"],
+      commands: ["./commands/firehorse/diagnose-fix.md"],
       skills: ["./skills/firehorse/feedback-loop"],
     });
   });
@@ -157,7 +157,7 @@ describe("definitions repository scripts", () => {
     expect(writeResult.exitCode).toBe(0);
 
     const provenancedStalePath =
-      "packages/firehorse-claude/commands/firehorse/horse-old-workflow.md";
+      "packages/firehorse-claude/commands/firehorse/old-workflow.md";
     const handAuthoredStalePath =
       "packages/firehorse-claude/commands/firehorse/hand-authored.md";
     const absoluteProvenancedStalePath = nodePath.join(fixture, provenancedStalePath);
