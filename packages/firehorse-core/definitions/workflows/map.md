@@ -72,7 +72,7 @@ You run the probe and write the Notes block yourself, then read `wayfinder`'s `S
 
 ## Safety Gates
 
-- **The Notes block stays under 200 words.** Count before writing; over the cap, stop and report it — the surplus belongs in `CONTEXT.md` or `docs/agents/`, which the Domain line already points at.
+- **Every line in the Notes block earns its place.** A line is a trigger and a verb — when this happens, do this. The block is loaded by every session that touches the map, so a line that only describes something is permanent context load for no instruction. Reference material belongs in `CONTEXT.md` or `docs/agents/`, which the Domain line already points at.
 - **Every line points at something the manifest or the resolved table confirms.** One dead pointer teaches the next session that the whole block is decorative.
 - **A pass that last failed is not a preference.** `index.graph` or `index.supermemory` false or absent → omit that paragraph rather than naming the tool.
 - **The map and its tickets live in the tracker** the tracker doc records, never a markdown draft committed beside the code.
@@ -125,8 +125,8 @@ No anchor is `true` → the Domain line is the `CONTEXT.md` sentence alone. `anc
 2. **Resolve the Notes block** from what step 1 read, following [Notes block](#notes-block).
    → Done when: no braced token remains, and every clause and skill named traces to a manifest field or a resolved table row.
 
-3. **Check the word count.** Over 200 words, stop and report it rather than writing a shorter paraphrase.
-   → Done when: the count is under the cap, or the run has stopped.
+3. **Read the block back as the next session will.** Keep every line that would change what that session does, and move anything that merely describes the repo into `CONTEXT.md` or `docs/agents/`. Length is not the test; a long block of triggers beats a short block of description.
+   → Done when: every remaining line names a trigger and a verb, and nothing kept is reference material.
 
 4. **Hand off to `mattpocock-skills:wayfinder`.** It is user-invoked only, so read its `SKILL.md` at the path in [Supporting Capabilities](#supporting-capabilities) and follow it rather than invoking it. Charting → give it the resolved block as the map's `## Notes` at the point where it creates the map. Working an existing map → read its Notes first, and where the block is missing or disagrees with the manifest, update the Notes before you choose a ticket.
    → Done when: the map's Notes match what the manifest records.

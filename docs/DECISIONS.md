@@ -2913,3 +2913,32 @@ reserved for plugins, so `/firehorse:ship` cannot be reproduced locally.
   `.claude/` — rejected: two authoring formats, and the gate stops covering them.
 - A `private: true` boolean — rejected: it names the exclusion, not the reader,
   and a third audience (contributor, say) would not fit it.
+
+## D-153 — The map's Notes block is bounded by what each line does, not by a word count
+
+**Date:** 2026-09-11
+**Decision:** `/firehorse:map` no longer caps the `## Notes` block at 200 words.
+The safety gate and the counting step are replaced by a test of content: every
+line is a trigger and a verb, and material that describes rather than instructs
+belongs in `CONTEXT.md` or `docs/agents/`. This reverses the cap recorded on
+[#51](https://github.com/cinjoff/firehorse/issues/51).
+**Rationale:** The Notes block is the only carrier for standing preferences, so
+truncating it truncates what every later session inherits — and it is truncated
+at exactly the moment most worth writing down, charting. The cap also failed on
+its own terms: charting [#97](https://github.com/cinjoff/firehorse/issues/97)
+came to 187/200 words, and nineteen settled decisions went into a `## Settled in
+charting` section that wayfinder's template does not define. The cap did not
+make the map leaner; it pushed content somewhere less expected. Removing a hard
+cap is not the same as having no bound: the block is permanent context load for
+every session that opens the map, and sprawl thins attention across it, so the
+constraint moves from length to whether a line would change what a session does.
+**Alternatives considered:**
+
+- Raise the cap to 400 words — rejected: the same failure at a different number,
+  and it still counts the wrong thing.
+- Delete the constraint outright — rejected: the block is loaded every session,
+  and nothing would then stop reference material accumulating in it.
+- Keep the cap and define a home for overflow — rejected: `## Settled in
+  charting` is what that already produced, and wayfinder's template has no
+  section for it.
+
