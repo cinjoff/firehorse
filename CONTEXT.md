@@ -12,10 +12,6 @@ _Avoid_: Composite skill, command, recipe
 A reusable instruction or capability ingredient that can support one or more workflows.
 _Avoid_: Workflow, command
 
-**Agent Role**:
-A reusable specialist role that may be projected into provider-native agent or subagent mechanisms.
-_Avoid_: Persona, bot; use "subagent" only for provider/runtime-specific implementations
-
 **Firehorse Definition Format**:
 The declarative cross-provider authoring model for Firehorse-authored workflows and their supporting ingredients.
 _Avoid_: Capability format, skill format, command format, execution graph
@@ -30,7 +26,7 @@ _Avoid_: Upstream Skill, mirrored skill
 
 **Orchestration Intent**:
 A provider-neutral description of how a workflow should coordinate work across phases, roles, gates, or parallel efforts.
-_Avoid_: Pi chain, saved chain, intercom recipe, execution graph
+_Avoid_: Saved chain, execution graph
 
 **Definition File**:
 A Markdown file with frontmatter that contains one canonical Firehorse definition and whose path matches its declared ID.
@@ -102,21 +98,20 @@ _Avoid_: Timestamp-only confidence, implicit freshness, memory cache
 
 ## Relationships
 
-- The **Firehorse Definition Format** describes Firehorse-authored **Workflows**, **Skills**, and **Agent Roles**.
-- A **Definition File** is the physical form of one Firehorse-authored **Workflow**, **Skill**, or **Agent Role**.
+- The **Firehorse Definition Format** describes Firehorse-authored **Workflows** and **Skills**.
+- A **Definition File** is the physical form of one Firehorse-authored **Workflow** or **Skill**.
 - A **Definition ID** identifies exactly one Firehorse-authored **Definition File** across all definition kinds and is stable public API.
 - A **Definition Alias** preserves continuity when a **Definition ID** is renamed or deprecated.
 - A **Definition File** combines frontmatter metadata with a structured **Definition Body**.
 - A **Definition File** declares an integer **Schema Version**, starting at `1`.
 - A **Definition File** may declare **Capability Requirements** for validation and provider projection.
 - The **Definition Schema** validates **Definition Files** without executing workflows or loading provider runtimes.
-- The **Projection Generator** produces **Generated Mirrors** for Pi and Claude distributions.
+- The **Projection Generator** produces **Generated Mirrors** for the Claude distribution.
 - A **Generated Mirror** is committed, uses a `horse-<id>` native name, and is traceable back to its source **Definition File**.
 - A **Generated Mirror** contains rendered instructions, not a runtime reference back to the source **Definition File**.
 - A **Generated Mirror** includes a SHA-256 source content hash for freshness checks and is exposed through package-local and repo-root manifests.
-- A **Workflow** projects to Pi prompt templates and Claude commands as its primary user-facing **Generated Mirrors**.
+- A **Workflow** projects to a Claude command as its primary user-facing **Generated Mirror**.
 - The future canonical `new-project` **Workflow** projects to the provider-native `horse-new-project` invocation name.
-- When `new-project` defines `docs/DESIGN.md` and the stack uses shadcn/ui, the design anchor feeds a shadcn preset that is initialized or applied through the shadcn CLI before component implementation.
 - The **Projection Generator** updates provider manifests so **Generated Mirrors** are exposed by their distributions.
 - A **Project Anchor** captures durable context for future workflows without depending on GSD.
 - A **Codebase Map** is stored as `docs/codebase/` **Project Anchors** and can be produced independently of `horse-new-project`.
@@ -128,8 +123,7 @@ _Avoid_: Timestamp-only confidence, implicit freshness, memory cache
 - An **Issue Draft** may become a tracker issue after approval and should retain the tracker link.
 - An **Upstream Skill Reference** points from a Firehorse-authored **Workflow** to an **Upstream Skill** without making that upstream skill the workflow's source of truth.
 - A **Firehorse-authored Skill** follows the Firehorse Definition Format; an **Upstream Skill** keeps its upstream-native shape.
-- A **Workflow** may reference supporting **Skills**, **Agent Roles**, and **Upstream Skills** separately.
-- An **Agent Role** projects to provider-native agent surfaces, such as Claude agents and Pi subagent files synced by setup.
+- A **Workflow** may reference supporting **Skills** and **Upstream Skills** separately.
 - A **Workflow** may declare **Orchestration Intent** without naming provider-specific orchestration features.
 - A **Skill** can support multiple **Workflows**.
 
@@ -143,32 +137,29 @@ _Avoid_: Timestamp-only confidence, implicit freshness, memory cache
 - "skills framework" can imply a collection of independently invoked skills; resolved: Firehorse is centered on **Workflows**, with **Skills** as supporting ingredients.
 - "capability format" conflicts with existing provider/orchestrator capability language; resolved: the authoring model is the **Firehorse Definition Format**.
 - The **Firehorse Definition Format** could be mistaken for a runnable workflow graph; resolved: it is declarative authoring metadata, not an execution engine.
-- Provider-specific orchestration features such as Pi subagent chains and intercom could leak into canonical definitions; resolved: canonical workflows express **Orchestration Intent**, and distributions decide how to project it.
+- Provider-specific orchestration features could leak into canonical definitions; resolved: canonical workflows express **Orchestration Intent**, and the distribution decides how to project it.
 - Definition storage could be YAML, TypeScript, or a central registry; resolved: each canonical definition is a Markdown-with-frontmatter **Definition File**.
 - Definition identity could come from either path or metadata alone; resolved: **Definition File** identity is explicit in frontmatter and must match its path.
 - Definition IDs could be scoped by kind or prefixed by kind; resolved: **Definition IDs** are globally unique across Firehorse-authored definitions while `kind` remains separate metadata.
 - Definition content could be all frontmatter or mostly prose; resolved: **Definition Files** use frontmatter for identity/projection metadata and a structured **Definition Body** for instruction-heavy guidance.
 - Provider capability mismatches could be tracked through a full provider matrix or prose only; resolved: **Definition Files** use provider-neutral `requires` / `optional` **Capability Requirements** plus projection notes for nuance.
-- Capability vocabulary could be fully closed or fully open; resolved: Firehorse documents common categories and values while allowing extension-prefixed values such as `mcp:github` or `provider:pi-subagents/intercom`.
+- Capability vocabulary could be fully closed or fully open; resolved: Firehorse documents common categories and values while allowing extension-prefixed values such as `mcp:github`.
 - Schema code could be deferred as runtime-like code; resolved: the gray-matter-parsed, Zod-backed **Definition Schema** belongs in Phase 2 because validation is an authoring safeguard, not a runtime or execution engine.
 - Upstream skill references could be strings or paths; resolved: **Upstream Skill References** use object references with separate `upstream` and `id` fields.
 - Definition aliases could live in a separate registry or changelog only; resolved: **Definition Aliases** live in definition frontmatter.
 - Definition projection could be runtime-loaded or manually ported; resolved: the **Projection Generator** creates checked-in **Generated Mirrors** with provenance headers.
-- Workflow projection could target Pi skills or Pi prompt templates; resolved: **Workflows** project to Pi prompt templates and Claude commands as user-facing invocation surfaces.
+- Workflow projection could target Claude skills or Claude commands; resolved: **Workflows** project to Claude commands as their user-facing invocation surface.
 - Generated native names could use raw IDs or a long prefix; resolved: **Generated Mirrors** use `horse-<id>` names while canonical **Definition IDs** stay unprefixed.
 - Generated mirrors could be thin references, hand-editable, or manifest-unaware; resolved: **Generated Mirrors** contain full rendered instructions, are edited only through canonical definitions, and are exposed through generated manifest updates.
-- Workflow mirrors could inline every supporting skill and role body; resolved: they include structured references and instructions for supporting capabilities without duplicating all supporting bodies.
+- Workflow mirrors could inline every supporting skill body; resolved: they include structured references and instructions for supporting capabilities without duplicating all supporting bodies.
 - Definition IDs could be renamed freely before runtime exists; resolved: **Definition IDs** are stable public API and renames require alias/deprecation handling.
 - `horse-new-project` could be mistaken for a canonical prefixed ID; resolved: the future canonical **Workflow** ID is `new-project`, while `horse-new-project` is the provider-native invocation name.
 - Generated file locations could be mixed into top-level provider directories; resolved: Firehorse generated mirrors live under provider-native `firehorse/` folders.
 - Generated mirrors could preserve stale deleted definitions; resolved: stale **Generated Mirrors** are removed when their provenance is valid and their source no longer exists.
 - Generated mirrors could rewrite canonical headings; resolved: mirrors preserve canonical Markdown headings where possible, with provider-specific frontmatter/provenance wrappers.
-- Definition docs could rely on snippets only; resolved: the format docs include full canonical examples for `diagnose-fix`, `feedback-loop`, and `diagnostic-reviewer`.
 - Schema versions could be semver strings or inferred from package versions; resolved: **Schema Version** is a required integer starting at `1`.
 - Projection modes could be check-only or write-only; resolved: the **Projection Generator** supports both `definitions:write` and `definitions:check`.
 - Source hashes could use git hashes or timestamps; resolved: **Generated Mirrors** use SHA-256 hashes of canonical Definition File content.
-- The first example workflow could port upstream diagnosis instructions; resolved: `diagnose-fix` references the upstream `mattpocock-skills` `diagnose` skill via an **Upstream Skill Reference**.
-- The first example workflow could patch by default; resolved: `diagnose-fix` may patch only when the scope is clear and a regression loop exists, otherwise it asks or reports.
 - New-project anchors could be scattered between root and docs; resolved: **Project Anchors** are written under `docs/`, with codebase anchors grouped under `docs/codebase/`.
 - Codebase mapping could be embedded only inside `horse-new-project`; resolved: **Codebase Map** is a reusable project anchor workflow that `horse-new-project` can invoke in brownfield mode.
 - Starter scaffolding could overwrite existing repo contents; resolved: **Starter Template** setup must preserve existing files and overlay starter files only with confirmation.
@@ -177,7 +168,5 @@ _Avoid_: Timestamp-only confidence, implicit freshness, memory cache
 - Issue creation could be the first durable handoff artifact; resolved: **PRD Drafts** and **Issue Drafts** are written locally before tracker mutation and retained with tracker links after publishing.
 - `docs/PROJECT.md` could be treated like a PRD; resolved: it is the high-level **Project Anchor** that many PRDs reference over time.
 - Codebase docs could silently go stale; resolved: **Codebase Maps** include **Freshness Metadata**.
-- "subagent" could be confused with canonical **Agent Role**; resolved: Firehorse says **Agent Role** for the canonical concept and uses "subagent" only for provider/runtime-specific mechanisms such as `pi-subagents`.
-- Claude has both skills and agents; resolved: Firehorse **Agent Roles** project to Claude agents, not Claude skills.
 - Imported skills and first-party workflows have different sources of truth; resolved: **Upstream Skills** keep their upstream-native shape, while Firehorse-authored **Workflows** use the **Firehorse Definition Format**.
 - A strict Firehorse skill template could force upstream skill rewrites; resolved: strict templates apply only to **Firehorse-authored Skills**, not **Upstream Skills**.
