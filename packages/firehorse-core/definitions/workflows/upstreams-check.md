@@ -1,0 +1,87 @@
+---
+schemaVersion: 1
+id: upstreams-check
+kind: workflow
+title: Upstreams Check
+description: Report upstream skill drift and what it costs — which workflow definitions reference a moved skill, which body steps depend on the part that moved, and whether the drift is breaking or advisory.
+argumentHint: "[--write]"
+requires:
+  tools:
+    - read
+    - bash
+    - grep
+  environment:
+    - filesystem
+    - git
+    - node
+    - pnpm
+optional:
+  tools:
+    - ls
+    - find
+    - edit
+  environment:
+    - github
+---
+
+# Upstreams Check
+
+## Purpose
+
+Use this workflow to find out what changed in the upstream skills and what it costs here. `pnpm upstreams:check` reports the mechanical facts — a version moved, a `sha256` changed, a skill ID vanished. This workflow adds the impact: for every skill that moved, it names the workflow definitions whose `upstreamSkills` reference it, the body steps that depend on the part that moved, and whether those steps still make sense against the new `SKILL.md`.
+
+A hash diff tells you something changed. This workflow tells you which of the seven workflows is now wrong.
+
+## Usage
+
+Invoke the generated command with no arguments to report. `$ARGUMENTS` may carry `--write` to accept the new baseline after you have read the report.
+
+## Inputs
+
+- `$ARGUMENTS`: an optional `--write`.
+- `upstreams.lock.json` at the repo root — the recorded baseline.
+- The installed plugins under `~/.claude/plugins/`, read as on-disk truth.
+- The declared dependencies in `.claude-plugin/marketplace.json` and `packages/firehorse-claude/.claude-plugin/plugin.json`.
+- Every `upstreamSkills` entry across `packages/firehorse-core/definitions/`.
+
+## Outputs
+
+- A drift report, split into breaking and advisory.
+- An impact section per drifted skill: the referencing workflows, the body steps at risk, and your judgement on whether each step survives.
+- A statement of which comparison ran — on-disk, or lockfile-only.
+- A rewritten `upstreams.lock.json`, only when you passed `--write`.
+
+## Supporting Capabilities
+
+- Required: `pnpm`, a shell, read, and grep over the definitions directory.
+- Optional: `gh`, when a breaking drift warrants an issue.
+- This workflow orchestrates no upstream skill. It reads them as data, so `upstreamSkills` is empty by design — a reference here would claim an orchestration that does not happen.
+
+## Orchestration Intent
+
+You run the script, then do the part the script cannot: read the changed `SKILL.md` and decide whether the definition body that depends on it still holds. The script is deterministic and the report is not — the judgement about whether a step survives is the output that matters, and it stays in the session that read both sides.
+
+## Safety Gates
+
+- Do not pass `--write` before you have read the report. The baseline is accepted deliberately, never as a side effect of checking.
+- Do not hand-edit `upstreams.lock.json`. The output is deterministic; `--write` plus a reviewed diff is the only supported path.
+- Do not report a missing `~/.claude/plugins/` directory as drift. On CI the directory is absent; that is a missing environment, not a moved skill.
+- Do not claim an on-disk comparison you did not make. When the comparison degraded to lockfile-only, the report says so in its first line.
+- Do not classify a changed `sha256` as breaking. Instructions moving under a stable name is advisory.
+- Do not fix a drifted definition in this run. Report it, and open or update a ticket.
+
+## Procedure
+
+1. Run `pnpm upstreams:check` without `--write`. Keep the output.
+2. Record which comparison ran. When `~/.claude/plugins/` is missing, the script prints one line, skips the on-disk comparison, and exits 0 — the reference check then degrades to lockfile-only, where every `upstreamSkills` entry must resolve to a skill recorded in `upstreams.lock.json`. State which of the two happened before any finding.
+3. Classify every finding. Breaking: a skill ID named by an `upstreamSkills` entry is absent from the installed plugin, or a declared plugin is installed with no lockfile entry, or the lockfile names a plugin that is no longer declared. Advisory: a `sha256` changed, a plugin `version` or `marketplace` changed, or a skill ID appeared or vanished with no definition referencing it.
+4. Build the impact section. For each drifted skill, grep `packages/firehorse-core/definitions/` for its ID under `upstreamSkills`, and for each hit read the body steps that name the skill.
+5. Read the changed `SKILL.md` on disk and compare it against what those steps assume. Say, per step, whether it still holds — and when it does not, say what in the skill moved and what the step would have to become.
+6. Name the consequence for the gate. A breaking finding fails `pnpm definitions:check`, so it blocks every workflow in this repo until it is resolved; say which workflows are blocked.
+7. Open or update a ticket for each breaking finding with `gh issue create`, referencing the workflow definitions by path. Advisory findings go in the report alone unless a step in step 5 failed.
+8. Accept the baseline only on request: `pnpm upstreams:check --write`, then show the `upstreams.lock.json` diff and commit it on its own.
+9. Report the comparison that ran, the breaking findings, the advisory findings, the per-step impact, and the tickets you opened.
+
+## Projection Notes
+
+The Claude mirror is a static command generated from this definition. The drift mechanics live in the `pnpm upstreams:check` script, not in this body — this definition describes when to run it and what to do with what it says. Run `pnpm definitions:write` after editing; the mirror is never hand-edited.
