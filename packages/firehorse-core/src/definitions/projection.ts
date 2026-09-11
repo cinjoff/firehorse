@@ -175,7 +175,7 @@ function projectSkill(definition: SkillDefinition, options: ProjectionOptions): 
   ];
 }
 
-export function audienceOf(definition: FirehorseDefinition): DefinitionAudience {
+function audienceOf(definition: FirehorseDefinition): DefinitionAudience {
   return definition.frontmatter.audience ?? DEFAULT_DEFINITION_AUDIENCE;
 }
 

@@ -70,7 +70,12 @@ describe("SessionStart setup hook consent", { timeout: 20_000 }, () => {
     expect(result.stdout).toContain("run /firehorse:new-project");
   });
 
-  it("names the plugin forms of the commands, which are what resolve", async () => {
+});
+
+// The plugin installs `/firehorse:<id>`; the bare forms this hook used to print
+// resolve to nothing in a session that has Firehorse installed.
+describe("SessionStart setup hook command names", { timeout: 20_000 }, () => {
+  it("names the plugin form of /firehorse:index when the repo is unindexed", async () => {
     const root = await repoWith([".firehorse"]);
     await writeFile(
       nodePath.join(root, ".firehorse/manifest.json"),

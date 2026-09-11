@@ -180,7 +180,7 @@ describe("definitions repository scripts", { timeout: 30_000 }, () => {
     const fixture = await createDefinitionsFixture();
     await writeFile(
       nodePath.join(fixture, "packages/firehorse-core/definitions/workflows/release-it.md"),
-      minimalWorkflowDefinition("release-it", [], "maintainer"),
+      minimalWorkflowDefinition("release-it", { audience: "maintainer" }),
     );
 
     const writeResult = await runDefinitions(fixture, "--write");
@@ -208,7 +208,7 @@ describe("definitions repository scripts", { timeout: 30_000 }, () => {
       fixture,
       "packages/firehorse-core/definitions/workflows/release-it.md",
     );
-    await writeFile(definitionPath, minimalWorkflowDefinition("release-it", [], "maintainer"));
+    await writeFile(definitionPath, minimalWorkflowDefinition("release-it", { audience: "maintainer" }));
     expect((await runDefinitions(fixture, "--write")).exitCode).toBe(0);
 
     const handAuthoredPath = ".claude/commands/hand-authored.md";
@@ -216,7 +216,7 @@ describe("definitions repository scripts", { timeout: 30_000 }, () => {
     await writeFile(nodePath.join(fixture, handAuthoredPath), handAuthoredContent);
 
     // Flip the audience: the maintainer mirror is now stale and the user one is new.
-    await writeFile(definitionPath, minimalWorkflowDefinition("release-it", [], "user"));
+    await writeFile(definitionPath, minimalWorkflowDefinition("release-it", { audience: "user" }));
     const repairResult = await runDefinitions(fixture, "--write");
 
     expect(repairResult.exitCode).toBe(0);
@@ -264,7 +264,7 @@ async function createDefinitionsFixture(): Promise<string> {
   await mkdir(nodePath.join(definitionsRoot, "skills"), { recursive: true });
   await writeFile(
     nodePath.join(definitionsRoot, "workflows/diagnose-fix.md"),
-    minimalWorkflowDefinition("diagnose-fix", ["feedback-loop"]),
+    minimalWorkflowDefinition("diagnose-fix", { supportingSkills: ["feedback-loop"] }),
   );
   await writeFile(
     nodePath.join(definitionsRoot, "skills/feedback-loop.md"),
@@ -291,22 +291,25 @@ function titleFor(id: string): string {
     .join(" ");
 }
 
-function minimalWorkflowDefinition(
-  id: string,
-  supportingSkills: readonly string[] = [],
-  audience?: "user" | "maintainer",
-): string {
+interface WorkflowFixtureOptions {
+  readonly supportingSkills?: readonly string[];
+  readonly audience?: "user" | "maintainer";
+}
+
+function minimalWorkflowDefinition(id: string, options: WorkflowFixtureOptions = {}): string {
   const title = titleFor(id);
+  const supportingSkills = options.supportingSkills ?? [];
   const references =
     supportingSkills.length > 0
       ? `supportingSkills:\n${supportingSkills.map((skill) => `  - id: ${skill}`).join("\n")}\n`
       : "";
+  const audience = options.audience ? `audience: ${options.audience}\n` : "";
 
   return `---
 schemaVersion: 1
 id: ${id}
 kind: workflow
-${audience ? `audience: ${audience}\n` : ""}title: ${title}
+${audience}title: ${title}
 description: Minimal generated mirror fixture.
 argumentHint: <freeform bug report>
 ${references}requires:
