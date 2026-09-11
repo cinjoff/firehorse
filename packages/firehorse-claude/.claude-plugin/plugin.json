@@ -24,11 +24,16 @@
     {
       "name": "impeccable",
       "marketplace": "impeccable"
+    },
+    {
+      "name": "supermemory",
+      "marketplace": "supermemory-plugins"
     }
   ],
   "hooks": "./hooks/hooks.json",
   "skills": [
-    "./skills/firehorse-setup"
+    "./skills/firehorse-setup",
+    "./skills/firehorse/firehorse-recall"
   ],
   "commands": [
     "./commands/firehorse/horse-build.md",
