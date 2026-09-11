@@ -129,9 +129,9 @@ describe("Firehorse setup manifest v2", () => {
 
 describe("index staleness", () => {
   it("is current when the recorded commit equals HEAD", () => {
-    expect(computeFirehorseIndexStaleness(RECORDED_COMMIT, { headCommit: RECORDED_COMMIT })).toEqual(
-      { status: "current" },
-    );
+    expect(
+      computeFirehorseIndexStaleness(RECORDED_COMMIT, { headCommit: RECORDED_COMMIT }),
+    ).toEqual({ status: "current" });
 
     const result = checkFirehorseSetup({
       manifestContent: manifest,
