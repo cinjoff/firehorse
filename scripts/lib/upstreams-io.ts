@@ -9,6 +9,7 @@ import path from "node:path";
 import process from "node:process";
 
 import {
+  OutdatedUpstreamsLockfileError,
   UPSTREAMS_LOCK_PATH,
   UPSTREAMS_LOCK_SCHEMA_VERSION,
   hashUpstreamSkillSource,
@@ -81,6 +82,25 @@ export async function readUpstreamsLockfile(repoRoot: string): Promise<Upstreams
   return content === null ? null : parseUpstreamsLockfile(content);
 }
 
+/**
+ * The lockfile, plus the reason it could not be read when that reason is a
+ * schema bump. An outdated baseline is regenerable, so the caller reports it as
+ * work to do rather than failing the way a corrupt file does.
+ */
+export async function readUpstreamsLockfileOrOutdated(repoRoot: string): Promise<{
+  readonly lockfile: UpstreamsLockfile | null;
+  readonly outdated: OutdatedUpstreamsLockfileError | null;
+}> {
+  try {
+    return { lockfile: await readUpstreamsLockfile(repoRoot), outdated: null };
+  } catch (error) {
+    if (error instanceof OutdatedUpstreamsLockfileError) {
+      return { lockfile: null, outdated: error };
+    }
+    throw error;
+  }
+}
+
 export function emptyUpstreamsLockfile(): UpstreamsLockfile {
   return { schemaVersion: UPSTREAMS_LOCK_SCHEMA_VERSION, plugins: {} };
 }
@@ -132,6 +152,8 @@ export interface UpstreamsState {
   readonly declared: readonly DeclaredUpstreamPlugin[];
   readonly lockfile: UpstreamsLockfile;
   readonly lockfilePresent: boolean;
+  /** Set when the baseline was recorded under an older schema version. */
+  readonly lockfileOutdated: OutdatedUpstreamsLockfileError | null;
   /** `null` when the plugins directory does not exist. */
   readonly installed: readonly InstalledUpstreamPlugin[] | null;
 }
@@ -140,12 +162,13 @@ export interface UpstreamsState {
 export async function readUpstreamsState(repoRoot: string): Promise<UpstreamsState> {
   const pluginsDir = resolveClaudePluginsDir();
   const declared = await readDeclaredUpstreamPlugins(repoRoot);
-  const lockfile = await readUpstreamsLockfile(repoRoot);
+  const { lockfile, outdated } = await readUpstreamsLockfileOrOutdated(repoRoot);
   return {
     pluginsDir,
     declared,
     lockfile: lockfile ?? emptyUpstreamsLockfile(),
     lockfilePresent: lockfile !== null,
+    lockfileOutdated: outdated,
     installed: await readInstalledUpstreamPlugins({ pluginsDir, declared }),
   };
 }
@@ -249,6 +272,7 @@ async function readPluginSkills(root: string): Promise<readonly InstalledUpstrea
       path: path.relative(root, file).replaceAll("\\", "/"),
       sha256: hashUpstreamSkillSource(content),
       nameSource: frontmatterName ? "frontmatter" : "directory",
+      modelInvocable: !readFrontmatterDisablesModelInvocation(content),
     });
   }
   return skills;
@@ -284,6 +308,25 @@ export function readFrontmatterName(content: string): string | null {
     }
   }
   return null;
+}
+
+/**
+ * `disable-model-invocation: true` strips the skill's description from the
+ * agent's reach, so only a human typing its name can invoke it. A workflow that
+ * tells the agent to invoke such a skill fails with "skill not found".
+ */
+export function readFrontmatterDisablesModelInvocation(content: string): boolean {
+  const match = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(content);
+  if (!match) {
+    return false;
+  }
+  for (const line of match[1].split(/\r?\n/)) {
+    const field = /^disable-model-invocation:\s*(.+?)\s*$/.exec(line);
+    if (field) {
+      return field[1].replace(/^["']|["']$/g, "").toLowerCase() === "true";
+    }
+  }
+  return false;
 }
 
 async function readJsonIfExists<T>(filePath: string): Promise<T | null> {

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 import {
+  OutdatedUpstreamsLockfileError,
   UPSTREAMS_LOCK_SCHEMA_VERSION,
   UpstreamsLockfileError,
   upstreamsLockfileSchema,
@@ -54,6 +55,7 @@ export function buildUpstreamsLockfile(options: BuildUpstreamsLockfileOptions): 
         path: skill.path,
         sha256: skill.sha256,
         nameSource: skill.nameSource,
+        modelInvocable: skill.modelInvocable,
       };
     }
     plugins[plugin.name] = {
@@ -83,6 +85,7 @@ export function serialiseUpstreamsLockfile(lock: UpstreamsLockfile): string {
         path: skill.path,
         sha256: skill.sha256,
         nameSource: skill.nameSource,
+        modelInvocable: skill.modelInvocable,
       };
     }
     plugins[name] = {
@@ -109,6 +112,14 @@ export function parseUpstreamsLockfile(content: string): UpstreamsLockfile {
     throw new UpstreamsLockfileError(
       `upstreams.lock.json is not valid JSON: ${error instanceof Error ? error.message : String(error)}`,
     );
+  }
+
+  const recordedVersion =
+    typeof json === "object" && json !== null
+      ? (json as { schemaVersion?: unknown }).schemaVersion
+      : undefined;
+  if (typeof recordedVersion === "number" && recordedVersion < UPSTREAMS_LOCK_SCHEMA_VERSION) {
+    throw new OutdatedUpstreamsLockfileError(recordedVersion);
   }
 
   const result = upstreamsLockfileSchema.safeParse(json);

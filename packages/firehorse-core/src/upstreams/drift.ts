@@ -142,7 +142,12 @@ export function diffUpstreams(input: DiffUpstreamsInput): UpstreamDriftReport {
 
 function diffPluginSkills(
   plugin: string,
-  locked: Readonly<Record<string, { readonly sha256: string; readonly path: string }>>,
+  locked: Readonly<
+    Record<
+      string,
+      { readonly sha256: string; readonly path: string; readonly modelInvocable: boolean }
+    >
+  >,
   installed: readonly InstalledUpstreamSkill[],
   usages: readonly UpstreamSkillUsage[],
 ): UpstreamDriftFinding[] {
@@ -174,6 +179,28 @@ function diffPluginSkills(
         });
       }
       continue;
+    }
+
+    if (present.modelInvocable !== baseline.modelInvocable) {
+      // A skill losing model invocation breaks every workflow that invokes it:
+      // the agent can no longer reach it at all. Gaining it only widens options.
+      const lostInvocation = baseline.modelInvocable && !present.modelInvocable;
+      findings.push({
+        code: "upstreams.skill_invocation_changed",
+        severity: lostInvocation && affectedWorkflows.length > 0 ? "breaking" : "advisory",
+        plugin,
+        skill: key,
+        affectedWorkflows,
+        message: lostInvocation
+          ? `Skill '${reference}' is now user-invoked only (disable-model-invocation), so an agent cannot invoke it — it has to read ${present.path} and follow it inline.` +
+            (affectedWorkflows.length > 0
+              ? ` Broken workflows: ${affectedWorkflows.join(", ")}.`
+              : "")
+          : `Skill '${reference}' is now model-invocable.` +
+            (affectedWorkflows.length > 0
+              ? ` Referenced by: ${affectedWorkflows.join(", ")}.`
+              : ""),
+      });
     }
 
     if (present.sha256 !== baseline.sha256) {

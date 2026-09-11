@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { FirehorseDefinition, WorkflowFrontmatter } from "../definitions/types.js";
 import {
   UPSTREAMS_LOCK_SCHEMA_VERSION,
+  OutdatedUpstreamsLockfileError,
   UpstreamsLockfileError,
   buildUpstreamsLockfile,
   checkUpstreamSkillUsages,
@@ -37,16 +38,19 @@ const lockfile: UpstreamsLockfile = {
           path: "skills/engineering/tdd/SKILL.md",
           sha256: TDD_HASH,
           nameSource: "frontmatter",
+          modelInvocable: true,
         },
         teach: {
           path: "skills/productivity/teach/SKILL.md",
           sha256: TEACH_HASH,
           nameSource: "frontmatter",
+          modelInvocable: true,
         },
         wayfinder: {
           path: "skills/engineering/wayfinder/SKILL.md",
           sha256: WAYFINDER_HASH,
           nameSource: "frontmatter",
+          modelInvocable: true,
         },
       },
     },
@@ -54,7 +58,7 @@ const lockfile: UpstreamsLockfile = {
 };
 
 function installed(
-  skills: readonly { key: string; path: string; sha256: string }[],
+  skills: readonly { key: string; path: string; sha256: string; modelInvocable?: boolean }[],
   version = "1.2.3",
 ): readonly InstalledUpstreamPlugin[] {
   return [
@@ -62,7 +66,11 @@ function installed(
       name: "mattpocock-skills",
       marketplace: "claude-plugins-official",
       version,
-      skills: skills.map((skill) => ({ ...skill, nameSource: "frontmatter" as const })),
+      skills: skills.map((skill) => ({
+        ...skill,
+        nameSource: "frontmatter" as const,
+        modelInvocable: skill.modelInvocable ?? true,
+      })),
     },
   ];
 }
@@ -414,18 +422,21 @@ describe("lockfile serialisation", () => {
               path: "skills/engineering/wayfinder/SKILL.md",
               sha256: WAYFINDER_HASH,
               nameSource: "frontmatter",
+              modelInvocable: true,
             },
             {
               key: "Teach",
               path: "skills/productivity/teach/SKILL.md",
               sha256: TEACH_HASH,
               nameSource: "directory",
+              modelInvocable: true,
             },
             {
               key: "tdd",
               path: "skills/engineering/tdd/SKILL.md",
               sha256: TDD_HASH,
               nameSource: "frontmatter",
+              modelInvocable: true,
             },
           ],
         },
@@ -436,7 +447,7 @@ describe("lockfile serialisation", () => {
 
     expect(serialised).toBe(
       `{
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "generatedAt": "2026-09-11T09:24:00.000Z",
   "plugins": {
     "impeccable": {
@@ -451,17 +462,20 @@ describe("lockfile serialisation", () => {
         "Teach": {
           "path": "skills/productivity/teach/SKILL.md",
           "sha256": "${TEACH_HASH}",
-          "nameSource": "directory"
+          "nameSource": "directory",
+          "modelInvocable": true
         },
         "tdd": {
           "path": "skills/engineering/tdd/SKILL.md",
           "sha256": "${TDD_HASH}",
-          "nameSource": "frontmatter"
+          "nameSource": "frontmatter",
+          "modelInvocable": true
         },
         "wayfinder": {
           "path": "skills/engineering/wayfinder/SKILL.md",
           "sha256": "${WAYFINDER_HASH}",
-          "nameSource": "frontmatter"
+          "nameSource": "frontmatter",
+          "modelInvocable": true
         }
       }
     }
@@ -479,20 +493,35 @@ describe("lockfile serialisation", () => {
     const built = buildUpstreamsLockfile({ plugins: [] });
     expect(built.generatedAt).toBeUndefined();
     expect(serialiseUpstreamsLockfile(built)).toBe(
-      '{\n  "schemaVersion": 1,\n  "plugins": {}\n}\n',
+      '{\n  "schemaVersion": 2,\n  "plugins": {}\n}\n',
     );
   });
 
   it("rejects a lockfile that does not match the schema", () => {
     expect(() => parseUpstreamsLockfile("{")).toThrow(UpstreamsLockfileError);
-    expect(() => parseUpstreamsLockfile('{"schemaVersion": 2, "plugins": {}}')).toThrow(
+    expect(() => parseUpstreamsLockfile('{"schemaVersion": 99, "plugins": {}}')).toThrow(
       UpstreamsLockfileError,
     );
     expect(() =>
       parseUpstreamsLockfile(
-        '{"schemaVersion": 1, "plugins": {"p": {"marketplace": "m", "version": "1", "skills": {"s": {"path": "a", "sha256": "NOTAHASH", "nameSource": "frontmatter"}}}}}',
+        '{"schemaVersion": 2, "plugins": {"p": {"marketplace": "m", "version": "1", "skills": {"s": {"path": "a", "sha256": "NOTAHASH", "nameSource": "frontmatter", "modelInvocable": true}}}}}',
       ),
     ).toThrow(/SHA-256/);
+  });
+
+  it("names an older baseline as regenerable rather than as drift", () => {
+    const error = (() => {
+      try {
+        parseUpstreamsLockfile('{"schemaVersion": 1, "plugins": {}}');
+        return null;
+      } catch (caught) {
+        return caught;
+      }
+    })();
+
+    expect(error).toBeInstanceOf(OutdatedUpstreamsLockfileError);
+    expect((error as OutdatedUpstreamsLockfileError).recordedSchemaVersion).toBe(1);
+    expect((error as Error).message).toContain("--write");
   });
 
   it("refuses two skills claiming the same key", () => {
@@ -509,12 +538,14 @@ describe("lockfile serialisation", () => {
                 path: "skills/a/SKILL.md",
                 sha256: TDD_HASH,
                 nameSource: "frontmatter",
+                modelInvocable: true,
               },
               {
                 key: "tdd",
                 path: "skills/b/SKILL.md",
                 sha256: TEACH_HASH,
                 nameSource: "directory",
+                modelInvocable: true,
               },
             ],
           },
