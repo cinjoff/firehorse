@@ -10,6 +10,7 @@ import {
   generatedManifestEntries,
   mergeGeneratedManifestEntries,
   projectDefinitions,
+  projectionRoots,
   resolveUpstreamSkills,
   type GeneratedFile,
 } from "../packages/firehorse-core/src/definitions/index.js";
@@ -25,9 +26,11 @@ type Mode = "check" | "write";
 
 const repoRoot = process.cwd();
 
+// Every root a projection may write to, so the sweep can find a mirror whose
+// definition changed audience and now lives under the other root. Nothing here
+// is deleted without Firehorse provenance on the file itself.
 const generatedDirectories = [
-  "packages/firehorse-claude/commands/firehorse",
-  "packages/firehorse-claude/skills/firehorse",
+  ...new Set(Object.values(projectionRoots).flatMap((roots) => Object.values(roots) as string[])),
 ];
 
 async function main(): Promise<void> {

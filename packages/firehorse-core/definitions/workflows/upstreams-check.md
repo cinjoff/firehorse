@@ -2,6 +2,7 @@
 schemaVersion: 1
 id: upstreams-check
 kind: workflow
+audience: maintainer
 title: Upstreams Check
 description: Report upstream skill drift and what it costs — which workflow definitions reference a moved skill, which body steps depend on the part that moved, and whether the drift is breaking or advisory.
 argumentHint: "[--write]"

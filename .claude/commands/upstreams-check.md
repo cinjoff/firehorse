@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "upstreams-check"
 firehorseSource: "packages/firehorse-core/definitions/workflows/upstreams-check.md"
-firehorseSourceSha256: "1b04f47462dc4d15527cd83990daa4c61bbf14abadeda8164852f786a6f11558"
+firehorseSourceSha256: "a57c6b8774307d67759dc9c6cf90b48e5fb617db4c603470edf5f9dcb11506d2"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/upstreams-check.md
 Definition ID: upstreams-check
 Definition kind: workflow
-Source SHA-256: 1b04f47462dc4d15527cd83990daa4c61bbf14abadeda8164852f786a6f11558
+Source SHA-256: a57c6b8774307d67759dc9c6cf90b48e5fb617db4c603470edf5f9dcb11506d2
 -->
 
 # Upstreams Check

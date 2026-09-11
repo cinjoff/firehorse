@@ -2886,3 +2886,30 @@ thing this decision relies on.
   surface users see in the picker to soften a break on a pre-1.0 plugin.
 - Switch to `firehorse-` — rejected: longer, and `/firehorse:firehorse-map`
   stutters.
+
+## D-152 — A definition declares its audience; projection branches on it
+
+**Date:** 2026-09-11
+**Decision:** Definition frontmatter takes `audience: user | maintainer`,
+defaulting to `user`. `user` definitions project into the plugin
+(`packages/firehorse-claude/commands/firehorse/`, `.../skills/firehorse/`) and
+are listed in `plugin.json`. `maintainer` definitions project into this repo's
+own `.claude/commands/` and `.claude/skills/`, are committed, and never reach
+the plugin manifest. `ship` and `upstreams-check` are the first two maintainer
+workflows, invoked here as `/ship` and `/upstreams-check`.
+**Rationale:** `upstreams-check` cannot function outside this repo, and `ship`
+encodes this repo's version sites and scripts, so neither is a capability
+offered to users. Dropping them from the manifest alone would also remove them
+from the maintainer's own Claude Code, because the manifest is how plugin
+commands resolve. A declared audience keeps one canonical definition and one
+projector while separating who is served; flipping `ship` back to `user` later
+is a one-field change. The maintainer root is flat because subdirectories under
+`.claude/commands/` are undocumented and the `plugin:command` colon namespace is
+reserved for plugins, so `/firehorse:ship` cannot be reproduced locally.
+**Alternatives considered:**
+
+- Filter the manifest only — rejected: the maintainer loses the commands too.
+- Keep the two workflows out of `definitions/` and hand-author them under
+  `.claude/` — rejected: two authoring formats, and the gate stops covering them.
+- A `private: true` boolean — rejected: it names the exclusion, not the reader,
+  and a third audience (contributor, say) would not fit it.

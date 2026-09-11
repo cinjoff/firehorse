@@ -13,6 +13,7 @@ const tsxBin = nodePath.join(repoRoot, "node_modules/.bin/tsx");
 
 const workflowCommandPath = "packages/firehorse-claude/commands/firehorse/diagnose-fix.md";
 const skillMirrorPath = "packages/firehorse-claude/skills/firehorse/feedback-loop/SKILL.md";
+const maintainerCommandPath = ".claude/commands/release-it.md";
 const pluginManifestPath = "packages/firehorse-claude/.claude-plugin/plugin.json";
 
 interface CommandResult {
@@ -175,6 +176,62 @@ describe("definitions repository scripts", { timeout: 30_000 }, () => {
     );
   });
 
+  it("writes a maintainer workflow to .claude/commands and keeps it out of the plugin manifest", async () => {
+    const fixture = await createDefinitionsFixture();
+    await writeFile(
+      nodePath.join(fixture, "packages/firehorse-core/definitions/workflows/release-it.md"),
+      minimalWorkflowDefinition("release-it", [], "maintainer"),
+    );
+
+    const writeResult = await runDefinitions(fixture, "--write");
+
+    expect(writeResult.exitCode).toBe(0);
+    expect(commandOutput(writeResult)).toContain(`created ${maintainerCommandPath}`);
+    await expect(fileExists(nodePath.join(fixture, maintainerCommandPath))).resolves.toBe(true);
+    await expect(
+      fileExists(
+        nodePath.join(fixture, "packages/firehorse-claude/commands/firehorse/release-it.md"),
+      ),
+    ).resolves.toBe(false);
+
+    const manifest = (await readJson(nodePath.join(fixture, pluginManifestPath))) as {
+      commands: string[];
+    };
+    expect(manifest.commands).toEqual(["./commands/firehorse/diagnose-fix.md"]);
+
+    await expect(runDefinitions(fixture, "--check")).resolves.toMatchObject({ exitCode: 0 });
+  });
+
+  it("sweeps .claude/commands by provenance when a definition leaves the maintainer audience", async () => {
+    const fixture = await createDefinitionsFixture();
+    const definitionPath = nodePath.join(
+      fixture,
+      "packages/firehorse-core/definitions/workflows/release-it.md",
+    );
+    await writeFile(definitionPath, minimalWorkflowDefinition("release-it", [], "maintainer"));
+    expect((await runDefinitions(fixture, "--write")).exitCode).toBe(0);
+
+    const handAuthoredPath = ".claude/commands/hand-authored.md";
+    const handAuthoredContent = "---\ndescription: Hand authored.\n---\n\n# Hand authored\n";
+    await writeFile(nodePath.join(fixture, handAuthoredPath), handAuthoredContent);
+
+    // Flip the audience: the maintainer mirror is now stale and the user one is new.
+    await writeFile(definitionPath, minimalWorkflowDefinition("release-it", [], "user"));
+    const repairResult = await runDefinitions(fixture, "--write");
+
+    expect(repairResult.exitCode).toBe(0);
+    expect(commandOutput(repairResult)).toContain(
+      `removed stale generated mirror ${maintainerCommandPath}`,
+    );
+    await expect(fileExists(nodePath.join(fixture, maintainerCommandPath))).resolves.toBe(false);
+
+    // Nothing in .claude/ that Firehorse did not generate is touched.
+    expect(commandOutput(repairResult)).not.toContain(handAuthoredPath);
+    await expect(readFile(nodePath.join(fixture, handAuthoredPath), "utf8")).resolves.toBe(
+      handAuthoredContent,
+    );
+  });
+
   it("refuses to overwrite hand-authored generated targets", async () => {
     const fixture = await createDefinitionsFixture();
     const writeResult = await runDefinitions(fixture, "--write");
@@ -234,7 +291,11 @@ function titleFor(id: string): string {
     .join(" ");
 }
 
-function minimalWorkflowDefinition(id: string, supportingSkills: readonly string[] = []): string {
+function minimalWorkflowDefinition(
+  id: string,
+  supportingSkills: readonly string[] = [],
+  audience?: "user" | "maintainer",
+): string {
   const title = titleFor(id);
   const references =
     supportingSkills.length > 0
@@ -245,7 +306,7 @@ function minimalWorkflowDefinition(id: string, supportingSkills: readonly string
 schemaVersion: 1
 id: ${id}
 kind: workflow
-title: ${title}
+${audience ? `audience: ${audience}\n` : ""}title: ${title}
 description: Minimal generated mirror fixture.
 argumentHint: <freeform bug report>
 ${references}requires:

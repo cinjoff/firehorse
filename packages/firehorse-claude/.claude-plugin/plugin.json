@@ -40,8 +40,6 @@
     "./commands/firehorse/index.md",
     "./commands/firehorse/map.md",
     "./commands/firehorse/memory.md",
-    "./commands/firehorse/new-project.md",
-    "./commands/firehorse/ship.md",
-    "./commands/firehorse/upstreams-check.md"
+    "./commands/firehorse/new-project.md"
   ]
 }
