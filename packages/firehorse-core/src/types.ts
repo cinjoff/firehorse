@@ -2,7 +2,7 @@
  * Core firehorse types. Scaffolding only — no behavior yet.
  */
 
-export type ProviderId = "claude" | "codex" | "pi" | (string & {});
+export type ProviderId = "claude" | "codex" | (string & {});
 
 export type OrchestratorId =
   | "superset"
