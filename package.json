@@ -31,12 +31,6 @@
     "typecheck": "pnpm definitions:check && pnpm -r --filter='./packages/*' typecheck",
     "test": "pnpm -r --filter='./packages/*' test",
     "format": "prettier --write .",
-    "upstreams:check": "node scripts/check-upstreams.mjs",
-    "upstreams:check:warn": "node scripts/check-upstreams.mjs --warn-only",
-    "upstreams:update:mattpocock-skills": "node scripts/update-mattpocock-skills.mjs",
-    "upstreams:update:impeccable": "node scripts/update-impeccable-skills.mjs",
-    "upstreams:update:shadcn-ui": "node scripts/update-shadcn-skill.mjs",
-    "upstreams:write-update-manifests": "node scripts/write-update-manifests.mjs",
     "definitions:write": "tsx scripts/definitions.ts --write",
     "definitions:check": "tsx scripts/definitions.ts --check"
   },

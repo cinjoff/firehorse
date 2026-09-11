@@ -42,9 +42,7 @@ async function main(): Promise<void> {
 
   try {
     const definitions = await loadDefinitions();
-    assertValidDefinitionSet(definitions, {
-      knownUpstreamSkills: await loadKnownUpstreamSkills(),
-    });
+    assertValidDefinitionSet(definitions);
 
     const generatedFiles = projectDefinitions(definitions, { repoRoot });
     const fileResult = await syncGeneratedFiles(generatedFiles, mode);
@@ -110,30 +108,6 @@ async function listMarkdownFiles(root: string): Promise<string[]> {
     }),
   );
   return files.flat();
-}
-
-async function loadKnownUpstreamSkills(): Promise<ReadonlySet<string>> {
-  const upstreamsRoot = path.join(repoRoot, "packages/firehorse-core/upstreams");
-  const keys = new Set<string>();
-  for (const entry of await readdir(upstreamsRoot, { withFileTypes: true })) {
-    if (!entry.isDirectory()) {
-      continue;
-    }
-    const manifestPath = path.join(upstreamsRoot, entry.name, "UPSTREAM.json");
-    const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as {
-      name?: string;
-      skills?: Array<{ name?: string }>;
-    };
-    if (!manifest.name || !Array.isArray(manifest.skills)) {
-      continue;
-    }
-    for (const skill of manifest.skills) {
-      if (skill.name) {
-        keys.add(`${manifest.name}:${skill.name}`);
-      }
-    }
-  }
-  return keys;
 }
 
 async function syncGeneratedFiles(
