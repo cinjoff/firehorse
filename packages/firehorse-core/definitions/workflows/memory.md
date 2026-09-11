@@ -53,21 +53,38 @@ Check, build if needed, start, report. There is no judgement in this workflow an
 
 ## Safety Gates
 
-- Do not start a second server on a port that is already serving. A healthy `/api/health` on the port means an instance is already up: report its URL and stop.
-- Do not talk over a port held by something that is not this app. Anything other than a healthy health check means the port is occupied — say so and stop, rather than binding elsewhere silently.
-- Do not run the server in the foreground of the session. It does not exit, and a workflow that never returns is a hung session.
-- Do not report a URL you have not confirmed answers.
-- Do not write to supermemory from this workflow, or suggest the app can.
+- **One instance per port.** A healthy `/api/health` means an instance is already up: report its URL and stop.
+- **A port that answers anything else belongs to something else.** Say so and stop, rather than binding elsewhere silently.
+- **The server runs in the background.** It does not exit, and a workflow that never returns is a hung session.
+- **Report a URL you have confirmed answers.**
+- **This workflow reads.** The app never modifies the store, and nothing here should suggest it can.
+
+## Gotchas
+
+- An unbuilt app answers `404` with `No built app found. Run pnpm build first.` — a live server and a useless one look the same until you ask.
+- A `503` from `/api/health` means supermemory itself is down, not this app. Opening a browser onto it shows an empty graph rather than an error.
+- The store is expected at `SUPERMEMORY_API_URL`, and the self-hosted server accepts unauthenticated reads — so a missing API key looks like success.
 
 ## Procedure
 
-1. Run `pnpm --filter firehorse-graph serve` from the repo root. It resolves configuration, checks the port, and either reports an instance already running or starts one. Run it in the background; it does not exit.
-2. Read its first line. `already running on <url>` means an instance was reused and there is nothing more to start. `Port … is taken by something that is not firehorse-graph` means stop and tell the user.
-3. If the app has never been built, the server answers `404` with `No built app found. Run pnpm build first.` Run `pnpm --filter firehorse-graph build` and start it again.
-4. Confirm `GET /api/health` returns `ok`. A `503` means supermemory itself is not running — report that, and that the store is expected at `SUPERMEMORY_API_URL`, rather than opening a browser onto an empty graph.
-5. Open the URL in the user's browser.
-6. Report the URL and the project count the health check returned. One line. The user is going to look at the app, not read about it.
+1. **Start the server.** `pnpm --filter firehorse-graph serve` from the repo root, in the background — it resolves configuration, checks the port, and either reports an instance already running or starts one. It does not exit.
+   → Done when: the process is running in the background and has printed its first line.
+
+2. **Read that first line.** `already running on <url>` means an instance was reused and there is nothing to start. `Port … is taken by something that is not firehorse-graph` means stop and tell the user.
+   → Done when: you know whether you started an instance, reused one, or must stop.
+
+3. **Build if the app answers `404`.** `pnpm --filter firehorse-graph build`, then start it again.
+   → Done when: the server serves the app rather than the no-built-app message. Already built, skip.
+
+4. **Confirm `GET /api/health` returns `ok`.**
+   → Done when: the health check passes, or a `503` is reported as supermemory being down rather than opened in a browser.
+
+5. **Open the URL** in the user's browser.
+   → Done when: the browser has been pointed at the confirmed URL.
+
+6. **Report the URL and the project count** the health check returned. One line — the user is going to look at the app, not read about it.
+   → Done when: both are in one line.
 
 ## Projection Notes
 
-The Claude mirror is a static command generated from this definition. It creates no execution graph and loads no skills — the whole workflow is three shell commands and a health check. Run `pnpm definitions:write` after editing this file; the mirror is never hand-edited.
+This definition creates no execution graph and loads no skills — the whole workflow is three shell commands and a health check.
