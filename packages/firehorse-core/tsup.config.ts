@@ -7,6 +7,7 @@ export default defineConfig({
     "orchestrators/index": "src/orchestrators/index.ts",
     "definitions/index": "src/definitions/index.ts",
     "setup/index": "src/setup/index.ts",
+    "upstreams/index": "src/upstreams/index.ts",
   },
   format: ["esm", "cjs"],
   dts: true,
