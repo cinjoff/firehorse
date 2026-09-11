@@ -2,20 +2,26 @@
 
 ## Unreleased
 
+## v0.4.0 — 2026-09-11
+
 ### Changed
 
-- **Breaking:** Dropped the `horse-` prefix from generated Claude command names.
-  The seven workflow commands are now `/firehorse:build`, `/firehorse:fix-bug`,
-  `/firehorse:index`, `/firehorse:map`, `/firehorse:new-project`,
-  `/firehorse:ship`, and `/firehorse:upstreams-check`. The old
-  `/firehorse:horse-*` names no longer resolve and no aliases are projected;
-  update any saved invocation. See D-151, which supersedes D-52.
+- **Breaking:** Dropped the `horse-` prefix from the plugin's workflow commands.
+  They are now `/firehorse:build`, `/firehorse:fix-bug`, `/firehorse:index`,
+  `/firehorse:map`, `/firehorse:new-project`, `/firehorse:ship`, and
+  `/firehorse:upstreams-check`. The old `/firehorse:horse-*` names no longer
+  resolve and no aliases are projected, so update any saved invocation, alias, or
+  script. The plugin namespace already distinguishes these commands from other
+  plugins', which is why the prefix went. See D-151, superseding D-52 and the
+  native-invocation half of D-58.
+- Docs now spell commands in the `/firehorse:<id>` form the plugin actually
+  installs, rather than the bare `/<id>` shorthand.
 
 ### Removed
 
-- Removed the `nativeName()` export from `firehorse-core`. With the prefix gone
-  it returned its argument unchanged, so command projection uses the canonical
-  Definition ID directly, as skill projection already did.
+- Removed the `nativeName()` export from the `firehorse` core library. With the
+  prefix gone it returned its argument unchanged. This affects only direct
+  importers of the library, not the plugin surface.
 
 ## v0.3.0 — 2026-05-18
 
