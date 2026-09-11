@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "build"
 firehorseSource: "packages/firehorse-core/definitions/workflows/build.md"
-firehorseSourceSha256: "d8a8a1a37a1997070dd823b2eed755126fa3f73a19f0de91466b3e3ede32bd6e"
+firehorseSourceSha256: "dddcca191f66be0330d1a91979390ad793d4a927a876bc67e251675f3f47e571"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/build.md
 Definition ID: build
 Definition kind: workflow
-Source SHA-256: d8a8a1a37a1997070dd823b2eed755126fa3f73a19f0de91466b3e3ede32bd6e
+Source SHA-256: dddcca191f66be0330d1a91979390ad793d4a927a876bc67e251675f3f47e571
 -->
 
 # Build
@@ -70,7 +70,7 @@ You drive the sequence: read the ticket, query the graph, confirm the seam, prot
 2. Query the graph before reading files. For every symbol the ticket names, run `search_graph`; for each hit, run `trace_path` to get its callers. Run `index_status`; if the index is behind HEAD, run `/index` first or state the gap in your report. Run `check_index_coverage` on every path you intend to cite.
 3. Write the seam list: the public boundary you will change, every call site the trace found, and the query that found it. Confirm it with the user. `tdd` starts only after that confirmation. When the seam's shape is itself the question — how deep the module should be, where the boundary belongs — consult `codebase-design` before confirming.
 4. Decide the prototype branch. The change has a UI surface and "what should it look like" or "does this state model feel right" is still open → invoke `prototype`, link the artifact from the issue, and get a reaction before writing production code. The shape is settled → skip it and say so in one line.
-5. For a UI surface, run an impeccable pass on the result when the `impeccable` plugin is installed. Read `DESIGN.md` first — it states the intended direction, which a critique of the current pixels cannot supply. Plugin absent: say so in one line and move on.
+5. For a UI surface, run `impeccable` on the result. Read `DESIGN.md` first — it states the intended direction, which a critique of the current pixels cannot supply.
 6. Implement with `implement`, using `tdd` at the seams confirmed in step 3 and no others.
 7. Verify, and keep the output. Run `pnpm typecheck`, `pnpm test`, and `pnpm definitions:check` when that script exists. A failing gate is the result; do not proceed past it.
 8. Commit in small, reviewable commits on the current branch.
