@@ -8,72 +8,78 @@ something upstream does not do, a drift check for upstream renames, and repo
 setup state. Everything else comes from plugins you install. Firehorse depends
 on upstream plugins and vendors nothing.
 
-This repo is mid-migration. [`docs/MIGRATION-PLAN.md`](./docs/MIGRATION-PLAN.md)
-is the settled plan and the source of truth; decisions D-136 through D-150 there
-are binding. The Pi distribution, the vendored upstream mirrors, the agent
-roster, and the claude-mem wiring are gone as of this migration — recoverable
-from the `pi-v0.3.0` tag.
+The Claude-only migration is complete.
+[`docs/MIGRATION-PLAN.md`](./docs/MIGRATION-PLAN.md) is the settled plan and
+decisions D-136 through D-150 there are binding. The Pi distribution, the
+vendored upstream mirrors, the agent roster, and the claude-mem wiring are gone
+— recoverable from the `pi-v0.3.0` tag.
 
 ## Install
 
-Firehorse depends on three upstream plugins: `mattpocock-skills` from the
-official `claude-plugins-official` marketplace, `impeccable` from
-`pbakaus/impeccable`, and `supermemory` from `supermemoryai/claude-supermemory`.
-Claude Code installs all three along with Firehorse. Add the other marketplaces
-first, because Claude Code cannot resolve a dependency from a marketplace it does
-not know about yet.
-
-```text
-/plugin marketplace add pbakaus/impeccable
-/plugin marketplace add supermemoryai/claude-supermemory
-/plugin marketplace add cinjoff/firehorse
-/plugin install firehorse@firehorse
-```
-
-Then run the setup skill once:
-
-```text
-firehorse-setup
-```
-
-Use `firehorse-setup --check` for a read-only status report.
-
-### codebase-memory-mcp
-
-The workflows query a codebase knowledge graph through `codebase-memory-mcp`.
-That is an MCP server, not a plugin, so Firehorse does not bundle it and
-`/plugin install` does not pull it in. Install the server from its own upstream,
-then register it at user scope so every project sees it:
+One command. It adds the three upstream marketplaces, installs the plugin and
+its dependencies, registers the MCP servers, and brings up the local memory
+stack.
 
 ```sh
-claude mcp add --scope user codebase-memory-mcp <path-to-codebase-memory-mcp>
+curl -fsSL https://raw.githubusercontent.com/cinjoff/firehorse/main/install.sh | bash
 ```
 
-### Memory
+From a clone, run `./install.sh` instead.
 
-Recall across sessions comes from a self-hosted supermemory server on
-`localhost:6767`, plus the `firehorse-recall` skill for deliberate queries. The
-plugin installs with Firehorse; the server does not. Set it up once, following
-[the memory runbook](./docs/MEMORY.md):
+Every step is idempotent, so re-running repairs rather than duplicates. To see
+what is and is not set up without writing anything:
 
 ```sh
-npx -y supermemory@latest local install
-ollama pull gpt-oss:20b
+./install.sh --check
 ```
 
-The extraction model must support tool calling, and it must stay resident. The
-runbook explains both, and why each one fails quietly if you skip it.
+| Flag              | Effect                                         |
+| ----------------- | ---------------------------------------------- |
+| `--check`         | Report status. Writes nothing.                 |
+| `--yes`           | Accept every prompt. For non-interactive runs. |
+| `--skip-memory`   | Leave the self-hosted supermemory stack alone. |
+| `--skip-superset` | Leave Superset MCP alone.                      |
 
-The core library is published separately for adapter contracts and the
-definition format. It is not a skill runtime.
+Restart Claude Code afterwards so the plugin, its hooks, and the MCP servers
+load.
 
-```sh
-pnpm add firehorse
-```
+### What the installer wires up
+
+- **Marketplaces** — `pbakaus/impeccable`, `supermemoryai/claude-supermemory`,
+  and `cinjoff/firehorse`. The first two come first, because Claude Code cannot
+  resolve a dependency from a marketplace it does not know about yet.
+- **The plugin** — `firehorse@firehorse`, which pulls `mattpocock-skills`,
+  `impeccable`, and `supermemory` with it.
+- **MCP servers** — `codebase-memory-mcp` for the structural queries the
+  workflows run, and `supermemory-docs` for supermemory's public documentation.
+- **Memory** — the self-hosted supermemory server on `localhost:6767`, the
+  `gpt-oss:20b` extraction model, the server credentials, a launchd job so it
+  survives a reboot, and the `SUPERMEMORY_API_URL` entries Claude Code needs in
+  `~/.claude/settings.json`.
+- **Superset MCP** — only when Superset is detected, and always through a
+  `headersHelper` so the API key never lands in a config file.
+
+Two things it cannot do for you. It installs the `codebase-memory-mcp` binary
+only if you already have it — that server has its own upstream — and it needs
+[Ollama](https://ollama.com) running before it can set up memory. It tells you
+so and carries on rather than failing.
+
+[The memory runbook](./docs/MEMORY.md) explains what the memory half does, and
+why each piece fails quietly if it is missing.
+
+### Doing it by hand
+
+The installer is the supported path. If you would rather wire it up yourself,
+the runbook and `install.sh` are both readable, and `./install.sh --check` will
+tell you what is still missing.
+
+The core library carries the adapter contracts and the definition format. It is
+not a skill runtime, and it is not published to npm — Firehorse is personal
+tooling (D-136). Consume it from the workspace.
 
 ## Packages
 
-- **`packages/firehorse-core`** (`firehorse` on npm) — canonical definitions,
+- **`packages/firehorse-core`** (`firehorse`, unpublished) — canonical definitions,
   the Firehorse Definition Format v1 parser and validator, the projection
   generator, and provider/orchestrator adapter contracts.
 - **`packages/firehorse-claude`** — the Claude Code plugin. Generated commands
