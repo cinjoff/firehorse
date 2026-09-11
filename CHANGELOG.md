@@ -1,96 +1,87 @@
 # Changelog
 
-## Unreleased
+## v0.6.0 — 2026-09-11
 
 ### Fixed
 
-- The `firehorse-recall` skill shipped this repo's own supermemory container tag
-  in its worked example, where every other occurrence used `<tag>`. A reader
-  copying it queried a container that does not exist for them.
-- `/firehorse:ship` carried a safety gate citing D-136 for "`firehorse` is
-  personal tooling" — a decision number that resolves to something else in
-  `docs/DECISIONS.md`, stated as guidance in a repo it does not apply to. It now
-  states the fact without the citation.
-- `/firehorse:ship`'s version sites missed `packages/firehorse-graph/package.json`,
-  added in v0.5.0. Seven fields carry the version now, not six, and
-  `claude plugin tag` still only checks two of them.
-
-### Fixed
-
-- Workflows no longer tell the agent to invoke a skill it cannot reach.
-  `implement`, `wayfinder`, and `setup-matt-pocock-skills` all set
+- **Workflows no longer tell the agent to invoke a skill it cannot reach.**
+  `implement`, `wayfinder` and `setup-matt-pocock-skills` all set
   `disable-model-invocation`, which strips their description from the agent's
-  reach and makes them user-invoked only — an agent asking for one gets "skill
-  not found". `upstreams.lock.json` now records `modelInvocable` per skill, every
-  generated workflow carries a table saying which skills to invoke and which to
-  read and follow inline, and `/firehorse:build`, `/firehorse:map`,
-  `/firehorse:new-project`, and `/firehorse:index` say so in the steps that use
-  them. `pnpm upstreams:check` reports a skill losing model invocation as
-  breaking for the workflows that reference it.
+  reach — asking for one fails with "skill not found", which is what a session
+  hit. Every generated workflow now says, per upstream skill, whether to invoke
+  it or to read its `SKILL.md` and follow it inline, and `/firehorse:build`,
+  `/firehorse:map`, `/firehorse:new-project` and `/firehorse:index` say so in the
+  steps that use them. `pnpm upstreams:check` reports a skill losing model
+  invocation as breaking for the workflows that reference it.
+- `firehorse-recall`'s worked example carried this repo's own supermemory
+  container tag where every other occurrence used `<tag>`, so a reader copying it
+  queried a container that does not exist for them.
+- `/firehorse:ship` cited a decision number for "`firehorse` is personal tooling"
+  that resolves to something else in `docs/DECISIONS.md`, as guidance in repos it
+  does not apply to. It now states the fact without the citation.
+- `/firehorse:ship` missed `packages/firehorse-graph/package.json`, added in
+  v0.5.0. Seven fields carry the version now, not six — and `claude plugin tag`
+  still checks only two of them.
 
 ### Added
 
-- Generated workflow mirrors carry a **Resolved upstream skills** table: per
-  `upstreamSkills` entry, its `plugin:skill` invocation, whether it can be
-  invoked, and its `SKILL.md` path under the plugin cache. Resolved at projection
-  time from the committed lockfile, so the paths are the same on CI as locally and
-  no session spends turns looking for where a skill lives.
-- Every procedure step carries a completion criterion (`→ Done when:`), so a step
-  ends on a checkable condition rather than on the agent's sense of being
+- **Every workflow step ends on a completion criterion** (`→ Done when:`), so a
+  step ends on a checkable condition rather than on the agent's sense of being
   finished.
-- A `## Gotchas` section per workflow, holding the environment facts that defy
-  reasonable assumptions — `claude plugin tag` being the only check on the version
-  set, `supermemory add` returning `queued` before anything is stored, file mtimes
-  not being a staleness signal.
+- **A `## Gotchas` section per workflow**, holding the environment facts that
+  defy reasonable assumptions: `claude plugin tag` being the only automated check
+  on the version set, `supermemory add` returning `queued` before anything is
+  stored, file modification times not being a staleness signal, an unbuilt graph
+  app and a working one looking identical until you ask.
+- **A resolved upstream-skill table in every generated command** — the
+  `plugin:skill` invocation, whether it can be invoked, and the `SKILL.md` path
+  under the plugin cache. Resolved from the committed lockfile, so the paths are
+  the same on CI as locally and no session spends turns hunting for a skill.
 - `firehorse-setup` and `install.sh` verify `codebase-memory-mcp` is registered.
   It is a standalone server rather than a marketplace plugin, so `plugin.json`
-  `dependencies` cannot express it and this check is what confirms it is there.
-  The server installs the `codebase-memory` skill, so one check covers both. The
-  install is not guessed at.
-- The Superset headers helper ships as
-  `skills/firehorse-setup/superset-mcp-headers.mjs` instead of being inlined in
-  the skill body for the agent to retype. `install.sh` keeps its own heredoc copy
-  because it runs through `curl | bash`; a test fails if the two drift.
+  `dependencies` cannot express it. The server installs the `codebase-memory`
+  skill, so one check covers both; the install itself is not guessed at.
+- The Superset headers helper ships as a file beside the `firehorse-setup` skill
+  instead of 50 lines of JavaScript in its body for the agent to retype.
+  `install.sh` keeps its own copy because it runs through `curl | bash`, and a
+  test fails if the two drift.
 
 ### Changed
 
-- `/firehorse:build`, `/firehorse:fix-bug`, and `/firehorse:index` declare
-  `mcp:codebase-memory-mcp` as **required** rather than optional, and their graph
-  steps say what the graph is for — architecture
-  and impact before touching a file. Absence is reported in the first line of the
-  report and every result from the grep fallback is treated as incomplete.
-  `/firehorse:ship` uses `trace_path` so a review covers the call sites a change
-  reaches rather than the files it touches.
-- `/firehorse:map` reads `.firehorse/manifest.json` instead of re-probing the repo
-  on every invocation. `/firehorse:new-project` records `anchors.context`,
-  `anchors.agents`, `anchors.design`, and `anchors.adr` once; `/firehorse:index`
-  keeps them current; the Notes block resolves from those fields and from
-  `index.graph` / `index.supermemory`.
-- Docs and definitions spell Firehorse commands as `/firehorse:<id>` and upstream
-  skills as `plugin:skill`, so a bare `/code-review` no longer reads ambiguously
-  against the built-in command of the same name.
-- Safety gates lead with the behaviour to take rather than the one to avoid, since
-  a prohibition makes the forbidden behaviour more available, not less.
-- Reference material consulted once moved out of the procedures into its own
-  sections: `map`'s Notes-block template and resolution rules, `ship`'s gate
-  command set and version sites, `index`'s freshness rule,
-  `upstreams-check`'s breaking-versus-advisory classification, `new-project`'s
-  manifest shape.
-- `firehorse-recall`'s description lists the four situations that should trigger
-  it instead of describing its own search procedure.
-- `upstreams.lock.json` is at schema version 2. A baseline recorded under an older
-  version is reported as a baseline to regenerate with `--write`, never read as
-  drift.
-- The `definitions` CLI tests allow 30s, since each spawns a `tsx` subprocess and
-  ran past vitest's 5s default whenever the rest of the suite competed for CPU.
+- `/firehorse:build`, `/firehorse:fix-bug` and `/firehorse:index` now declare
+  `codebase-memory-mcp` **required** rather than optional, and say what the graph
+  is for: architecture and impact before touching a file. Absence is reported in
+  the first line of the run and every grep-fallback result is treated as
+  incomplete. `/firehorse:ship` traces changed public symbols so a review covers
+  the call sites a change reaches rather than the files it touches.
+- `/firehorse:map` reads `.firehorse/manifest.json` instead of re-probing the
+  repo on every invocation. `/firehorse:new-project` records which anchors a repo
+  has once; `/firehorse:index` keeps them current.
+- Safety gates across every workflow lead with the behaviour to take rather than
+  the one to avoid, since a prohibition makes the forbidden behaviour more
+  available, not less.
+- Commands are spelled `/firehorse:<id>` and upstream skills `plugin:skill`, so a
+  bare `/code-review` no longer reads ambiguously against the built-in command of
+  the same name.
+- Reference consulted once moved out of the procedures into its own sections, so
+  the steps read as steps: `map`'s Notes-block template, `ship`'s gate and
+  version sites, `index`'s freshness rule, `upstreams-check`'s classification,
+  `new-project`'s manifest shape.
+- `firehorse-recall`'s description lists the situations that should trigger it
+  instead of describing its own search procedure.
+- The README leads with what Firehorse is and why, sets up in two copy-paste
+  steps, and carries an installer summary a reader can audit before piping a
+  script to `bash`.
+- `upstreams.lock.json` is at schema version 2, recording per skill whether an
+  agent can invoke it. A baseline at an older version is reported as one to
+  regenerate, never read as drift.
 
 ### Removed
 
-- `## Projection Notes` no longer ships in the generated mirrors. It tells the
-  person editing the definition how projection works, and told the running agent
-  nothing the generated DO-NOT-EDIT banner did not already say. The section stays
-  required in the definitions; `stripAuthoringOnlySections` drops it at projection
-  time.
+- `## Projection Notes` no longer ships in the generated commands and skills. It
+  tells the person editing a definition how projection works and told the running
+  agent nothing the DO-NOT-EDIT banner did not already say. It stays required in
+  the definitions and is stripped when they are projected.
 
 ## v0.5.0 — 2026-09-11
 

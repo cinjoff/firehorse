@@ -1,7 +1,7 @@
 {
   "name": "firehorse-workspace",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Firehorse monorepo — core lib + Claude plugin.",
   "license": "MIT",
   "author": {
