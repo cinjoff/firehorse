@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "build"
 firehorseSource: "packages/firehorse-core/definitions/workflows/build.md"
-firehorseSourceSha256: "dddcca191f66be0330d1a91979390ad793d4a927a876bc67e251675f3f47e571"
+firehorseSourceSha256: "918d2e3f27a190fc8f3329e4291b0b3d8292fd61991d0c1afef000c06d345d32"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,14 +15,18 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/build.md
 Definition ID: build
 Definition kind: workflow
-Source SHA-256: dddcca191f66be0330d1a91979390ad793d4a927a876bc67e251675f3f47e571
+Source SHA-256: 918d2e3f27a190fc8f3329e4291b0b3d8292fd61991d0c1afef000c06d345d32
 -->
 
 # Build
 
 ## Purpose
 
-Use this workflow to take one ticket from the tracker to a committed, verified change. It adds three things `implement` and `tdd` do not do on their own: it makes you establish the affected seam from the codebase graph before you open a file, it routes an uncertain UI shape through a prototype before any production code exists, and it requires verification evidence — commands and their output — rather than a claim that the work is done.
+Use this workflow to take one ticket from the tracker to a committed, verified change. It adds three things `implement` and `tdd` do not do on their own:
+
+- The **seam** — the public boundary under change — is established from the codebase graph, in writing, before you open a file.
+- An uncertain **shape** — what the UI should look like, whether a state model feels right — goes through a prototype before any production code exists.
+- The report carries **evidence**: commands and their output, not a claim that the work is done.
 
 `tdd` refuses to write a test at an unconfirmed seam. This workflow is how the seam gets confirmed: from `search_graph` and `trace_path`, in writing, before the first test.
 
@@ -33,49 +37,85 @@ Invoke the generated command with a GitHub issue URL or number, or a path to a s
 ## Inputs
 
 - `$ARGUMENTS`: the issue reference or spec path.
-- The issue body, labels, and comments, read with `gh issue view <number> --comments`.
+- The issue body, labels, and comments, from `gh issue view <number> --comments`.
 - The codebase graph for this repo, through `codebase-memory-mcp`.
 - `CONTEXT.md` for the repo's vocabulary, and `DESIGN.md` when the change has a UI surface.
 
 ## Outputs
 
-- A named seam list: the public boundary under change and its call sites, each with the graph query that produced it.
-- A prototype linked from the issue, when the UI shape was the open question.
-- Commits on the current branch, small and reviewable.
-- A verification block on the issue: every command run and its result, pasted.
+- A seam list: the public boundary under change and its call sites, each with the graph query that produced it.
+- A prototype linked from the issue, when the shape was the open question.
+- Small, reviewable commits on the current branch.
+- A verification block on the issue: every command run, its output, and what you did not verify.
 
 ## Supporting Capabilities
 
-- Upstream skills: `mattpocock-skills` / `implement` for the build loop, `tdd` for the red-green loop at the confirmed seams, `prototype` for the UI branch, `codebase-design` when the seam's depth is itself in question.
-- Required: read, edit, write, `gh`, and a shell for the gate.
-- Optional: `codebase-memory-mcp`. Without it, step 2 degrades to grep and the report must say so.
+- `implement` drives the build loop, `tdd` the red-green loop at the confirmed seams, `prototype` the shape branch, and `codebase-design` when the seam's depth is itself in question. The table below says which of them you can invoke and which you read.
+- `impeccable` critiques a UI surface against the direction `DESIGN.md` states.
+- `codebase-memory-mcp` is required: step 2 is a graph query, and grep over a repo this workflow has not read is not a substitute. Absent, say so in the first line of the report, fall back to grep, and treat every seam in the list as unconfirmed until the user confirms it by hand.
+- **Graph reference:** the `codebase-memory` skill carries the `search_graph` and `query_graph` syntax, the edge-type vocabulary, and the multi-hop examples. `codebase-memory-mcp` installs it, so it is present wherever the server is — invoke it when you need the query form rather than guessing one. This workflow says when to query, not how.
+
+**Resolved upstream skills.** How to reach each one, and where its text lives, so
+neither costs a search. The plugin root is `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`.
+
+A skill marked **read the file and follow it inline** sets
+`disable-model-invocation`, which means only a human can invoke it by name.
+Trying to invoke one fails with "skill not found"; read its `SKILL.md` at the
+path below and carry out its steps yourself.
+
+| Skill | How to reach it | `SKILL.md` under the plugin cache |
+| ----- | --------------- | --------------------------------- |
+| `mattpocock-skills:implement` | **read the file and follow it inline** | `claude-plugins-official/mattpocock-skills/1.2.3/skills/engineering/implement/SKILL.md` |
+| `mattpocock-skills:tdd` | invoke `mattpocock-skills:tdd` | `claude-plugins-official/mattpocock-skills/1.2.3/skills/engineering/tdd/SKILL.md` |
+| `mattpocock-skills:prototype` | invoke `mattpocock-skills:prototype` | `claude-plugins-official/mattpocock-skills/1.2.3/skills/engineering/prototype/SKILL.md` |
+| `mattpocock-skills:codebase-design` | invoke `mattpocock-skills:codebase-design` | `claude-plugins-official/mattpocock-skills/1.2.3/skills/engineering/codebase-design/SKILL.md` |
+| `impeccable:impeccable` | invoke `impeccable:impeccable` | `impeccable/impeccable/4.3.1/skills/impeccable/SKILL.md` |
 
 ## Orchestration Intent
 
-You drive the sequence: read the ticket, query the graph, confirm the seam, prototype if the shape is open, implement, verify, record. `implement` and `tdd` run inline. The `prototype` step produces a throwaway artifact linked from the issue, never production code. When the repo supports subagents, run the `/code-review` pass as a subagent so its context stays clean; `/ship` runs that review again before the PR.
+You drive the sequence; `implement` and `tdd` run inline. `prototype` produces a throwaway artifact linked from the issue, never production code. Where the repo supports subagents, run the `mattpocock-skills:code-review` pass as a subagent so its context stays clean — `/firehorse:ship` runs that review again before the PR.
 
 ## Safety Gates
 
-- Do not open a source file before step 2 has produced the seam list. Structure first, files second.
-- Do not write a test at a seam the user has not confirmed.
-- Do not write production UI code while "what should this look like" is still the open question. Prototype first.
-- Do not cite a path you have not opened. Run `check_index_coverage` on every path the graph returns before you quote it.
-- Do not close the ticket on a claim. The gate output goes on the issue, or the ticket stays open.
-- Do not write a local planning draft under `docs/prds/` or `docs/issues/` (D-149).
-- Do not hand-edit a generated mirror under `packages/firehorse-claude/commands/firehorse/` or `packages/firehorse-claude/skills/firehorse/`. Edit the definition and run `pnpm definitions:write`.
+- **Structure first, files second.** The seam list from step 3 exists before you open a source file.
+- **Confirmed seams only.** `tdd` runs at the seams the user confirmed in step 3, and nowhere else.
+- **Shape before pixels.** While "what should this look like" is still open, the artifact is a prototype.
+- **Cite only what you opened.** `check_index_coverage` confirms every path the graph returns before you quote it.
+- **Evidence closes work, claims do not.** The gate output goes on the issue; a red gate is the result of the run.
+- **Planning lives in the tracker** (D-149) — issues and their comments, never a draft under `docs/prds/` or `docs/issues/`.
+- **Generated mirrors come from `pnpm definitions:write`.** Edit the definition under `packages/firehorse-core/definitions/`, never the mirror under `packages/firehorse-claude/`.
+
+## Gotchas
+
+- A stale graph answers confidently. `index_status` behind HEAD means the seam list describes an older tree — run `/firehorse:index`, or state the gap in the report.
+- `check_index_coverage` is best-effort. It confirms a path was indexed; it never proves the trace found every caller, so a negative result is "not found", never "does not exist".
+- `DESIGN.md` states intended direction. A critique of the current pixels cannot supply it, so `impeccable` reads it first or it critiques against nothing.
 
 ## Procedure
 
-1. Read the ticket with `gh issue view <number> --comments`. Name the behaviour that must change. When the ticket is a wayfinder child issue, load its map's `## Notes` and obey what it says.
-2. Query the graph before reading files. For every symbol the ticket names, run `search_graph`; for each hit, run `trace_path` to get its callers. Run `index_status`; if the index is behind HEAD, run `/index` first or state the gap in your report. Run `check_index_coverage` on every path you intend to cite.
-3. Write the seam list: the public boundary you will change, every call site the trace found, and the query that found it. Confirm it with the user. `tdd` starts only after that confirmation. When the seam's shape is itself the question — how deep the module should be, where the boundary belongs — consult `codebase-design` before confirming.
-4. Decide the prototype branch. The change has a UI surface and "what should it look like" or "does this state model feel right" is still open → invoke `prototype`, link the artifact from the issue, and get a reaction before writing production code. The shape is settled → skip it and say so in one line.
-5. For a UI surface, run `impeccable` on the result. Read `DESIGN.md` first — it states the intended direction, which a critique of the current pixels cannot supply.
-6. Implement with `implement`, using `tdd` at the seams confirmed in step 3 and no others.
-7. Verify, and keep the output. Run `pnpm typecheck`, `pnpm test`, and `pnpm definitions:check` when that script exists. A failing gate is the result; do not proceed past it.
-8. Commit in small, reviewable commits on the current branch.
-9. Comment on the issue: the seam list, the prototype link when there was one, the commands you ran with their output, and what you did not verify. Leave the issue open for `/ship` to close.
+1. **Read the ticket.** `gh issue view <number> --comments`. Name the behaviour that must change. A wayfinder child issue also means loading its map's `## Notes` and obeying what it says.
+   → Done when: the behaviour under change is written in one sentence.
 
-## Projection Notes
+2. **Query the graph.** The graph is how you learn this codebase's architecture and the impact of the change before touching it. For every symbol the ticket names, `search_graph`; for each hit, `trace_path` for its callers; `get_architecture` when the ticket crosses modules. Then `index_status` for freshness and `check_index_coverage` on every path you intend to cite.
+   → Done when: every named symbol has a trace, and the index's freshness is recorded.
 
-The Claude mirror is a static command generated from this definition. Upstream skills are referenced, not inlined, so Claude loads them through its own skill mechanism and a changed upstream does not need this file rewritten — `/upstreams-check` reports when one moves. Run `pnpm definitions:write` after editing; the mirror is never hand-edited.
+3. **Confirm the seam list.** Write the public boundary you will change, every call site the trace found, and the query that found each one. When the seam's shape is itself the question — how deep the module should be, where the boundary belongs — consult `mattpocock-skills:codebase-design` before asking.
+   → Done when: the user has confirmed the list. `tdd` starts only after that confirmation.
+
+4. **Decide the shape branch.** UI surface with "what should it look like" or "does this state model feel right" still open → invoke `mattpocock-skills:prototype`, link the artifact from the issue, and get a reaction before any production code. Shape settled → skip, and say so in one line.
+   → Done when: the branch is taken or declined, in writing.
+
+5. **Critique the UI surface.** For a UI change, read `DESIGN.md`, then run `impeccable:impeccable` against it.
+   → Done when: `impeccable`'s findings are addressed or recorded. No UI surface, skip.
+
+6. **Implement.** `mattpocock-skills:implement` is user-invoked only, so read its `SKILL.md` at the path in [Supporting Capabilities](#supporting-capabilities) and follow its loop yourself; invoke `mattpocock-skills:tdd` at the step-3 seams.
+   → Done when: the behaviour from step 1 is in place and its tests pass.
+
+7. **Run the gate.** `pnpm typecheck`, `pnpm test`, and `pnpm definitions:check` where that script exists. Keep the output verbatim.
+   → Done when: every gate is green, or a red gate is recorded and the run stops here.
+
+8. **Commit.** Small, reviewable commits on the current branch.
+   → Done when: the working tree is clean.
+
+9. **Report on the issue.** Comment with the seam list, the prototype link when there was one, the gate commands with their output, and what you did not verify. Leave the issue open for `/firehorse:ship` to close.
+   → Done when: the comment is posted and the issue is still open.

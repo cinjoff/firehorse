@@ -7,6 +7,7 @@ description: Fix a bug by building a feedback loop, tracing the failing symbol's
 argumentHint: "[bug description | issue URL or number | failing test | log excerpt]"
 requires:
   tools:
+    - mcp:codebase-memory-mcp
     - read
     - bash
     - edit
@@ -19,7 +20,6 @@ optional:
     - find
     - ls
     - write
-    - mcp:codebase-memory-mcp
   orchestration:
     - subagents
   environment:
@@ -37,9 +37,12 @@ upstreamSkills:
 
 ## Purpose
 
-Use this workflow to move from a bug report to a fix that is proven to have changed the behaviour. It adds two things to `diagnosing-bugs`: before you hypothesise, you enumerate the failing symbol's callers from the codebase graph, so the hypothesis names a real call site instead of a plausible one; and you report regression evidence from both sides of the fix — the loop red on the old code, green on the new, both pasted.
+Use this workflow to move from a bug report to a fix proven to have changed the behaviour. It adds two things to `diagnosing-bugs`:
 
-`diagnosing-bugs` Phase 3 tells you to hypothesise. The graph trace is what stops that phase from guessing which caller is implicated.
+- Before you hypothesise, the failing symbol's **call sites** come out of the codebase graph, so the hypothesis names a real one instead of a plausible one.
+- The report carries **evidence from both sides**: the loop **red** on the old code, **green** on the new, both pasted.
+
+`diagnosing-bugs` Phase 3 tells you to hypothesise. The graph trace is what stops that phase guessing which caller is implicated.
 
 ## Usage
 
@@ -48,50 +51,73 @@ Invoke the generated command with a bug description, an issue reference, a faili
 ## Inputs
 
 - `$ARGUMENTS`: the report or the evidence.
-- The issue body and comments when the report is a tracker issue.
+- The issue body and comments, when the report is a tracker issue.
 - The codebase graph, through `codebase-memory-mcp`.
 - `CONTEXT.md` for the repo's vocabulary, and the ADRs covering the area you are touching.
 
 ## Outputs
 
-- The feedback loop: the exact command or script that goes red on this bug.
-- A caller list for the failing symbol, with the query that produced it.
+- The loop: the exact command or script that goes red on this bug.
+- A call-site list for the failing symbol, with the query that produced it.
 - The smallest patch that addresses the evidenced cause.
-- A regression test, named, with its path.
+- A named regression test, with its path.
 - A regression evidence block: the loop's output before the patch and after it.
 
 ## Supporting Capabilities
 
-- Upstream skills: `mattpocock-skills` / `diagnosing-bugs` for the six-phase discipline, `tdd` for the regression test.
-- Required: read, edit, and a shell to run the loop.
-- Optional: `codebase-memory-mcp`. Without it, step 3 degrades to grep for call sites and the report must say so.
+- `mattpocock-skills` / `diagnosing-bugs` supplies the six-phase discipline; `tdd` writes the regression test.
+- `codebase-memory-mcp` is required: step 3 enumerates call sites from the graph, which is what stops a hypothesis naming a plausible caller instead of a real one. Absent, say so in the first line of the report and fall back to grep, knowing the call-site list is then incomplete.
+- **Graph reference:** the `codebase-memory` skill carries the `search_graph` and `query_graph` syntax, the edge-type vocabulary, and the multi-hop examples. `codebase-memory-mcp` installs it, so it is present wherever the server is — invoke it when you need the query form rather than guessing one. This workflow says when to query, not how.
 
 ## Orchestration Intent
 
-You run `diagnosing-bugs` phase by phase and insert the graph trace between Phase 2 and Phase 3. Nothing is delegated by default; the loop has to stay in the session that is reading its output. When the bug spans packages and the traces are large, run the trace as a subagent and bring back the caller list alone.
+You run `diagnosing-bugs` phase by phase and insert the graph trace between Phase 2 and Phase 3. Nothing is delegated by default — the loop stays in the session reading its output. When the bug spans packages and the traces are large, run the trace as a subagent and bring back the call-site list alone.
 
 ## Safety Gates
 
-- Do not edit code before a feedback loop exists that goes red on this bug. No loop, no patch — produce a diagnosis instead and say why the loop could not be built.
-- Do not state a hypothesis that does not name a call site from step 3's list.
-- Do not widen the patch past the evidenced cause. A second bug is a second ticket.
-- Redact every secret in every command, output, and captured artifact you show. Write `<REDACTED>` in its place and build loops against environment variables.
-- Do not claim the fix works without the before-and-after loop output.
-- Do not write a local planning draft under `docs/issues/` (D-149). The diagnosis goes in a comment on the issue.
-- Do not hand-edit a generated mirror.
+- **A red loop precedes every edit.** No loop, no patch: produce a diagnosis instead, and say why the loop could not be built.
+- **Every hypothesis names a call site** from step 3's list. One that cannot be attached to a call site is discarded.
+- **One bug, one patch.** The patch addresses the evidenced cause and stops; a second bug is a second ticket.
+- **Secrets stay out of every artifact.** Write `<REDACTED>` in place of a secret in any command, output, or captured artifact, and build loops against environment variables.
+- **Before-and-after output proves the fix.** The claim without both sides of the loop is not a result.
+- **The diagnosis lives in an issue comment** (D-149), never a draft under `docs/issues/`.
+- **Generated mirrors come from `pnpm definitions:write`**, never an editor.
+
+## Gotchas
+
+- A loop that passes on the broken code is not a loop for this bug. Confirm it goes red before trusting anything it says afterwards.
+- Instrumentation added in Phase 4 survives the patch unless Phase 6 removes it. A diff carrying leftover logging is a review finding, not a fix.
+- A stale graph answers confidently. `index_status` behind HEAD means the call-site list describes an older tree — run `/firehorse:index`, or state the gap.
 
 ## Procedure
 
-1. Read the report. Name the claimed failure, the expected behaviour, and the evidence you already have. When it is a tracker issue, read it with `gh issue view <number> --comments`.
-2. Run `diagnosing-bugs` Phase 1 and build the feedback loop. Spend disproportionate effort here; record the exact command and its red output. Then Phase 2: reproduce and minimise.
-3. Trace before you hypothesise. Run `search_graph` for the symbol the loop implicates, then `trace_path` on each hit to enumerate its callers, and `query_graph` when the path crosses more than one hop. Run `check_index_coverage` on every path you will cite, and `index_status` to confirm the index is not behind HEAD — if it is, run `/index` or state the gap. Write the caller list down.
-4. Phase 3: hypothesise. Each hypothesis names one call site from that list and says what the loop would do if the hypothesis held. Discard any hypothesis you cannot attach to a call site.
-5. Phase 4: instrument the named call site and confirm or kill the hypothesis against the loop.
-6. Phase 5: make the smallest patch that addresses the confirmed cause, and write the regression test with `tdd` at the seam the loop already reaches.
-7. Produce the regression evidence: the loop's red output from step 2, the same loop green after the patch, and the regression test failing on the pre-patch code. Run `pnpm typecheck` and `pnpm test`.
-8. Phase 6: remove the instrumentation you added, and commit in small, reviewable commits.
-9. Comment on the issue: the loop, the caller list, the confirmed cause, the regression evidence, the test path, and anything you did not verify. Leave the issue open for `/ship` to close.
+1. **Read the report.** Name the claimed failure, the expected behaviour, and the evidence you already have. A tracker issue is read with `gh issue view <number> --comments`.
+   → Done when: claimed failure and expected behaviour are written down, separately.
+
+2. **Build the loop.** `mattpocock-skills:diagnosing-bugs` Phase 1, spending disproportionate effort here, then Phase 2 to reproduce and minimise.
+   → Done when: one command goes red on this bug, recorded verbatim with its output.
+
+3. **Trace the call sites.** `search_graph` for the symbol the loop implicates, `trace_path` on each hit for its callers, `query_graph` when the path crosses more than one hop. Then `check_index_coverage` on every path you will cite and `index_status` for freshness.
+   → Done when: the call-site list is written down and the index's freshness is recorded.
+
+4. **Hypothesise.** Phase 3. Each hypothesis names one call site from step 3 and states what the loop would do if it held.
+   → Done when: every surviving hypothesis is attached to a call site and carries a prediction.
+
+5. **Instrument.** Phase 4, at the named call site, against the loop.
+   → Done when: one hypothesis is confirmed or all are killed. All killed, return to step 4.
+
+6. **Patch and test.** Phase 5: the smallest patch that addresses the confirmed cause, plus a regression test via `mattpocock-skills:tdd` at the seam the loop already reaches.
+   → Done when: the loop goes green and the regression test has a path.
+
+7. **Produce regression evidence.** The loop's red output from step 2, the same loop green now, and the regression test failing against the pre-patch code. Then `pnpm typecheck` and `pnpm test`.
+   → Done when: all three outputs are captured and the gate is green.
+
+8. **Clean up and commit.** Remove the step-5 instrumentation, then commit in small, reviewable commits.
+   → Done when: the diff contains no instrumentation and the working tree is clean.
+
+9. **Report on the issue.** Comment with the loop, the call-site list, the confirmed cause, the regression evidence, the test path, and anything you did not verify. Leave the issue open for `/firehorse:ship` to close.
+   → Done when: the comment is posted and the issue is still open.
 
 ## Projection Notes
 
-The Claude mirror is a static command generated from this definition. `diagnosing-bugs` and `tdd` are referenced rather than inlined, so their reference files load through Claude's own skill mechanism. Run `pnpm definitions:write` after editing; the mirror is never hand-edited.
+`diagnosing-bugs` and `tdd` are referenced rather than inlined, so their reference files load through Claude's own skill mechanism.
