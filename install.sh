@@ -342,7 +342,8 @@ if mcp_present codebase-memory-mcp; then
   record ok "codebase-memory-mcp" "registered"
 elif [ -z "$CBM_BIN" ]; then
   warn "codebase-memory-mcp binary not found; skipping registration"
-  note "The workflows query it for structure. Install it from its own upstream,"
+  note "The workflows query it for structure, and it installs the codebase-memory"
+  note "skill they use for query syntax. Install it from its own upstream,"
   note "then: claude mcp add --scope user codebase-memory-mcp <path>"
   record warn "codebase-memory-mcp" "binary not installed"
 elif would "claude mcp add --scope user codebase-memory-mcp $CBM_BIN"; then
