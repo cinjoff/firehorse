@@ -53,6 +53,11 @@
       "types": "./dist/setup/index.d.ts",
       "import": "./dist/setup/index.js",
       "require": "./dist/setup/index.cjs"
+    },
+    "./upstreams": {
+      "types": "./dist/upstreams/index.d.ts",
+      "import": "./dist/upstreams/index.js",
+      "require": "./dist/upstreams/index.cjs"
     }
   },
   "files": [

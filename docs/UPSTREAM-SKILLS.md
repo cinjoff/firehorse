@@ -32,8 +32,10 @@ Firehorse plugin pulls them in. Phase 2 of
 ## The drift-check lockfile
 
 Everything in this section is the design settled on
-[Design the drift-check lockfile format](https://github.com/cinjoff/firehorse/issues/49).
-Nothing below is implemented yet; Phase 4 builds it.
+[Design the drift-check lockfile format](https://github.com/cinjoff/firehorse/issues/49),
+built in Phase 4. The diffing and impact logic lives in
+`packages/firehorse-core/src/upstreams/` as pure functions; the filesystem and
+`~/.claude/plugins/` reads are at the edges in `scripts/`.
 
 Upstream plugins ship continuously, so a skill can be renamed or rewritten under
 a Firehorse workflow without any version changing. The lockfile records a
@@ -82,6 +84,23 @@ thing that shows in a diff.
 A plugin enters the file because Firehorse declares it, not because it happens
 to be installed. On-disk truth is read from `~/.claude/plugins/`.
 
+### The manifest decides which skills exist
+
+A plugin's `.claude-plugin/plugin.json` `skills` field is the authority on what
+the plugin exposes — an array of skill directories, or a single directory to
+scan. Do not change this to walk the on-disk tree instead. A skill directory
+that the manifest omits is one Claude Code never loads, so an `upstreamSkills`
+entry naming it is genuinely broken, and reporting it as missing is correct.
+Consulting the tree would quietly start accepting references to skills no
+session can invoke.
+
+`mattpocock-skills` 1.2.3 makes the gap concrete: it lists 25 paths under
+`skills/engineering/` and `skills/productivity/`, while the tree holds 35
+directories. The 10 extras sit under `skills/in-progress/` and `skills/misc/`
+and are unavailable at runtime, so the lockfile records 25. A plugin whose
+manifest has no `skills` field is scanned under `skills/`, which is the only
+case where the tree is the authority.
+
 ### What breaks the build and what only gets reported
 
 Breaking — the command exits non-zero and `definitions:check` fails:
@@ -108,7 +127,17 @@ pnpm upstreams:check --write   # rewrite the lockfile from disk and print what m
 
 The check never writes without `--write`. Hand-editing the lockfile is not a
 supported path: the output is deterministic, so the way to accept a new baseline
-is to run `--write` and review the diff in the commit.
+is to run `--write` and review the diff in the commit. `--write` refuses to run
+when `~/.claude/plugins/` is missing, since there is nothing to read a baseline
+from.
+
+`pnpm definitions:check` — which `pnpm typecheck` and CI already run — validates
+every `upstreamSkills` reference with the same data, so upstream breakage fails
+the existing gate. Its diagnostic quotes what it resolved against.
+
+Set `FIREHORSE_CLAUDE_PLUGINS_DIR` to point either command at a copy of the
+plugins directory instead of `~/.claude/plugins/`. That is how the rename case is
+exercised against a real install without touching it.
 
 ### CI, where no plugins are installed
 

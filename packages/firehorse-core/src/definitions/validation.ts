@@ -8,6 +8,11 @@ import {
 export interface ValidateDefinitionSetOptions {
   /** Keys use '<upstream>:<id>', e.g. 'mattpocock-skills:diagnose'. */
   readonly knownUpstreamSkills?: ReadonlySet<string>;
+  /**
+   * What `knownUpstreamSkills` was read from, quoted in the diagnostic so the
+   * gate never claims it compared something it did not.
+   */
+  readonly knownUpstreamSkillsSource?: string;
 }
 
 export function validateDefinitionSet(
@@ -58,7 +63,12 @@ export function validateDefinitionSet(
 
     if (definition.kind === "workflow") {
       diagnostics.push(
-        ...validateWorkflowReferences(definition, byId, options.knownUpstreamSkills),
+        ...validateWorkflowReferences(
+          definition,
+          byId,
+          options.knownUpstreamSkills,
+          options.knownUpstreamSkillsSource,
+        ),
       );
     }
   }
@@ -80,6 +90,7 @@ function validateWorkflowReferences(
   definition: WorkflowDefinition,
   byId: ReadonlyMap<string, FirehorseDefinition>,
   knownUpstreamSkills: ReadonlySet<string> | undefined,
+  knownUpstreamSkillsSource: string | undefined,
 ): DefinitionDiagnostic[] {
   const diagnostics: DefinitionDiagnostic[] = [];
 
@@ -108,7 +119,7 @@ function validateWorkflowReferences(
       if (!knownUpstreamSkills.has(key)) {
         diagnostics.push({
           code: "references.upstream_skill_missing",
-          message: `Workflow '${definition.frontmatter.id}' references unknown upstream skill '${key}'.`,
+          message: `Workflow '${definition.frontmatter.id}' references unknown upstream skill '${key}'${knownUpstreamSkillsSource ? ` (checked against ${knownUpstreamSkillsSource})` : ""}.`,
           path: definition.path,
           field: "upstreamSkills",
         });
