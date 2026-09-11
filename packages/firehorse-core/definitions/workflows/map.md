@@ -1,0 +1,113 @@
+---
+schemaVersion: 1
+id: map
+kind: workflow
+title: Map
+description: Chart or work a wayfinder map, and pre-fill the map's Notes with this repo's standing preferences so every later session inherits them.
+argumentHint: "[loose idea | map issue URL or number] [ticket URL or number]"
+requires:
+  tools:
+    - read
+    - bash
+  environment:
+    - filesystem
+    - git
+    - github
+optional:
+  tools:
+    - grep
+    - ls
+    - edit
+    - mcp:codebase-memory-mcp
+    - cli:supermemory
+  orchestration:
+    - subagents
+  environment:
+    - node
+    - pnpm
+upstreamSkills:
+  - upstream: mattpocock-skills
+    id: wayfinder
+  - upstream: mattpocock-skills
+    id: grilling
+  - upstream: mattpocock-skills
+    id: domain-modeling
+---
+
+# Map
+
+## Purpose
+
+Use this workflow instead of invoking `wayfinder` directly. It adds one thing: the map's `## Notes` block is written from what this repo actually has, so the standing preferences reach every session that loads the map days later. Wayfinder defines `## Notes` as "domain; skills every session should consult; standing preferences for this effort" and leaves the content to the caller. This workflow supplies that content, and it is the only carrier for those preferences (D-140).
+
+## Usage
+
+Invoke the generated command with a loose idea to chart a new map, or with a map issue URL or number to work through one. `$ARGUMENTS` carries whichever you gave, plus an optional ticket when you want to name the ticket yourself.
+
+## Inputs
+
+- `$ARGUMENTS`: a loose idea, or a map issue reference, optionally followed by a ticket reference.
+- The repo probe: whether `CONTEXT.md`, `docs/agents/`, `DESIGN.md`, and `docs/adr/` exist.
+- `package.json` scripts, for the verification command.
+- `SUPERMEMORY_API_URL`, and whether `codebase-memory-mcp` is configured for this repo.
+- The installed-plugin skill list, read from `~/.claude/plugins/`.
+
+## Outputs
+
+- A `wayfinder:map` issue on `cinjoff/firehorse` whose `## Notes` carries the interpolated preferences block, or an existing map whose Notes you brought up to date.
+- Child decision tickets, wired with the tracker's native blocking.
+- One resolution comment per ticket you closed, plus the matching line in the map's Decisions-so-far.
+
+## Supporting Capabilities
+
+- Upstream skills: `mattpocock-skills` / `wayfinder` for the map and ticket mechanics, `grilling` and `domain-modeling` on every `wayfinder:grilling` ticket.
+- Required: file reads, `gh`, and git.
+- Optional: `codebase-memory-mcp` and the `supermemory` CLI, which decide whether two paragraphs of the Notes block get emitted at all.
+
+## Orchestration Intent
+
+You run the probe and write the Notes block yourself, then hand the rest to `wayfinder` and follow it as written. Wayfinder owns the map's shape, the ticket types, the claim, and the one-ticket-per-session rule. This workflow owns only the Notes block and the gate on it. Research tickets still resolve through `/research` subagents, as wayfinder specifies.
+
+## Safety Gates
+
+- Do not write a Notes block over 200 words. Count the words before writing. Over the cap, stop and report it — the surplus belongs in `CONTEXT.md` or `docs/agents/`, which the Domain line already points at.
+- Do not emit a line that points at a path or a skill that is absent. One dead pointer teaches the next session that the whole block is decorative.
+- Do not write a local planning draft under `docs/prds/` or `docs/issues/`. The map and its tickets are GitHub issues (D-149).
+- Do not resolve more than one ticket in a session, research tickets excepted.
+- Do not restate a decision on the map. The map indexes; the ticket holds the detail.
+
+## Procedure
+
+1. Probe the repo, and nothing more: the existence of `CONTEXT.md`, `docs/agents/`, `DESIGN.md`, and `docs/adr/`; the `package.json` scripts; `SUPERMEMORY_API_URL`; whether `codebase-memory-mcp` is configured; and the installed-plugin skill list.
+2. Interpolate the block below from that probe. Braced tokens are interpolated; every other character is constant text.
+
+   ```markdown
+   **Domain:** `CONTEXT.md` carries this repo's vocabulary.{ANCHORS}
+
+   **Query the graph before you read files.** `codebase-memory-mcp`: `search_graph` for the
+   symbol you are about to change, `trace_path` for its callers. Structure first, files second.
+   Cite only paths you actually opened.
+
+   **Search prior work before you re-derive it.** Run `npx supermemory search "<the question
+   you are about to answer>"` before any decision that sounds like one this repo has already
+   made. If it comes back empty, say so in one line and move on.
+
+   **Skills every session should consult:**
+   {SKILLS}
+
+   **Standing preferences:** small, reviewable commits; `{GATE}` green before any ticket
+   closes; never hand-edit a generated mirror.
+   ```
+
+3. Resolve `{ANCHORS}` by appending one clause to the Domain sentence per anchor that exists, in this order: `docs/agents/` gives "Tracker, label and persistence conventions are in `docs/agents/`."; `DESIGN.md` gives "`DESIGN.md` states the intended direction — read it before proposing UI."; `docs/adr/` gives "Binding decisions are the ADRs under `docs/adr/`; don't relitigate them." Omit the clause when the path is absent. When no anchor exists, the Domain line is the `CONTEXT.md` sentence alone; when `CONTEXT.md` is itself absent, drop the Domain line.
+4. Resolve `{SKILLS}` to one bullet per skill that resolves in the installed plugins — the same on-disk read `/upstreams-check` does, so a renamed upstream never lands here as a dead reference. The default set: `/grilling` and `/domain-modeling` on every `wayfinder:grilling` ticket; `/tdd` or `/implement` on tickets that change code; `/code-review` before opening a PR; `impeccable` on anything with a UI surface. Drop a skill that is absent from disk, without comment.
+5. Resolve `{GATE}` from `package.json` scripts: `pnpm typecheck && pnpm test`, plus `&& pnpm definitions:check` when that script exists. No gate script, no clause.
+6. Emit the graph paragraph only when `codebase-memory-mcp` is configured for this repo, and the supermemory paragraph only when `SUPERMEMORY_API_URL` is set or the supermemory plugin is installed. A tool that is not there is not a preference.
+7. Count the words in the resolved block. Over 200, stop and report it rather than writing a shorter paraphrase.
+8. Invoke `wayfinder`. When charting, give it the resolved block as the map's `## Notes` at the point where it creates the map. When working a map, read its Notes first: where the block is missing, or disagrees with what the probe just found, update the Notes before you choose a ticket.
+9. Follow `wayfinder` from there — name the destination, map the frontier, claim one ticket, resolve it, record the resolution, graduate the fog.
+10. Report the map by its title with the link inside the title, the ticket you resolved, and the Notes block you wrote or left alone.
+
+## Projection Notes
+
+The Claude mirror is a static command generated from this definition. It carries the rendered instructions and the upstream references, and it creates no execution graph — `wayfinder` and the skills named in the Notes block load through Claude's own skill mechanism. Run `pnpm definitions:write` after editing this file; the mirror is never hand-edited.

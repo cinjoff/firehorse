@@ -150,8 +150,6 @@ describe("Firehorse definitions", () => {
     expect(docs).toContain("pnpm definitions:write");
     expect(docs).toContain("pnpm definitions:check");
     expect(docs).toContain("firehorseSourceSha256");
-    expect(docs).toContain("horse-new-project");
-    expect(docs).toContain("horse-map-codebase");
     expect(docs).toContain("Firehorse runtime loading or execution");
   });
 

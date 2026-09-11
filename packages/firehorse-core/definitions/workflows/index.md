@@ -1,0 +1,96 @@
+---
+schemaVersion: 1
+id: index
+kind: workflow
+title: Index
+description: Index the repo into codebase-memory-mcp and supermemory, write the derivable anchors under docs/codebase/, and record index freshness in the Firehorse manifest by commit ancestry.
+argumentHint: "[--graph-only | --memory-only | --anchors-only]"
+requires:
+  tools:
+    - read
+    - bash
+    - write
+  environment:
+    - filesystem
+    - git
+optional:
+  tools:
+    - grep
+    - ls
+    - edit
+    - mcp:codebase-memory-mcp
+    - cli:supermemory
+  environment:
+    - github
+    - node
+    - pnpm
+upstreamSkills:
+  - upstream: mattpocock-skills
+    id: wayfinder
+---
+
+# Index
+
+## Purpose
+
+Use this workflow to make the repo's structure queryable and its history searchable, and to record how fresh that claim is. It adds what neither `codebase-memory-mcp` nor supermemory does on its own: three anchor files derived from the graph rather than from recollection, a narrative source for them taken from the repo's wayfinder maps, and a freshness record computed from commit ancestry so a later session can tell whether the index still describes HEAD.
+
+Freshness is the point. An index nobody can date is an index every session has to distrust.
+
+## Usage
+
+Invoke the generated command with no arguments to run all three passes. `$ARGUMENTS` may carry `--graph-only`, `--memory-only`, or `--anchors-only` to run one. A partial run still records which passes succeeded.
+
+## Inputs
+
+- `$ARGUMENTS`: an optional pass selector.
+- `git rev-parse HEAD`.
+- The repo's source roots, and the existing `.firehorse/manifest.json`.
+- The repo's `wayfinder:map` issues and their Decisions-so-far.
+- `SUPERMEMORY_API_URL`, and whether `codebase-memory-mcp` is configured for this repo.
+
+## Outputs
+
+- A graph index for this repo, with coverage confirmed on the paths the anchors cite.
+- Documents in supermemory for the anchors and the map decisions.
+- `docs/codebase/ARCHITECTURE.md`, `docs/codebase/STRUCTURE.md`, and `docs/codebase/CONVENTIONS.md`.
+- `.firehorse/manifest.json` updated with `index.commit`, `index.at`, `index.graph`, `index.supermemory`, `anchors.codebase`, and `anchors.design`.
+
+## Supporting Capabilities
+
+- Upstream skill: `mattpocock-skills` / `wayfinder`, for the narrative pass — its maps hold the decisions that explain why the structure is as it is.
+- Required: read, write, git, and a shell.
+- Optional: `codebase-memory-mcp` and the `supermemory` CLI. Either one absent is recorded as `false`, never silently skipped.
+
+## Orchestration Intent
+
+Three passes, each recorded independently: graph, memory, anchors. A half-finished index stays legible because `index.graph` and `index.supermemory` say which pass actually succeeded. The narrative pass reads wayfinder maps and does not write to them — `/index` never creates a ticket, never closes one, and never edits a map.
+
+## Safety Gates
+
+- Do not write `DESIGN.md`. It is a human statement of direction; inferring it from the components that exist describes what the UI is, not what it should be (D-146). Record only whether it exists.
+- Do not compute staleness from file modification times. They say which tool touched a file last and nothing about whether content changed. Use commit ancestry.
+- Do not record `index.graph: true` or `index.supermemory: true` for a pass that did not succeed.
+- Do not cite a path in an anchor that `check_index_coverage` did not confirm.
+- Do not write an anchor from recollection. Every claim in the three files traces to a graph query or to a file you opened.
+- Do not edit a wayfinder map or any of its tickets.
+- Do not put a secret or an id in the manifest. It is committed.
+
+## Procedure
+
+1. Record the commit first: `git rev-parse HEAD`. Every later field refers to this value, not to HEAD at the time you finish.
+2. Graph pass. Run `index_repository` for this repo, then `index_status` to confirm it completed, then `check_index_coverage` on each source root. Success sets `index.graph: true`; a failure sets it to `false` and the report says what failed.
+3. Narrative pass. List the repo's `wayfinder:map` issues with `gh issue list --label wayfinder:map --json number,title`, read each map's Decisions-so-far, and fetch the resolution comment of any closed ticket whose decision bears on the structure. These are the reasons the anchors cite; the graph supplies the shape.
+4. Write the three derivable anchors under `docs/codebase/`, each from `get_architecture`, `search_graph`, and `query_graph` output plus the decisions from step 3:
+   - `ARCHITECTURE.md` — the modules, their boundaries, and the decision that put each boundary there.
+   - `STRUCTURE.md` — the directory layout and what each directory is for.
+   - `CONVENTIONS.md` — the patterns the code actually follows, each with a cited example path.
+5. Memory pass. For each anchor you wrote and each map decision you read, run `npx supermemory add` so a later `npx supermemory search` can reach it. `SUPERMEMORY_API_URL` unset and the supermemory plugin absent: set `index.supermemory: false`, say so in one line, and carry on.
+6. Update `.firehorse/manifest.json`: `index.commit` from step 1, `index.at` as an ISO timestamp, `index.graph` and `index.supermemory` from the passes, `anchors.codebase` as the basenames you wrote under `docs/codebase/`, and `anchors.design` as whether `DESIGN.md` exists.
+7. State the freshness rule in your report, because a reader of the manifest applies it: `index.commit` equal to HEAD means current; otherwise `git merge-base --is-ancestor <index.commit> HEAD` plus `git rev-list --count <index.commit>..HEAD` gives how far behind, and a non-ancestor means the index was recorded on a different line of history.
+8. Commit the anchors and the manifest together, so `index.commit` and the anchors it describes stay in one commit.
+9. Report each pass as succeeded or failed, the anchors written, and the manifest fields you set.
+
+## Projection Notes
+
+The Claude mirror is a static command generated from this definition. The graph tools reach Claude through the `codebase-memory-mcp` MCP server and supermemory through its CLI; this definition adds no transport of its own. Run `pnpm definitions:write` after editing; the mirror is never hand-edited.

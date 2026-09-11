@@ -1,215 +1,152 @@
-# Upstream skills and agents
+# Upstream skills
 
-Firehorse can vendor third-party skill repositories and shared agent definitions
-while keeping a curated public surface for each adapter.
+Firehorse depends on upstream plugins and vendors nothing (D-137). An upstream
+skill stays in the plugin that ships it; Firehorse references it from a workflow
+and orchestrates it.
 
-## Model
+This replaces the earlier model, in which core held a pinned copy of each
+upstream repository under `packages/firehorse-core/upstreams/` with an
+`UPSTREAM.json` provenance file, and each distribution carried generated
+mirrors. That copy went stale, upstream renamed most of what it mirrored, and a
+second copy of a plugin you already install bought nothing.
 
-Upstream skills and agents have three layers:
+## How a workflow names an upstream skill
 
-1. **Pinned source in core** — `packages/firehorse-core/upstreams/<name>/`
-   stores the copied upstream files, license, and `UPSTREAM.json` provenance.
-2. **Adapter mirrors** — Pi and Claude receive generated copies or consume a
-   pinned bundled package under their own idiomatic package directories.
-3. **Adapter manifests** — each adapter decides which mirrored skills / agents
-   are visible to users.
+A workflow declares `upstreamSkills` in its frontmatter, one entry per skill:
 
-This keeps provenance and maintainer-side update tracking in core, while still
-shipping self-contained Pi and Claude packages. End users do not check upstream
-repositories directly; they update Firehorse package/plugin versions.
-
-## mattpocock/skills
-
-Current upstream:
-
-- Source: <https://github.com/mattpocock/skills>
-- Pinned commit: see
-  `packages/firehorse-core/upstreams/mattpocock-skills/UPSTREAM.json`
-- Selection policy: expose the skills listed by the upstream Claude plugin
-  manifest. Deprecated, in-progress, personal, and misc skills are not exposed
-  unless Firehorse explicitly allow-lists them later.
-
-Generated locations:
-
-- Core source: `packages/firehorse-core/upstreams/mattpocock-skills/`
-- Claude mirror: `packages/firehorse-claude/skills/mattpocock/`
-- Pi mirror: `packages/firehorse-pi/skills/mattpocock/`
-
-## pbakaus/impeccable
-
-Current upstream:
-
-- Source: <https://github.com/pbakaus/impeccable>
-- Pinned commit: see
-  `packages/firehorse-core/upstreams/impeccable/UPSTREAM.json`
-- Selection policy: expose the skill directories exported by the upstream
-  Claude plugin manifest. Core keeps the canonical upstream `skill/` source for
-  provenance; adapter mirrors use the upstream-generated Claude and Pi variants
-  with script references normalized to skill-relative paths.
-
-Generated locations:
-
-- Core source: `packages/firehorse-core/upstreams/impeccable/`
-- Claude mirror: `packages/firehorse-claude/skills/pbakaus/impeccable/`
-- Pi mirror: `packages/firehorse-pi/skills/pbakaus/impeccable/`
-
-## shadcn/ui
-
-Current upstream:
-
-- Source: <https://github.com/shadcn-ui/ui>
-- Pinned commit: see
-  `packages/firehorse-core/upstreams/shadcn-ui/UPSTREAM.json`
-- Selection policy: expose the official `skills/shadcn` agent skill. Firehorse
-  treats this skill as required for reliable shadcn/ui work because it carries
-  the project-aware CLI, registry, component-composition, icon, base-vs-radix,
-  Tailwind, and preset rules.
-
-Generated locations:
-
-- Core source: `packages/firehorse-core/upstreams/shadcn-ui/`
-- Claude mirror: `packages/firehorse-claude/skills/shadcn-ui/shadcn/`
-- Pi mirror: `packages/firehorse-pi/skills/shadcn-ui/shadcn/`
-
-The Pi distribution exposes the `shadcn` skill for shadcn/ui tasks, but does
-not grant it to the `worker` subagent by default yet. Firehorse's default
-`pi-subagents` override manifest grants code-oriented Pi subagents the Pi-native
-`memory_recall` tool from `pi-agent-memory` instead of Claude-only memory tool
-names.
-
-## claude-mem and pi-agent-memory
-
-Current upstreams:
-
-- Claude source: <https://github.com/thedotmack/claude-mem>
-- Claude plugin package: `claude-mem@13.2.0`
-- Claude pinned commit: see
-  `packages/firehorse-core/upstreams/claude-mem/UPSTREAM.json`
-- Pi adapter source: <https://github.com/ArtemisAI/pi-mem>
-- Pi package: `pi-agent-memory@0.3.4`
-- Pi pinned commit: see
-  `packages/firehorse-core/upstreams/pi-agent-memory/UPSTREAM.json`
-- Selection policy: keep the memory runtime owned by upstream. Pi bundles the
-  `pi-agent-memory` package and exposes only its `pi-mem` extension plus
-  `mem-search` skill. Claude declares `claude-mem` as a Firehorse marketplace
-  dependency and installs the upstream plugin from its `plugin/` subdirectory;
-  Firehorse does not merge claude-mem hooks, MCP server, worker scripts, or
-  skills into the Firehorse plugin.
-
-Generated / runtime locations:
-
-- Core provenance: `packages/firehorse-core/upstreams/claude-mem/` and
-  `packages/firehorse-core/upstreams/pi-agent-memory/`
-- Pi runtime source: bundled
-  `packages/firehorse-pi/node_modules/pi-agent-memory/` plus bundled
-  `packages/firehorse-pi/node_modules/claude-mem/` worker scripts.
-- Claude runtime source: Firehorse marketplace entry `claude-mem`, pinned to the
-  upstream `plugin/` subdirectory via `git-subdir`.
-
-The Pi adapter expects a claude-mem worker to be installed and running on
-`CLAUDE_MEM_HOST` / `CLAUDE_MEM_PORT` (`127.0.0.1:37777` by default). Firehorse-
-pi bundles the `claude-mem` npm package and starts/checks its worker scripts for
-Pi-only harness use, so Claude Code is not a prerequisite. The Claude plugin
-dependency remains the canonical Firehorse path for Claude Code users. Upstream
-`npx claude-mem install` / plugin marketplace setup remains the fallback or
-repair path; upstream documents `npm install -g claude-mem` as SDK/library-only
-and not sufficient for hooks or worker startup.
-
-Firehorse setup resolves the canonical repository project with
-`gh repo view --json name --jq .name`, then pins `FIREHORSE_PROJECT_NAME`,
-`CLAUDE_MEM_PROJECT`, and `PI_MEM_PROJECT` so memories remain under that project
-across Superset / Conductor worktrees. Path-based Superset detection is only a
-human hint; Firehorse does not rely on git parent directories or cwd basenames
-for memory identity.
-
-## pi-subagents built-in agents
-
-Current upstream:
-
-- Source: <https://github.com/nicobailon/pi-subagents>
-- Pinned npm package: `pi-subagents@0.24.3`
-- Selection policy: expose the upstream built-in agent set as Firehorse shared
-  subagent definitions.
-
-Generated / runtime locations:
-
-- Core source: `packages/firehorse-core/upstreams/pi-subagents/agents/`
-- Claude mirror: `packages/firehorse-claude/agents/`
-- Pi runtime source: bundled `packages/firehorse-pi/node_modules/pi-subagents/agents/`
-
-The Pi adapter currently consumes the upstream package's built-in agent files at
-runtime. The core copy is the reviewed Firehorse provenance surface, and the
-Claude mirror is adapted from that same pinned source with Claude-compatible
-frontmatter.
-
-## Checking for upstream drift
-
-```sh
-pnpm upstreams:check
+```yaml
+upstreamSkills:
+  - upstream: mattpocock-skills
+    id: wayfinder
 ```
 
-The command reads the baseline in `upstreams.lock.json`, enumerates the declared
-plugins as installed under `~/.claude/plugins/`, and reports impact rather than
-change. A vanished or renamed skill ID that an `upstreamSkills` entry names is
-**breaking**: the report lists the workflows that break and the command exits
-non-zero. A changed `SKILL.md` hash, a changed plugin version or marketplace, an
-added skill, and a vanished skill nothing references are **advisory**: reported,
-exit 0.
+`upstream` is the plugin name and `id` is the skill's frontmatter `name`. See
+[the definition format](./FIREHORSE-DEFINITION-FORMAT.md) for the rest of the
+frontmatter contract.
 
-`upstreams.lock.json` records, per declared plugin, its marketplace, its version,
-and for every exposed skill the path, a SHA-256 of the whole `SKILL.md`
-(frontmatter included, CRLF normalised to LF), and whether the key came from
-frontmatter or the directory name. `plugins` is sorted by name and `skills` by
-key, both ASCII, so a real change is the only thing that shows in a diff.
+Plugins Firehorse depends on are declared in `.claude-plugin/marketplace.json`
+and `packages/firehorse-claude/.claude-plugin/plugin.json`, so installing the
+Firehorse plugin pulls them in. Phase 2 of
+[the migration plan](./MIGRATION-PLAN.md) adds those declarations.
 
-`~/.claude/plugins/` does not exist on CI, and absence is not drift. When the
-directory is missing, `upstreams:check` prints one line, skips the on-disk
-comparison, and exits 0; the reference check folded into `definitions:check`
-degrades to a lockfile-only pass, where every `upstreamSkills` entry must resolve
-to a skill recorded in `upstreams.lock.json`.
+## The drift-check lockfile
+
+Everything in this section is the design settled on
+[Design the drift-check lockfile format](https://github.com/cinjoff/firehorse/issues/49),
+built in Phase 4. The diffing and impact logic lives in
+`packages/firehorse-core/src/upstreams/` as pure functions; the filesystem and
+`~/.claude/plugins/` reads are at the edges in `scripts/`.
+
+Upstream plugins ship continuously, so a skill can be renamed or rewritten under
+a Firehorse workflow without any version changing. The lockfile records a
+baseline that a check can compare against what is installed on disk.
+
+`upstreams.lock.json` lives at the repo root, beside `pnpm-lock.yaml` — not
+under `packages/firehorse-core/`, which is published to npm and has no business
+carrying a repo-local baseline. It records, per declared plugin: the marketplace,
+the version, and every skill it exposes with that skill's path and a SHA-256.
+
+```json
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-11T09:24:00.000Z",
+  "plugins": {
+    "mattpocock-skills": {
+      "marketplace": "claude-plugins-official",
+      "version": "1.2.3",
+      "skills": {
+        "wayfinder": {
+          "path": "skills/engineering/wayfinder/SKILL.md",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "nameSource": "frontmatter"
+        }
+      }
+    }
+  }
+}
+```
+
+The hash covers the whole `SKILL.md`, frontmatter included: `description` decides
+whether a skill gets invoked at all, so rewriting it is a behavior change worth
+reporting. Bytes are read as UTF-8 with CRLF normalized to LF before hashing,
+and nothing else is trimmed.
+
+A skill's key is its frontmatter `name`, falling back to the containing
+directory name when the frontmatter omits one, because the frontmatter name is
+what an `upstreamSkills` entry references and what a session invokes.
+`nameSource` records which of the two was used, so a name that later appears in
+frontmatter reads as a change rather than a mystery.
+
+`plugins` is ordered by name and `skills` by key, both ASCII-sorted, following
+the rule the generated manifests already use. A real change is then the only
+thing that shows in a diff.
+
+A plugin enters the file because Firehorse declares it, not because it happens
+to be installed. On-disk truth is read from `~/.claude/plugins/`.
+
+### The manifest decides which skills exist
+
+A plugin's `.claude-plugin/plugin.json` `skills` field is the authority on what
+the plugin exposes — an array of skill directories, or a single directory to
+scan. Do not change this to walk the on-disk tree instead. A skill directory
+that the manifest omits is one Claude Code never loads, so an `upstreamSkills`
+entry naming it is genuinely broken, and reporting it as missing is correct.
+Consulting the tree would quietly start accepting references to skills no
+session can invoke.
+
+`mattpocock-skills` 1.2.3 makes the gap concrete: it lists 25 paths under
+`skills/engineering/` and `skills/productivity/`, while the tree holds 35
+directories. The 10 extras sit under `skills/in-progress/` and `skills/misc/`
+and are unavailable at runtime, so the lockfile records 25. A plugin whose
+manifest has no `skills` field is scanned under `skills/`, which is the only
+case where the tree is the authority.
+
+### What breaks the build and what only gets reported
+
+Breaking — the command exits non-zero and `definitions:check` fails:
+
+- A skill named by an `upstreamSkills` entry is absent from the installed
+  plugin. The report names every workflow that references it.
+- A declared plugin is installed but has no lockfile entry, or the lockfile
+  names a plugin Firehorse no longer declares. The lockfile is stale either way,
+  which makes its comparisons worthless.
+
+Advisory — reported, exit 0:
+
+- A skill's `sha256` changed. The instructions moved under a stable name, so an
+  orchestration may drift without breaking.
+- A plugin's `version` or `marketplace` changed.
+- A skill ID appeared, or vanished with no definition referencing it.
+
+### Commands
+
+```sh
+pnpm upstreams:check           # compare the lockfile against ~/.claude/plugins/
+pnpm upstreams:check --write   # rewrite the lockfile from disk and print what moved
+```
+
+The check never writes without `--write`. Hand-editing the lockfile is not a
+supported path: the output is deterministic, so the way to accept a new baseline
+is to run `--write` and review the diff in the commit. `--write` refuses to run
+when `~/.claude/plugins/` is missing, since there is nothing to read a baseline
+from.
 
 `pnpm definitions:check` — which `pnpm typecheck` and CI already run — validates
 every `upstreamSkills` reference with the same data, so upstream breakage fails
-the existing gate.
+the existing gate. Its diagnostic quotes what it resolved against.
 
-## Accepting a new baseline
+Set `FIREHORSE_CLAUDE_PLUGINS_DIR` to point either command at a copy of the
+plugins directory instead of `~/.claude/plugins/`. That is how the rename case is
+exercised against a real install without touching it.
 
-```sh
-pnpm upstreams:check --write
-```
+### CI, where no plugins are installed
 
-`--write` rewrites `upstreams.lock.json` from what is on disk and prints what
-moved. It never writes without the flag, and it refuses to write when
-`~/.claude/plugins/` is missing. Hand-editing is not a supported path: the output
-is deterministic, so review the diff in the commit instead.
+`~/.claude/plugins/` does not exist on CI, so its absence is not drift. When the
+directory is missing, `pnpm upstreams:check` prints one line, skips the on-disk
+comparison, and exits 0. The reference check folded into `definitions:check`
+then degrades to a lockfile-only pass: every `upstreamSkills` reference must
+resolve to a skill recorded in `upstreams.lock.json`. The gate stays meaningful
+without lying about what it compared.
 
-## Updating an upstream
-
-```sh
-pnpm upstreams:update:mattpocock-skills
-pnpm upstreams:update:impeccable
-pnpm upstreams:update:shadcn-ui
-# For claude-mem / pi-agent-memory, update the pinned package versions,
-# marketplace source SHA, and UPSTREAM.json manifests together.
-pnpm upstreams:check
-pnpm typecheck && pnpm build && pnpm test
-```
-
-Then review the diff. If accepted, bump/release the relevant Firehorse package
-versions and write GitHub release notes describing the upstream change. Users
-receive the updated upstream skills or agents by updating their Firehorse
-package/plugin version; they do not install the upstream repository separately.
-
-## User-facing update checks
-
-Runtime update checks rely on Firehorse versions, not upstream repository state:
-
-- Pi checks npm's latest `firehorse-pi` version and suggests
-  `pi update npm:firehorse-pi`.
-- Claude checks the latest `cinjoff/firehorse` GitHub release and suggests
-  `/plugin update firehorse@firehorse`.
-
-Because upstream skill and agent changes are released as Firehorse package/plugin
-version bumps, these checks still cover upstream changes while keeping user
-startup fast and reproducible. The GitHub release changelog is the user-facing
-explanation of what changed.
+A declared plugin that is not installed while the directory does exist is
+breaking. That is real drift, not a missing environment.
