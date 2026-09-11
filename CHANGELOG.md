@@ -91,7 +91,7 @@
   interactive graph in a browser. It starts a local server, or reuses one that is
   already running, and hands back the URL. Read-only: nothing in it writes to the
   store. This is for looking at what was stored when you cannot yet phrase the
-  question — `firehorse-recall` remains the deliberate-recall path (D-144).
+  question — `firehorse-recall` remains the deliberate-recall path (D-163).
 - Added `packages/firehorse-graph`, a private Vite + React app behind that
   command. It reads through a local proxy rather than from the browser, because
   the self-hosted supermemory server sends no CORS headers and because the API

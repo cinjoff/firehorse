@@ -1,6 +1,6 @@
 # Upstream skills
 
-Firehorse depends on upstream plugins and vendors nothing (D-137). An upstream
+Firehorse depends on upstream plugins and vendors nothing (D-156). An upstream
 skill stays in the plugin that ships it; Firehorse references it from a workflow
 and orchestrates it.
 

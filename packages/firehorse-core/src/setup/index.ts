@@ -211,7 +211,7 @@ export function checkFirehorseSetup(
 /**
  * Reports manifest state in the order the SessionStart hook reports it, so the
  * first diagnostic is the line the hook prints. State only — never conventions
- * or preferences (D-145).
+ * or preferences (D-164).
  */
 export function validateFirehorseSetupManifest(
   manifest: FirehorseSetupManifest,

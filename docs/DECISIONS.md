@@ -1,9 +1,10 @@
 # DECISIONS.md
 
-Project-wide binding decision log. Append-only. Each entry: ID, date,
-decision, rationale, alternatives considered. Update an entry only if a later
-project-wide decision supersedes it; record that as a new entry that references
-the old.
+Project-wide binding decision log, and the only `D-NN` sequence (D-178). Each
+entry: ID, date, decision, rationale, alternatives considered. Append a new
+entry rather than rewriting an old one; where a later decision invalidates an
+earlier entry, the new entry is the record and the old one is marked in place
+so a reader meets the reversal where they meet the decision.
 
 Do not use this file as the default transcript for every `grill-with-docs` or
 `create-plan` answer. Planning-session decisions belong in the owning Planning
@@ -2975,3 +2976,279 @@ survives. This also closes the migration map's open question about
 - Delete the capability vocabulary too — rejected: it is what keeps a definition
   from naming a vendor SDK, and the schema validates it across every definition.
 
+## D-155 — Firehorse is Claude-only tooling packaged as a plugin
+
+**Date:** 2026-09-11
+**Decision:** **Invalidated by D-170.** Firehorse is packaged as one Claude Code plugin. Recorded in the migration plan as D-136, where it also framed Firehorse as *personal* tooling: release ceremony, version parity, and the external-user framing were dropped with it.
+**Rationale:** The "one source across ecosystems" premise died with Pi. Packaging as a plugin stands; the personal-tooling framing does not, and D-170 reverses it.
+**Alternatives considered:**
+
+- Keep the multi-provider distribution — rejected: nothing consumed it.
+
+## D-156 — Depend on upstream plugins; vendor nothing
+
+**Date:** 2026-09-11
+**Decision:** Firehorse references upstream skills from workflow frontmatter and leaves them in the plugin that ships them. Recorded in the migration plan as D-137.
+**Rationale:** The vendored `mattpocock-skills` pin went stale and upstream renamed most of it. A second, older copy of a plugin you already install is a liability.
+**Alternatives considered:**
+
+- Keep a pinned vendored copy — rejected: it is what went stale.
+
+## D-157 — Drop the Pi distribution
+
+**Date:** 2026-09-11
+**Decision:** The Pi provider and its distribution package are removed, recoverable from the `pi-v0.3.0` tag. Recorded in the migration plan as D-138.
+**Rationale:** Claude-only focus. Nothing was maintaining the Pi surface.
+**Alternatives considered:**
+
+- Keep Pi on life support — rejected: an unmaintained second target costs every change twice.
+
+## D-158 — Keep the definition format and the projector
+
+**Date:** 2026-09-11
+**Decision:** Canonical definitions plus build-time projection survive the migration. Recorded in the migration plan as D-139.
+**Rationale:** Not for multi-provider reasons, which are gone, but for schema enforcement, provenance checking, and upstream reference validation.
+**Alternatives considered:**
+
+- Hand-author the Claude commands — rejected: no schema, no provenance, no reference check.
+
+## D-159 — Workflows are the only carrier for standing preferences
+
+**Date:** 2026-09-11
+**Decision:** Preferences reach a session through the workflow it invoked, not through `CLAUDE.md` rules or hooks. Recorded in the migration plan as D-140.
+**Rationale:** Both other carriers were rejected on evidence: a preference that is not inside the command being run does not reliably happen.
+**Alternatives considered:**
+
+- A `CLAUDE.md` rules block — rejected: read inconsistently.
+- A hook — rejected: fires outside the work it is meant to shape.
+
+## D-160 — Drop `kind: agent-role` and all nine agents
+
+**Date:** 2026-09-11
+**Decision:** The agent-role definition kind and the nine agents are removed; workflows run their steps inline. Recorded in the migration plan as D-141.
+**Rationale:** The six mirrors lose their origin with Pi; the three canonical roles are unused once workflows run inline. The frontmatter schema was Pi-shaped throughout.
+**Alternatives considered:**
+
+- Keep the canonical three — rejected: nothing invoked them.
+
+## D-161 — Upstream references are a flat `upstreamSkills` list
+
+**Date:** 2026-09-11
+**Decision:** A workflow names upstream skills as a flat list of `{upstream, id}` entries; ordering lives in the body. Recorded in the migration plan as D-142.
+**Rationale:** Phase-bound references would be a schema redesign in service of a validator that does not exist.
+**Alternatives considered:**
+
+- Phase-scoped reference objects — rejected: complexity ahead of a consumer.
+
+## D-162 — Memory is self-hosted supermemory, fully offline
+
+**Date:** 2026-09-11
+**Decision:** Local graph engine, local embeddings, Ollama for extraction. Replaces claude-mem entirely. Recorded in the migration plan as D-143.
+**Rationale:** Memory that leaves the machine is a different product with different consent questions. Self-hosting keeps it local by construction.
+**Alternatives considered:**
+
+- The hosted supermemory service — rejected: recall is local-only by design.
+
+## D-163 — Deliberate recall comes from the `npx supermemory` CLI, not an MCP shim
+
+**Date:** 2026-09-11
+**Decision:** `firehorse-recall` wraps the CLI against the self-hosted server. Recorded in the migration plan as D-144.
+**Rationale:** The CLI already does this. A shim would be 150 lines of runtime for capability that exists.
+**Alternatives considered:**
+
+- An MCP server of our own — rejected: runtime Firehorse does not want to own.
+
+## D-164 — Follow Matt Pocock's persistence conventions exactly
+
+**Date:** 2026-09-11
+**Decision:** `docs/agents/*` is written by setup and read by skills at run time, with an `## Agent skills` pointer block in `AGENTS.md`. Explicit invocation only; no auto-triggering skills. Recorded in the migration plan as D-145.
+**Rationale:** Firehorse is a thin layer over those skills. Inventing a parallel convention would make the two disagree.
+**Alternatives considered:**
+
+- A Firehorse-specific config file — rejected: a second place to look.
+
+## D-165 — `/firehorse:index` writes only derivable anchors
+
+**Date:** 2026-09-11
+**Decision:** `ARCHITECTURE.md`, `STRUCTURE.md` and `CONVENTIONS.md` come from code and the graph. `DESIGN.md` is a human statement of direction and is never inferred. Recorded in the migration plan as D-146.
+**Rationale:** Inferring direction from the components that already exist describes what the UI is, not what it should be.
+**Alternatives considered:**
+
+- Generate a starter `DESIGN.md` — rejected: a plausible invention is worse than an absence.
+
+## D-166 — Drop shadcn, `plan-review` and `feedback-loop` for now
+
+**Date:** 2026-09-11
+**Decision:** Each is removed rather than carried. Recorded in the migration plan as D-147.
+**Rationale:** Each is replaceable, unproven, or unexamined. Shadcn may return once a non-vendored route exists; the other two return only if their absence is felt.
+**Alternatives considered:**
+
+- Carry them unused — rejected: surface nobody maintains.
+
+## D-167 — Memory is the last migration phase, not the fifth
+
+**Date:** 2026-09-11
+**Decision:** Structure first, then cleanup, then memory. Recorded in the migration plan as D-148.
+**Rationale:** Standing supermemory up before the surface it serves has settled would mean configuring against a moving target.
+**Alternatives considered:**
+
+- Do memory early for the dogfooding — rejected: re-indexing a moving surface.
+
+## D-168 — Planning lives in the tracker, never in repo drafts
+
+**Date:** 2026-09-11
+**Decision:** PRDs, plans and issue drafts under `docs/` are staging at most; a planning artifact is published to the tracker or it does not exist. `docs/agents/*` stays — it is skill config, not planning. Recorded in the migration plan as D-149, which named GitHub Issues as the only tracker; **amended by D-174**, which defers the choice of tracker to the repo.
+**Rationale:** Local planning docs drift from the tracker and get read by nobody.
+**Alternatives considered:**
+
+- Keep PRDs as the store of record — rejected: six of them went stale in place.
+
+## D-169 — The six existing PRDs are kept, published as parked issues
+
+**Date:** 2026-09-11
+**Decision:** The PRDs stay under `docs/prds/` and are parked as issues; their derived implementation tickets stay closed. Recorded in the migration plan as D-150.
+**Rationale:** They carry reasoning worth revisiting. The ideas survive; the stale tickets do not.
+**Alternatives considered:**
+
+- Delete them — rejected: the reasoning is not recoverable from the code.
+
+## D-170 — Firehorse is for anyone building software
+
+**Date:** 2026-09-11
+**Decision:** Firehorse is built for anyone building software, not for one
+maintainer's machine. It is a thin, opinionated layer over whatever skills a
+repo has installed, adding memory, a codebase map, and UI critique. This
+reverses the personal-tooling half of D-155 and the "publishing for external
+users is out of scope" line on the migration map.
+**Rationale:** Everything the migration built — derived gates, recorded
+trackers, a plugin distribution — is only worth its complexity if someone other
+than the author runs it. Nothing in the shipped surface depends on this repo
+once the audience is stated and enforced.
+**Alternatives considered:**
+
+- Stay personal tooling — rejected: it justifies every this-repo-only shortcut,
+  and those shortcuts are what made the surface unusable elsewhere.
+- Aim at a narrower audience, Claude Code power users say — rejected: the
+  workflows are about building software, not about the harness.
+
+## D-171 — Cross-provider lives in the projector, not in adapters
+
+**Date:** 2026-09-11
+**Decision:** Firehorse is designed to be cross-provider; Claude Code is the
+only target supported today. The seam for a second target is per-provider output
+paths and frontmatter renderers in the projector, and it is cut when a second
+target is real.
+**Rationale:** The adapter trees were a design for a transport that no longer
+exists, and a second provider would not have used them (D-154). What a second
+target actually needs is projection, which is one function away.
+**Alternatives considered:**
+
+- Declare Firehorse Claude-only — rejected: the definition format is the part
+  worth keeping portable.
+- Build the second target now — rejected: no consumer, and the shape would be
+  guessed.
+
+## D-172 — Upstream skills are an implementation detail
+
+**Date:** 2026-09-11
+**Decision:** Firehorse defines the surface it offers; which upstream skill
+implements a step is an implementation detail. An upstream change is never a
+user-facing breaking change. Matt Pocock's skills are today's basis, not a
+permanent commitment.
+**Rationale:** Users invoke `/firehorse:*`, not the upstream skill. Treating an
+upstream rename as a user-facing break would make every upstream release a
+Firehorse release, and would stop the basis ever changing.
+**Alternatives considered:**
+
+- Re-export upstream skills as the surface — rejected: the surface would change
+  whenever upstream did.
+
+## D-173 — Distribution is marketplace-only
+
+**Date:** 2026-09-11
+**Decision:** Firehorse ships through the Claude Code marketplace.
+`firehorse-core` is `private` and is never published to npm.
+**Rationale:** Nothing outside this repo consumes the library, and a published
+package would carry an install path that resolves to nothing.
+**Alternatives considered:**
+
+- Publish `firehorse` to npm — rejected: no consumer, and a second distribution
+  channel to keep in step.
+
+## D-174 — The tracker is whatever `docs/agents/issue-tracker.md` records
+
+**Date:** 2026-09-11
+**Decision:** Every tracker action in the shipped workflows goes through the
+tracker recorded in `docs/agents/issue-tracker.md`, which
+`mattpocock-skills:setup-matt-pocock-skills` writes after asking the user. This
+amends D-168: planning still lives in the tracker rather than in repo drafts,
+but the tracker is no longer hardcoded to GitHub Issues, and `github` is an
+optional capability rather than a required one.
+**Rationale:** The mechanism already existed and already offered GitHub, GitLab,
+local markdown, and freeform. Firehorse was bypassing it and locking out every
+user not on GitHub.
+**Alternatives considered:**
+
+- Build tracker integrations in Firehorse — rejected: that is the upstream
+  skill's job, and Firehorse is a thin layer.
+
+## D-175 — The gate is derived from the repo, never assumed
+
+**Date:** 2026-09-11
+**Decision:** Workflows derive the verification gate from the repo they run in:
+the typecheck, test and check scripts its manifest declares, run through the
+package manager its lockfile names. No gate script means no gate, said in one
+line.
+**Rationale:** Naming `pnpm` unconditionally while declaring it optional made
+the instruction wrong in most repos. `/firehorse:map` already derived its gate;
+this makes the rest agree with it.
+**Alternatives considered:**
+
+- Record the gate in the manifest at setup — rejected: a second copy that can
+  disagree with `package.json`.
+
+## D-176 — Anchor granularity is bounded by prose, not by a word count
+
+**Date:** 2026-09-11
+**Decision:** The `docs/codebase/` anchors stay at the altitude a newcomer
+needs — the boundaries, what each is for, why each is there — with per-symbol
+detail left to the graph. No word cap.
+**Rationale:** Granularity was the objection, and a word count does not bound
+granularity. The graph answers per-symbol questions exactly and stays current;
+an anchor that restates them goes stale on the next rename.
+**Alternatives considered:**
+
+- Cap each anchor at N words — rejected: bounds length, not altitude.
+
+## D-177 — User-facing docs lead with what works today
+
+**Date:** 2026-09-11
+**Decision:** Docs lead with what Firehorse does today, note the cross-provider
+door in a line, and leave the rationale to `docs/ARCHITECTURE.md`. Decision
+citations are maintainer-facing and do not appear in user-facing docs or in the
+shipped definitions.
+**Rationale:** A `D-NN` citation means nothing to a reader who has not read this
+log, and it made the shipped workflows read as internal notes.
+**Alternatives considered:**
+
+- Cite decisions everywhere for traceability — rejected: traceability for the
+  maintainer, noise for everyone else.
+
+## D-178 — One decision log, one contiguous sequence
+
+**Date:** 2026-09-11
+**Decision:** `docs/DECISIONS.md` is the only `D-NN` sequence. The fifteen
+decisions recorded in `docs/MIGRATION-PLAN.md` as D-136 through D-150 are
+promoted here as D-155 through D-169, and the migration plan keeps a mapping
+table instead of a second sequence. The append-only rule is set aside for this
+one cleanup: entries invalidated by later work are marked in place rather than
+left to be discovered.
+**Rationale:** Two sequences held different content at the same numbers — D-141
+said keep the agent roles and rename them in one, delete all nine in the other.
+Every citation in the repo was ambiguous until you knew which file it meant.
+**Alternatives considered:**
+
+- Renumber the migration plan's entries in place and keep two files — rejected:
+  two logs stay two logs, and the next session has to learn which is which.
+- Leave both and disambiguate citations — rejected: every future citation pays
+  the cost.

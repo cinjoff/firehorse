@@ -1,6 +1,6 @@
 # Architecture
 
-Firehorse is personal tooling packaged as one Claude Code plugin (D-136). It
+Firehorse is personal tooling packaged as one Claude Code plugin (D-155). It
 holds a small set of workflow definitions and a projector that turns them into
 Claude-native commands. Everything a user invokes is a generated slash command.
 
@@ -68,7 +68,7 @@ prefixes and sorts them, so hand-maintained entries such as
 Seven workflow definitions sit under `definitions/workflows/`, and their
 generated commands are the user-facing surface. They orchestrate upstream skills
 rather than restating them, and a workflow is the only carrier Firehorse uses for
-standing preferences (D-140).
+standing preferences (D-159).
 
 - `new-project` — stands a repo up for Firehorse: remote, tracker, the label
   vocabulary created in the tracker, `setup-matt-pocock-skills`,
@@ -77,7 +77,7 @@ standing preferences (D-140).
 - `index` — indexes the repo into `codebase-memory-mcp` and supermemory, writes
   `docs/codebase/ARCHITECTURE.md`, `STRUCTURE.md`, and `CONVENTIONS.md` from the
   graph, and records freshness in the manifest by commit ancestry. It never
-  writes `DESIGN.md` (D-146).
+  writes `DESIGN.md` (D-165).
 - `map` — charts a wayfinder map from a loose idea, or works through an existing
   one, and fills the map's `## Notes` from what this repo actually has so later
   sessions inherit the preferences.
@@ -110,9 +110,9 @@ once it was clear a second provider would need no change to any of them.
 
 ## Upstream skills
 
-Firehorse depends on upstream plugins and vendors nothing (D-137). A workflow
+Firehorse depends on upstream plugins and vendors nothing (D-156). A workflow
 names a skill in its frontmatter as a flat `upstreamSkills` list of
-`{upstream, id}` entries (D-142), where `upstream` is the plugin name and `id` is
+`{upstream, id}` entries (D-161), where `upstream` is the plugin name and `id` is
 the skill's frontmatter `name`; ordering lives in the workflow body.
 
 `packages/firehorse-claude/.claude-plugin/plugin.json` and the repo-root
@@ -144,7 +144,7 @@ five-second timeout. `check-setup.mjs` reads the manifest, runs at most three gi
 commands, prints at most one `firehorse:` line, and exits 0 on every path —
 malformed JSON, absent git, absent manifest, unknown `schemaVersion`. Silence is
 the healthy state. It reports state and never injects rules, which keeps it clear
-of D-145. `check-update.mjs` checks the latest GitHub release for
+of D-164. `check-update.mjs` checks the latest GitHub release for
 `cinjoff/firehorse` on a throttle and honours `FIREHORSE_SKIP_UPDATE_CHECK`,
 `FIREHORSE_OFFLINE`, `CLAUDE_OFFLINE`, and `CI`.
 
@@ -154,14 +154,14 @@ before anything in the workspace is built, so it must not import from it.
 ## Memory
 
 Memory is self-hosted supermemory, reached through `npx supermemory` rather than
-an MCP shim (D-143, D-144). A local server on 6767, local embeddings, and Ollama
+an MCP shim (D-162, D-163). A local server on 6767, local embeddings, and Ollama
 for extraction keep it offline.
 
 Two halves reach it. The supermemory plugin's four REST hooks capture each
 session and inject what they judge relevant; they are a declared dependency, so
 Claude Code installs them with Firehorse. The `firehorse-recall` skill
 (`definitions/skills/firehorse-recall.md`) wraps `npx supermemory search|add`
-for deliberate recall, invoked explicitly and never as a reflex (D-145).
+for deliberate recall, invoked explicitly and never as a reflex (D-164).
 
 The server itself is not a repo artifact — it is machine setup, and
 [`MEMORY.md`](./MEMORY.md) is its runbook. The `index` and `map` workflows read
@@ -176,7 +176,7 @@ absent, so they run without it.
 - No provider transport. Capabilities are declared; nothing connects.
 - No CLI. `firehorse-core` is a library, and `scripts/definitions.ts` is a repo
   script rather than a published binary.
-- No agent definitions. `kind: agent-role` and the nine agents went with D-141;
+- No agent definitions. `kind: agent-role` and the nine agents went with D-160;
   workflows run their steps inline.
 - No vendored upstream content, and no second copy of a plugin you already
-  install (D-137).
+  install (D-156).

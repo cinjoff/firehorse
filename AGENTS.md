@@ -6,7 +6,7 @@ notes live in `CLAUDE.md` and defer here for the substance.
 
 ## What this repo is
 
-Personal Claude-only tooling, packaged as a Claude Code plugin (D-136), shipped
+Personal Claude-only tooling, packaged as a Claude Code plugin (D-155), shipped
 as a pnpm monorepo with three packages:
 
 - **`packages/firehorse-core`** (`firehorse` on npm) — TypeScript core library.
@@ -19,7 +19,7 @@ as a pnpm monorepo with three packages:
   supermemory store as a graph, launched by `/firehorse:memory`. A browser app
   rather than a library, so Vite owns its build and nothing imports from it.
 
-Firehorse depends on upstream plugins and vendors nothing (D-137).
+Firehorse depends on upstream plugins and vendors nothing (D-156).
 
 ## Hard rules
 
@@ -69,9 +69,11 @@ Before starting work, read:
 - `docs/MEMORY.md` — the self-hosted supermemory runbook. Read it before
   changing anything that touches recall, and when a session recalls nothing.
 
-GitHub Issues is the only tracker (D-149). The wayfinder map and its child
-tickets hold current position and granular work items, so neither lives in the
-repo. `docs/` is hand-written and intentionally lightweight — no `gsd-tools`,
+Planning lives in the tracker, not in repo drafts (D-168) — for this repo that
+tracker is GitHub Issues, as `docs/agents/issue-tracker.md` records, and the
+shipped workflows read it from there rather than assuming it (D-174). The
+wayfinder map and its child tickets hold current position and granular work
+items, so neither lives in the repo. `docs/` is hand-written and intentionally lightweight — no `gsd-tools`,
 no plugin-cache symlinks. Keep it that way.
 
 ## Commands
