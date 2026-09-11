@@ -11,8 +11,6 @@ Run this once after installing the Firehorse Claude Code plugin.
 
 - Verify the Firehorse Claude plugin is available.
 - Detect whether the user is using Superset.
-- Pin the claude-mem project id to the canonical repository name so memory
-  persists across Superset and git worktrees.
 - If Superset is detected, configure Superset MCP in Claude Code's **user**
   scope so it works across new projects and Superset workspaces.
 - Keep Superset API keys out of project files, `.mcp.json`, git worktrees, and
@@ -26,10 +24,6 @@ Interpret the user's arguments naturally:
 - `--superset` / `--force-superset` — configure Superset MCP even if detection
   is inconclusive.
 - `--no-superset` — skip Superset MCP setup.
-- `--pi` — also offer Pi user-global MCP setup if Pi is installed.
-- `--memory-project <name>` / "pin memory to <name>" — optional manual override
-  when no GitHub repository can be resolved with `gh`.
-- `--skip-memory-patch` — do not run the claude-mem project-id patch script.
 
 ## Setup status mode (`--check`)
 
@@ -59,23 +53,6 @@ Check:
 5. Firehorse header helper:
    - `~/.config/firehorse/superset-mcp-headers.mjs` exists and is not
      group/world-writable on Unix-like systems.
-6. claude-mem project identity:
-   - Resolve the canonical project id from GitHub repository metadata by
-     running `gh repo view --json name --jq .name` from the current checkout.
-   - Prefer existing explicit env / private env-file values only when they are
-     already set; `--memory-project` is a manual fallback, not the normal path.
-   - The Superset path segment `/.superset/worktrees/<project>/` may be used as
-     a diagnostic suggestion only.
-   - Do **not** infer from git worktree parent directories or cwd basename for
-     Conductor/Superset workspaces; those paths may not mirror the canonical
-     repo name.
-   - The Firehorse Claude plugin dependency `claude-mem` is installed/enabled.
-   - `CLAUDE_MEM_PROJECT` and `FIREHORSE_PROJECT_NAME` are explicitly set to the
-     canonical id via shell/user environment, repo-local Claude settings, or
-     `~/.config/firehorse/memory.env`.
-   - `scripts/patch-claude-mem-project-env.cjs --check` reports the installed
-     claude-mem bundle is patched, unless upstream has native env override.
-
 Status table shape:
 
 ```markdown
@@ -87,8 +64,6 @@ Status table shape:
 | Secret file permissions | ✓ private / ✗ too open / ○ not present     |
 | Header helper           | ✓ configured / ✗ missing / ⚠ needs update  |
 | Claude MCP config       | ✓ configured / ✗ missing / ⚠ needs update  |
-| Memory project id       | ✓ <project> / ⚠ gh unavailable / ✗ missing |
-| claude-mem patch        | ✓ patched / ⚠ pending / ○ not installed    |
 ```
 
 If anything needs action, show the exact next command or file path. Then stop.
@@ -129,80 +104,7 @@ If you use Superset, run this setup again with:
 
 Continue with any other setup checks added to this skill in the future.
 
-### 3. Configure claude-mem project identity
-
-Firehorse depends on upstream `claude-mem` for Claude memory. Upstream v13
-normally derives worktree project ids like `parent/worktree`; Firehorse must pin
-memory to the canonical repository project so main agents and subagents share
-one memory namespace across Superset / Conductor workspaces.
-
-Resolve and pin the canonical project id automatically in this order:
-
-1. Explicit `--memory-project <name>` only if the user provided it as an
-   override.
-2. Existing `FIREHORSE_PROJECT_NAME`, `CLAUDE_MEM_PROJECT`, or `PI_MEM_PROJECT`
-   from the environment.
-3. Existing private `~/.config/firehorse/memory.env` value.
-4. GitHub repository name from the current checkout using the GitHub CLI:
-
-```sh
-gh repo view --json name --jq .name
-```
-
-Run this command during setup; do not ask the user for the repo name if it
-succeeds.
-
-Do not derive the canonical id from git worktree parent directories, git root
-basenames, or cwd basenames for Conductor/Superset workspaces. Some orchestrators
-store worktrees outside the canonical repo root, so parent paths can be wrong.
-The Superset path segment `/.superset/worktrees/<project>/...` is only a useful
-hint for humans. If `gh` is unavailable or cannot resolve the repository, ask the
-user to authenticate/install `gh` or run setup with `--memory-project <repo>`
-rather than guessing.
-
-For Superset workspaces like:
-
-```text
-~/.superset/worktrees/firehorse/<owner>/<workspace>
-```
-
-`gh repo view --json name --jq .name` should return:
-
-```text
-firehorse
-```
-
-Apply the pin in the safest available place:
-
-- Prefer the user's shell / Superset / Conductor launcher environment:
-  `FIREHORSE_PROJECT_NAME=<project>` and `CLAUDE_MEM_PROJECT=<project>`.
-- For a durable non-secret user-level override, create
-  `~/.config/firehorse/memory.env` with mode `600`:
-
-```sh
-project_name="$(gh repo view --json name --jq .name)"
-mkdir -p ~/.config/firehorse
-chmod 700 ~/.config/firehorse
-printf 'FIREHORSE_PROJECT_NAME=%s\nCLAUDE_MEM_PROJECT=%s\nPI_MEM_PROJECT=%s\n' \
-  "$project_name" "$project_name" "$project_name" > ~/.config/firehorse/memory.env
-chmod 600 ~/.config/firehorse/memory.env
-```
-
-- For repo-local Claude Code runs only, `.claude/settings.json` may set these
-  non-secret env vars. Do not use repo settings for secrets.
-
-Then patch installed claude-mem bundles unless the user passed
-`--skip-memory-patch` or upstream already supports `CLAUDE_MEM_PROJECT`:
-
-```sh
-node path/to/firehorse-claude/scripts/patch-claude-mem-project-env.cjs
-```
-
-The script patches compiled claude-mem `context-generator` and `worker-service`
-files so they honor `CLAUDE_MEM_PROJECT` / `FIREHORSE_PROJECT_NAME`. Re-run it
-after claude-mem updates.
-
-### 4. Configure the Superset API key safely
+### 3. Configure the Superset API key safely
 
 Never ask the user to paste a Superset API key into chat.
 
@@ -236,7 +138,7 @@ chmod 600 ~/.config/firehorse/superset.env
 Do not write secrets into `.mcp.json`, `.claude/settings.json`,
 `~/.claude.json`, project files, or git worktrees.
 
-### 5. Write the Claude headers helper
+### 4. Write the Claude headers helper
 
 Claude Code supports dynamic MCP request headers via `headersHelper`. Use this
 instead of storing a literal `Authorization` header.
@@ -300,7 +202,7 @@ if (!apiKey) {
 process.stdout.write(JSON.stringify({ Authorization: `Bearer ${apiKey}` }));
 ```
 
-### 6. Register Superset MCP for Claude Code user scope
+### 5. Register Superset MCP for Claude Code user scope
 
 Superset MCP v2 is a hosted HTTP MCP server. There is no npm MCP server binary
 to install.
@@ -332,7 +234,7 @@ Rules:
   from a terminal with Claude Code installed.
 - Do not put the API key in `--header`; use `headersHelper`.
 
-### 7. Verify / refresh
+### 6. Verify / refresh
 
 After registering MCP, tell the user:
 
@@ -344,33 +246,7 @@ confirm the Superset server is registered.
 Verification must be non-destructive. Do not create Superset workspaces or run
 agents during setup verification.
 
-### 8. Optional Pi setup
-
-If the user passed `--pi`, or explicitly asks to configure Pi too, use the same
-Superset detection and API-key safety rules, then configure Pi's user-global MCP
-file (`$PI_CODING_AGENT_DIR/mcp.json` or `~/.pi/agent/mcp.json`) with:
-
-```json
-{
-  "url": "https://api.superset.sh/api/v2/agent/mcp",
-  "auth": "bearer",
-  "bearerTokenEnv": "SUPERSET_API_KEY",
-  "lifecycle": "lazy",
-  "directTools": [
-    "hosts_list",
-    "projects_list",
-    "workspaces_list",
-    "workspaces_create",
-    "agents_list",
-    "agents_run"
-  ]
-}
-```
-
-Preserve all other Pi MCP config entries. Never write the API key into the Pi
-MCP file.
-
-### 9. Summary
+### 7. Summary
 
 Print:
 
@@ -385,8 +261,6 @@ Then summarize:
 - Claude MCP scope: user
 - Claude MCP status
 - header helper path
-- canonical memory project id
-- claude-mem patch status
 - API key status without printing the key
 - next command, if any
 

@@ -16,9 +16,6 @@
     "claude-code",
     "claude-plugin"
   ],
-  "dependencies": [
-    "claude-mem"
-  ],
   "hooks": "./hooks/hooks.json",
   "skills": [
     "./skills/firehorse-setup"
