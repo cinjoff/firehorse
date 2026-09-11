@@ -35,6 +35,8 @@
     "./commands/firehorse/horse-fix-bug.md",
     "./commands/firehorse/horse-index.md",
     "./commands/firehorse/horse-map.md",
-    "./commands/firehorse/horse-new-project.md"
+    "./commands/firehorse/horse-new-project.md",
+    "./commands/firehorse/horse-ship.md",
+    "./commands/firehorse/horse-upstreams-check.md"
   ]
 }
