@@ -29,10 +29,19 @@ export const firehorseSetupManifestSchema = z.strictObject({
       supermemory: z.boolean().optional(),
     })
     .optional(),
+  /**
+   * Which repo anchors exist, recorded once so a later workflow reads the
+   * manifest instead of re-probing the tree on every invocation. Machine-specific
+   * facts stay out: whether supermemory or the graph is reachable here is what
+   * `index.supermemory` and `index.graph` report.
+   */
   anchors: z
     .strictObject({
       design: z.boolean().optional(),
       codebase: z.array(nonEmptyStringSchema).optional(),
+      context: z.boolean().optional(),
+      agents: z.boolean().optional(),
+      adr: z.boolean().optional(),
     })
     .optional(),
   upstreams: z
