@@ -33,6 +33,8 @@
   "commands": [
     "./commands/firehorse/horse-build.md",
     "./commands/firehorse/horse-fix-bug.md",
-    "./commands/firehorse/horse-map.md"
+    "./commands/firehorse/horse-index.md",
+    "./commands/firehorse/horse-map.md",
+    "./commands/firehorse/horse-new-project.md"
   ]
 }
