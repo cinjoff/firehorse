@@ -1,5 +1,5 @@
 #!/usr/bin/env tsx
-import { readdir, readFile, rm, stat, writeFile, mkdir } from "node:fs/promises";
+import { readFile, rm, stat, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
@@ -9,11 +9,11 @@ import {
   extractGeneratedProvenance,
   generatedManifestEntries,
   mergeGeneratedManifestEntries,
-  parseDefinitionFile,
   projectDefinitions,
-  type FirehorseDefinition,
   type GeneratedFile,
 } from "../packages/firehorse-core/src/definitions/index.js";
+import { loadDefinitions, listMarkdownFiles } from "./lib/definitions-io.js";
+import { readUpstreamsState, resolveKnownUpstreamSkills } from "./lib/upstreams-io.js";
 
 interface CheckResult {
   readonly ok: boolean;
@@ -23,10 +23,6 @@ interface CheckResult {
 type Mode = "check" | "write";
 
 const repoRoot = process.cwd();
-const definitionsRoot = path.join(
-  repoRoot,
-  "packages/firehorse-core/definitions",
-);
 
 const generatedDirectories = [
   "packages/firehorse-claude/commands/firehorse",
@@ -37,8 +33,17 @@ async function main(): Promise<void> {
   const mode = parseMode(process.argv.slice(2));
 
   try {
-    const definitions = await loadDefinitions();
-    assertValidDefinitionSet(definitions);
+    const definitions = await loadDefinitions(repoRoot);
+
+    // Upstream references are validated against on-disk truth when
+    // ~/.claude/plugins/ exists, and against upstreams.lock.json alone when it
+    // does not, so the gate never claims it compared something it did not.
+    const upstreams = await readUpstreamsState(repoRoot);
+    const { known, source } = resolveKnownUpstreamSkills(upstreams);
+    assertValidDefinitionSet(definitions, {
+      knownUpstreamSkills: known,
+      knownUpstreamSkillsSource: source,
+    });
 
     const generatedFiles = projectDefinitions(definitions, { repoRoot });
     const fileResult = await syncGeneratedFiles(generatedFiles, mode);
@@ -58,7 +63,7 @@ async function main(): Promise<void> {
     console.log(
       mode === "write"
         ? `definitions:write updated ${generatedFiles.length} generated mirrors and manifests.`
-        : `definitions:check validated ${definitions.length} definitions, ${generatedFiles.length} generated mirrors, and manifests.`,
+        : `definitions:check validated ${definitions.length} definitions, ${generatedFiles.length} generated mirrors, manifests, and upstream skill references against ${source}.`,
     );
   } catch (error) {
     if (error instanceof DefinitionValidationError) {
@@ -80,30 +85,6 @@ function parseMode(args: readonly string[]): Mode {
     return "check";
   }
   throw new Error("Usage: pnpm definitions:write | pnpm definitions:check");
-}
-
-async function loadDefinitions(): Promise<FirehorseDefinition[]> {
-  const files = (await listMarkdownFiles(definitionsRoot)).sort((a, b) =>
-    a.localeCompare(b),
-  );
-  return Promise.all(files.map((file) => parseDefinitionFile(file)));
-}
-
-async function listMarkdownFiles(root: string): Promise<string[]> {
-  const entries = await readdir(root, { withFileTypes: true });
-  const files = await Promise.all(
-    entries.map(async (entry) => {
-      const fullPath = path.join(root, entry.name);
-      if (entry.isDirectory()) {
-        return listMarkdownFiles(fullPath);
-      }
-      if (entry.isFile() && entry.name.endsWith(".md")) {
-        return [fullPath];
-      }
-      return [];
-    }),
-  );
-  return files.flat();
 }
 
 async function syncGeneratedFiles(
@@ -188,32 +169,26 @@ async function findStaleGeneratedFiles(
   return stale.sort((a, b) => a.localeCompare(b));
 }
 
-async function syncManifests(
-  files: readonly GeneratedFile[],
-  mode: Mode,
-): Promise<CheckResult> {
+async function syncManifests(files: readonly GeneratedFile[], mode: Mode): Promise<CheckResult> {
   const entries = generatedManifestEntries(files);
   const manifestTargets = await Promise.all([
-    transformJsonFile(
-      "packages/firehorse-claude/.claude-plugin/plugin.json",
-      (json) => {
-        const manifest = json as {
-          commands?: string[];
-          skills?: string[];
-        };
-        manifest.commands = mergeGeneratedManifestEntries(
-          manifest.commands,
-          entries.claudeCommands,
-          "./commands/firehorse/",
-        );
-        manifest.skills = mergeGeneratedManifestEntries(
-          manifest.skills,
-          entries.claudeSkills,
-          "./skills/firehorse/",
-        );
-        return manifest;
-      },
-    ),
+    transformJsonFile("packages/firehorse-claude/.claude-plugin/plugin.json", (json) => {
+      const manifest = json as {
+        commands?: string[];
+        skills?: string[];
+      };
+      manifest.commands = mergeGeneratedManifestEntries(
+        manifest.commands,
+        entries.claudeCommands,
+        "./commands/firehorse/",
+      );
+      manifest.skills = mergeGeneratedManifestEntries(
+        manifest.skills,
+        entries.claudeSkills,
+        "./skills/firehorse/",
+      );
+      return manifest;
+    }),
   ]);
 
   const messages: string[] = [];
