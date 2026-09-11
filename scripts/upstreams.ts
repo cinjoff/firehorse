@@ -35,6 +35,15 @@ async function main(): Promise<void> {
   const state = await readUpstreamsState(repoRoot);
   const usages = collectUpstreamSkillUsages(await loadDefinitions(repoRoot));
 
+  // A baseline from an older schema version cannot answer what this check asks.
+  // Say so and regenerate it; never read the gap as drift.
+  if (state.lockfileOutdated && !write) {
+    console.log(`upstreams:check could not use the recorded baseline.`);
+    console.log(state.lockfileOutdated.message);
+    process.exitCode = 1;
+    return;
+  }
+
   if (state.installed === null) {
     // CI has no ~/.claude/plugins/. Absence is not drift.
     console.log(

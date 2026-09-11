@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const UPSTREAMS_LOCK_SCHEMA_VERSION = 1;
+export const UPSTREAMS_LOCK_SCHEMA_VERSION = 2;
 export const UPSTREAMS_LOCK_PATH = "upstreams.lock.json";
 
 /** Where a recorded skill key came from: `SKILL.md` frontmatter, or the containing directory. */
@@ -16,6 +16,12 @@ export const lockedUpstreamSkillSchema = z.strictObject({
   path: nonEmptyStringSchema,
   sha256: sha256Schema,
   nameSource: z.enum(upstreamSkillNameSources),
+  /**
+   * False when the skill sets `disable-model-invocation`, which makes it
+   * user-invoked only: an agent cannot reach it through the Skill tool, so a
+   * workflow has to read its `SKILL.md` and follow it inline instead.
+   */
+  modelInvocable: z.boolean(),
 });
 
 export const lockedUpstreamPluginSchema = z.strictObject({
@@ -48,6 +54,8 @@ export interface InstalledUpstreamSkill {
   readonly path: string;
   readonly sha256: string;
   readonly nameSource: UpstreamSkillNameSource;
+  /** False when the skill sets `disable-model-invocation`. */
+  readonly modelInvocable: boolean;
 }
 
 /** An installed plugin as read from `~/.claude/plugins/`. */
@@ -95,5 +103,21 @@ export class UpstreamsLockfileError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "UpstreamsLockfileError";
+  }
+}
+
+/**
+ * The baseline was recorded under an older schema, so it cannot answer what the
+ * current comparison asks. Reported as a baseline to regenerate, never as drift.
+ */
+export class OutdatedUpstreamsLockfileError extends UpstreamsLockfileError {
+  readonly recordedSchemaVersion: number;
+
+  constructor(recordedSchemaVersion: number) {
+    super(
+      `${UPSTREAMS_LOCK_PATH} was recorded at schema version ${recordedSchemaVersion}; this check reads version ${UPSTREAMS_LOCK_SCHEMA_VERSION}. Re-run \`pnpm upstreams:check --write\` to record a new baseline, then review its diff.`,
+    );
+    this.name = "OutdatedUpstreamsLockfileError";
+    this.recordedSchemaVersion = recordedSchemaVersion;
   }
 }
