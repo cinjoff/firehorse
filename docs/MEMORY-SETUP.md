@@ -19,6 +19,11 @@ Embeddings run locally (`Xenova/bge-base-en-v1.5`, 768d, no key). Everything
 else — summaries, chunking, memory extraction — needs an OpenAI-compatible
 endpoint, which here is Ollama at `http://localhost:11434/v1`.
 
+The server runs under launchd as `ai.supermemory.server`
+(`~/Library/LaunchAgents/ai.supermemory.server.plist`, `RunAtLoad` and
+`KeepAlive`), so it survives reboots. Without it, memory stops silently: the
+plugin hooks fail soft, and a session looks normal while capturing nothing.
+
 ## The extraction model must support tool calling
 
 This is the trap the setup is built around. `POST /v3/documents` returns
