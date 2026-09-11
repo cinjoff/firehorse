@@ -7,6 +7,21 @@ description: Run once after installing Firehorse for Claude Code. Checks Firehor
 
 Run this once after installing the Firehorse Claude Code plugin.
 
+## Relation to install.sh
+
+`install.sh` in the Firehorse repository is the supported install path. It does
+everything below plus the marketplaces, the plugin install, the MCP servers, and
+the memory stack, and it is idempotent:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/cinjoff/firehorse/main/install.sh | bash
+./install.sh --check   # read-only status, same shape as --check here
+```
+
+This skill covers the half that has to run from inside a Claude session, and
+verifies the rest. Prefer the installer for first-time setup; reach for this
+skill to check state or to configure Superset MCP on its own.
+
 ## Goals
 
 - Verify the Firehorse Claude plugin is available.
@@ -53,17 +68,17 @@ Check:
 5. Firehorse header helper:
    - `~/.config/firehorse/superset-mcp-headers.mjs` exists and is not
      group/world-writable on Unix-like systems.
-Status table shape:
+     Status table shape:
 
 ```markdown
-| Component               | Status                                     |
-| ----------------------- | ------------------------------------------ |
-| Firehorse Claude plugin | ✓ available / ✗ missing                    |
-| Superset detected       | ✓ yes / ○ no / ? inconclusive              |
-| Superset API key        | ✓ env set / ✓ env file / ✗ missing         |
-| Secret file permissions | ✓ private / ✗ too open / ○ not present     |
-| Header helper           | ✓ configured / ✗ missing / ⚠ needs update  |
-| Claude MCP config       | ✓ configured / ✗ missing / ⚠ needs update  |
+| Component               | Status                                    |
+| ----------------------- | ----------------------------------------- |
+| Firehorse Claude plugin | ✓ available / ✗ missing                   |
+| Superset detected       | ✓ yes / ○ no / ? inconclusive             |
+| Superset API key        | ✓ env set / ✓ env file / ✗ missing        |
+| Secret file permissions | ✓ private / ✗ too open / ○ not present    |
+| Header helper           | ✓ configured / ✗ missing / ⚠ needs update |
+| Claude MCP config       | ✓ configured / ✗ missing / ⚠ needs update |
 ```
 
 If anything needs action, show the exact next command or file path. Then stop.

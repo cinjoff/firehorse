@@ -5,54 +5,55 @@ Claude-adapted variants of firehorse's commands, skills, and hooks.
 
 ## Status
 
-Plugin manifest is in place. The package exposes `firehorse-setup` for
-first-time checks and user-scoped Superset MCP registration in Claude Code, and
-ships a `SessionStart` hook that checks GitHub releases and suggests
-`/plugin update firehorse@firehorse` when a newer Firehorse plugin version is
-available. `commands/` is a placeholder until Phase 3 adds the workflow set. The
-plugin declares `mattpocock-skills` and `impeccable` as dependencies, so Claude
-Code installs both alongside Firehorse.
+Shipping. The plugin carries seven generated workflow commands
+(`/horse-build`, `/horse-fix-bug`, `/horse-index`, `/horse-map`,
+`/horse-new-project`, `/horse-ship`, `/horse-upstreams-check`), two skills
+(`firehorse-setup` and `firehorse-recall`), and two `SessionStart` hooks — one
+that checks repo setup state, one that checks for a newer Firehorse release.
+
+It declares three dependencies — `mattpocock-skills`, `impeccable`, and
+`supermemory` — so Claude Code installs all three alongside it.
 
 ## Install
 
-Two paths.
+Run the installer from the repository root. It adds the upstream marketplaces
+this plugin's dependencies resolve from, installs the plugin, and wires up the
+MCP servers and the local memory stack:
 
-**Via marketplace** (recommended):
+```sh
+curl -fsSL https://raw.githubusercontent.com/cinjoff/firehorse/main/install.sh | bash
+```
+
+See [the root README](../../README.md#install) for the flags and for what each
+step does.
+
+**By hand**, if you prefer. The marketplaces must come first, because Claude
+Code cannot resolve a dependency from a marketplace it does not know about yet:
 
 ```text
 /plugin marketplace add pbakaus/impeccable
+/plugin marketplace add supermemoryai/claude-supermemory
 /plugin marketplace add cinjoff/firehorse
 /plugin install firehorse@firehorse
 ```
 
-The repo root contains `.claude-plugin/marketplace.json`; its Firehorse plugin
-entry uses a relative source (`./packages/firehorse-claude`) so Claude Code can
-install the plugin from the same GitHub repo. The same entry declares the two
-upstream dependencies and allowlists their marketplaces through
+The repo root contains `.claude-plugin/marketplace.json`; its Firehorse entry
+uses a relative source (`./packages/firehorse-claude`) so Claude Code installs
+the plugin from the same GitHub repo. That entry declares the three upstream
+dependencies and allowlists their marketplaces through
 `allowCrossMarketplaceDependenciesOn`. `mattpocock-skills` comes from the
-built-in `claude-plugins-official` marketplace; add `pbakaus/impeccable` first so
-Claude Code can resolve `impeccable`.
+built-in `claude-plugins-official` marketplace.
 
-After install, run the setup skill once:
-
-```text
-firehorse-setup
-```
-
-Use `firehorse-setup --check` for a read-only status report. If Superset is
-detected, setup registers Superset MCP in Claude Code's **user** scope using a
-private `headersHelper`, not a project `.mcp.json` or literal API key.
-
-**As a local plugin** for development:
-
-Point Claude Code at this directory via your Claude Code plugin config. The
-plugin is recognized by the `.claude-plugin/plugin.json` manifest at the
-package root. Validate from the repository root with:
+**As a local plugin** for development, point Claude Code at this directory via
+your plugin config. The `.claude-plugin/plugin.json` manifest at the package
+root is what makes it a plugin. Validate from the repository root:
 
 ```sh
 claude plugin validate .
 claude plugin validate packages/firehorse-claude
 ```
+
+Both run as part of the `/horse-ship` gate; no pnpm gate reads these manifests.
 
 ## Layout
 
@@ -84,14 +85,20 @@ release exists, it surfaces the update command, reload hint, and release-notes
 URL.
 
 This checks Firehorse release versions, not every upstream repository at user
-runtime. Upstream drift is the Phase 4 drift check's job.
+runtime. Upstream drift is `/horse-upstreams-check`'s job.
+
+Because the hook reads GitHub _releases_, a release cut as a tag alone leaves it
+silent. `/horse-ship` cuts both the `v{version}` repo tag and the
+`firehorse--v{version}` plugin tag that `/plugin update` resolves against, then
+publishes the release the hook reads.
 
 Set `FIREHORSE_SKIP_UPDATE_CHECK=1`, `FIREHORSE_OFFLINE=1`, or `CLAUDE_OFFLINE=1`
 to skip the network check. Results are cached for 24 hours in
 `${CLAUDE_PLUGIN_DATA}`.
 
-## Per-project setup (future)
+## Per-project setup
 
-A future `/new-project` workflow will scaffold project-local Claude config
-(`.claude/`, `docs/agents/`, the setup manifest) and then call `/index`. Not
-built yet.
+`/horse-new-project` scaffolds project-local Claude config (`.claude/`,
+`docs/agents/`, the setup manifest) and then calls `/horse-index`. The
+`check-setup.mjs` hook reads the resulting `.firehorse/manifest.json` on every
+session start and stays silent unless the index is stale.
