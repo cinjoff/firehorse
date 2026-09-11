@@ -7,6 +7,7 @@
     "name": "cinjoff",
     "url": "https://github.com/cinjoff"
   },
+  "allowCrossMarketplaceDependenciesOn": ["claude-plugins-official", "impeccable"],
   "plugins": [
     {
       "name": "firehorse",
@@ -21,6 +22,10 @@
       "repository": "https://github.com/cinjoff/firehorse",
       "license": "MIT",
       "keywords": ["firehorse", "agentic", "skills", "claude-code", "claude-plugin"],
+      "dependencies": [
+        { "name": "mattpocock-skills", "marketplace": "claude-plugins-official" },
+        { "name": "impeccable", "marketplace": "impeccable" }
+      ],
       "category": "agent-frameworks",
       "tags": ["agent-framework", "skills", "cross-provider"]
     }
