@@ -6,22 +6,26 @@
 
 export interface MemoryEntry {
   readonly id: string;
-  readonly documentId?: string | null;
-  readonly content?: string | null;
-  readonly summary?: string | null;
-  readonly title?: string | null;
-  readonly type?: string | null;
+  /** The memory text. The local server calls this `memory`, not `content`. */
+  readonly memory?: string | null;
   readonly createdAt?: string | null;
   readonly updatedAt?: string | null;
   readonly spaceContainerTag?: string | null;
   readonly spaceId?: string | null;
   readonly isLatest?: boolean;
+  readonly isStatic?: boolean;
+  readonly isForgotten?: boolean;
+  readonly forgetAfter?: string | null;
+  readonly forgetReason?: string | null;
+  readonly version?: number;
+  readonly parentMemoryId?: string | null;
+  readonly rootMemoryId?: string | null;
   /**
    * The local server sends an object here, not the `relation` string the
    * hosted docs describe. It was empty on every entry in the store when #87
    * measured it, so there are no memory-to-memory edges to draw yet.
    */
-  readonly memoryRelations?: Record<string, unknown>;
+  readonly memoryRelations?: Record<string, unknown> | null;
 }
 
 export interface DocumentWithMemories {

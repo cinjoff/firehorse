@@ -51,6 +51,9 @@ importers:
 
   packages/firehorse-graph:
     dependencies:
+      '@supermemory/memory-graph':
+        specifier: ^0.2.3
+        version: 0.2.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react:
         specifier: ^19.3.0
         version: 19.3.0
@@ -873,6 +876,12 @@ packages:
     resolution: {integrity: sha512-hPt/bgL5cE+Qp+/TPHBqptcAgPzgj46mPcg/16zNUmbQk0j+mOEQV/+Lqu8QRtDV3Ek95Q6FeFITpuhl6OTsAA==}
     cpu: [x64]
     os: [win32]
+
+  '@supermemory/memory-graph@0.2.3':
+    resolution: {integrity: sha512-tBioyg+GayOmyhUaInu5ngKURWss9O7iQsPWH5ECx1av0Poynz8hVdeT2VdBugynngfmCbG4bhLXTBul2jDeow==}
+    peerDependencies:
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
 
   '@testing-library/dom@10.4.1':
     resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
@@ -2597,6 +2606,12 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.60.3':
     optional: true
+
+  '@supermemory/memory-graph@0.2.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+    dependencies:
+      d3-force: 3.0.0
+      react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
 
   '@testing-library/dom@10.4.1':
     dependencies:

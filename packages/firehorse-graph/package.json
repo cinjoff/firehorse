@@ -36,6 +36,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@supermemory/memory-graph": "^0.2.3",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
