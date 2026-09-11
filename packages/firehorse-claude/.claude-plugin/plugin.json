@@ -30,5 +30,7 @@
   "skills": [
     "./skills/firehorse-setup"
   ],
-  "commands": []
+  "commands": [
+    "./commands/firehorse/horse-map.md"
+  ]
 }
