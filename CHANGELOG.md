@@ -1,5 +1,81 @@
 # Changelog
 
+## v0.7.0 — 2026-09-11
+
+### Changed
+
+- **Six commands ship, not eight.** `/firehorse:ship` and
+  `/firehorse:upstreams-check` were maintainer tools for this repo:
+  `upstreams-check` cannot run anywhere else, and `ship` encoded this repo's
+  version sites and scripts. Definitions now declare `audience: user |
+  maintainer`, and only `user` reaches the plugin. If you had either command,
+  it disappears on update; nothing you can run today loses a capability.
+- **The gate a workflow runs is derived from your repo.** `/firehorse:build`
+  and `/firehorse:fix-bug` named `pnpm` unconditionally while declaring it
+  optional. They now read the typecheck and test scripts your manifest declares
+  and run them through the package manager your lockfile names — and say so in
+  one line when there is no gate script at all.
+- **The tracker is the one you recorded.** Every tracker action in
+  `/firehorse:build`, `/firehorse:fix-bug`, `/firehorse:index`, `/firehorse:map`
+  and `/firehorse:new-project` now goes through `docs/agents/issue-tracker.md`,
+  which `setup-matt-pocock-skills` writes after asking you — GitHub, GitLab,
+  local markdown, or your own description. `github` is an optional capability
+  rather than a required one, and `/firehorse:new-project` no longer stops on a
+  missing GitHub remote before it knows whether your tracker needs one. Its
+  label step follows the same route, down to the triage-label names you chose.
+- **`/firehorse:map` no longer caps its Notes block at 200 words.** The block is
+  the only carrier for standing preferences, and the cap truncated it at the
+  moment most worth writing down. What replaces it is a test of content: every
+  line is a trigger and a verb, and reference material belongs in `CONTEXT.md`
+  or `docs/agents/`.
+- `/firehorse:upstreams-check` says who a breaking drift breaks it for. Firehorse
+  defines the surface; which upstream skill implements a step is an
+  implementation detail, so an upstream that moves never breaks your workflow —
+  it means a maintainer edits a definition.
+- The anchors `/firehorse:index` writes stay at the altitude a newcomer needs,
+  with per-symbol detail left to the graph, which answers it exactly and stays
+  current.
+
+### Fixed
+
+- **The SessionStart hook stopped nagging people who never installed Firehorse.**
+  It treated `docs/agents/` as consent, but that directory is written by
+  `mattpocock-skills:setup-matt-pocock-skills` — so every mattpocock-skills user
+  saw `firehorse: no .firehorse/manifest.json` in every session of every repo.
+  Consent is now `.firehorse/` or a firehorse marketplace entry. The same hook
+  advertised `/new-project` and `/index`, which never resolved; it names the
+  `/firehorse:` forms.
+- The shipped workflows stopped citing this repo's decision log at you, banning
+  draft locations that only exist here, and telling you never to hand-edit a
+  generated mirror — a rule about Firehorse's own build, not your repo.
+
+### Removed
+
+- The provider and orchestrator adapter trees, 315 lines with no callers and no
+  tests. Nothing a user invokes changes: a definition stays free of vendor SDKs
+  through the capability vocabulary it declares, and support for a second
+  provider, when it comes, is a projection change. `firehorse` is also marked
+  private — distribution is through the marketplace, and the package README no
+  longer offers an npm install that would have shipped a broken tarball.
+
+### Documentation
+
+- The README introduces the plugins Firehorse builds on — what
+  `mattpocock-skills`, `impeccable` and `supermemory` each teach an agent, with
+  links — and what Firehorse adds around them: memory you can question, a
+  codebase map queried before a file is opened, UI critique where a surface
+  changes.
+- One decision log. `docs/DECISIONS.md` and `docs/MIGRATION-PLAN.md` both held a
+  D-136 through D-150 with different content at the same numbers; the migration
+  plan's are promoted into the log, which is now the only sequence, with the two
+  entries later work reversed marked in place.
+- The mechanism docs match the code again: the lockfile example parses under the
+  current schema, projection is described as it behaves rather than as copying
+  the body verbatim, and the architecture doc carries three packages.
+- `docs/agents/issue-tracker.md` gained a **Wayfinding operations** section —
+  how a child ticket is wired, how blocking is expressed, how the frontier is
+  queried, and how a ticket is claimed, each command verified against this repo.
+
 ## v0.6.0 — 2026-09-11
 
 ### Fixed
