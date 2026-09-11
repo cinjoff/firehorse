@@ -37,9 +37,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check upstream freshness
-        run: pnpm upstreams:check:warn
-
       - name: Typecheck
         run: pnpm typecheck
 

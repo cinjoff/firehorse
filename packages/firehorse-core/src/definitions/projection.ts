@@ -3,15 +3,14 @@ import path from "node:path";
 import matter from "gray-matter";
 
 import type {
-  AgentRoleDefinition,
   DefinitionKind,
   FirehorseDefinition,
   SkillDefinition,
   WorkflowDefinition,
 } from "./types.js";
 
-export type ProjectionProvider = "pi" | "claude";
-export type ProjectionResourceKind = "workflow" | "skill" | "agent-role";
+export type ProjectionProvider = "claude";
+export type ProjectionResourceKind = "workflow" | "skill";
 
 export interface GeneratedFile {
   readonly path: string;
@@ -36,16 +35,6 @@ export interface GeneratedProvenance {
   readonly firehorseSchemaVersion: number;
 }
 
-const claudeToolNames = new Map<string, string>([
-  ["read", "Read"],
-  ["grep", "Grep"],
-  ["find", "Glob"],
-  ["ls", "LS"],
-  ["bash", "Bash"],
-  ["edit", "Edit"],
-  ["write", "Write"],
-]);
-
 export function nativeName(id: string): string {
   return `horse-${id}`;
 }
@@ -68,8 +57,6 @@ export function projectDefinition(
       return projectWorkflow(definition, options);
     case "skill":
       return projectSkill(definition, options);
-    case "agent-role":
-      return projectAgentRole(definition, options);
   }
 }
 
@@ -113,22 +100,6 @@ function projectWorkflow(
 
   return [
     {
-      path: `packages/firehorse-pi/prompts/firehorse/${name}.md`,
-      provider: "pi",
-      resourceKind: "workflow",
-      definitionId: definition.frontmatter.id,
-      sourcePath,
-      sourceHash: definition.sourceHash,
-      content: renderMarkdownFile(
-        {
-          description: definition.frontmatter.description,
-          "argument-hint": definition.frontmatter.argumentHint,
-          ...common,
-        },
-        body,
-      ),
-    },
-    {
       path: `packages/firehorse-claude/commands/firehorse/${name}.md`,
       provider: "claude",
       resourceKind: "workflow",
@@ -157,24 +128,6 @@ function projectSkill(
 
   return [
     {
-      path: `packages/firehorse-pi/skills/firehorse/${definition.frontmatter.id}/SKILL.md`,
-      provider: "pi",
-      resourceKind: "skill",
-      definitionId: definition.frontmatter.id,
-      sourcePath,
-      sourceHash: definition.sourceHash,
-      content: renderMarkdownFile(
-        {
-          name: definition.frontmatter.id,
-          description: definition.frontmatter.description,
-          license: definition.frontmatter.license,
-          compatibility: definition.frontmatter.compatibility,
-          ...common,
-        },
-        body,
-      ),
-    },
-    {
       path: `packages/firehorse-claude/skills/firehorse/${definition.frontmatter.id}/SKILL.md`,
       provider: "claude",
       resourceKind: "skill",
@@ -187,70 +140,6 @@ function projectSkill(
           description: definition.frontmatter.description,
           license: definition.frontmatter.license,
           compatibility: definition.frontmatter.compatibility,
-          ...common,
-        },
-        body,
-      ),
-    },
-  ];
-}
-
-function projectAgentRole(
-  definition: AgentRoleDefinition,
-  options: ProjectionOptions,
-): GeneratedFile[] {
-  const sourcePath = sourcePathFor(definition.path, options.repoRoot);
-  const name = nativeName(definition.frontmatter.id);
-  const common = generatedCommonFrontmatter(definition, sourcePath);
-  const body = renderGeneratedBody(definition, sourcePath);
-  const piFrontmatter = pickDefined({
-    name,
-    description: definition.frontmatter.description,
-    package: definition.frontmatter.package,
-    tools: definition.frontmatter.tools?.join(", "),
-    extensions: definition.frontmatter.extensions?.join(", "),
-    model: definition.frontmatter.model,
-    fallbackModels: definition.frontmatter.fallbackModels?.join(", "),
-    thinking: definition.frontmatter.thinking,
-    systemPromptMode: definition.frontmatter.systemPromptMode,
-    inheritProjectContext: definition.frontmatter.inheritProjectContext,
-    inheritSkills: definition.frontmatter.inheritSkills,
-    defaultContext: definition.frontmatter.defaultContext,
-    skills: definition.frontmatter.skills?.join(", "),
-    output: definition.frontmatter.output,
-    defaultReads: definition.frontmatter.defaultReads?.join(", "),
-    defaultProgress: definition.frontmatter.defaultProgress,
-    interactive: definition.frontmatter.interactive,
-    maxSubagentDepth: definition.frontmatter.maxSubagentDepth,
-    ...common,
-  });
-  const claudeTools = (definition.frontmatter.tools ?? [])
-    .map((tool) => claudeToolNames.get(tool))
-    .filter((tool): tool is string => Boolean(tool));
-
-  return [
-    {
-      path: `packages/firehorse-pi/agents/firehorse/${name}.md`,
-      provider: "pi",
-      resourceKind: "agent-role",
-      definitionId: definition.frontmatter.id,
-      sourcePath,
-      sourceHash: definition.sourceHash,
-      content: renderMarkdownFile(piFrontmatter, body),
-    },
-    {
-      path: `packages/firehorse-claude/agents/firehorse/${name}.md`,
-      provider: "claude",
-      resourceKind: "agent-role",
-      definitionId: definition.frontmatter.id,
-      sourcePath,
-      sourceHash: definition.sourceHash,
-      content: renderMarkdownFile(
-        {
-          name,
-          description: definition.frontmatter.description,
-          tools: claudeTools.length > 0 ? claudeTools.join(", ") : undefined,
-          effort: definition.frontmatter.thinking,
           ...common,
         },
         body,
