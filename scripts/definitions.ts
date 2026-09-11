@@ -29,12 +29,8 @@ const definitionsRoot = path.join(
 );
 
 const generatedDirectories = [
-  "packages/firehorse-pi/prompts/firehorse",
-  "packages/firehorse-pi/skills/firehorse",
-  "packages/firehorse-pi/agents/firehorse",
   "packages/firehorse-claude/commands/firehorse",
   "packages/firehorse-claude/skills/firehorse",
-  "packages/firehorse-claude/agents/firehorse",
 ];
 
 async function main(): Promise<void> {
@@ -198,51 +194,12 @@ async function syncManifests(
 ): Promise<CheckResult> {
   const entries = generatedManifestEntries(files);
   const manifestTargets = await Promise.all([
-    transformJsonFile("package.json", (json) => {
-      const root = json as { pi?: { skills?: string[]; prompts?: string[] } };
-      root.pi ??= {};
-      root.pi.skills = mergeGeneratedManifestEntries(
-        root.pi.skills,
-        entries.rootPiSkills,
-        "./packages/firehorse-pi/skills/firehorse/",
-      );
-      root.pi.prompts = mergeGeneratedManifestEntries(
-        root.pi.prompts,
-        entries.rootPiPrompts,
-        "./packages/firehorse-pi/prompts/firehorse/",
-      );
-      return root;
-    }),
-    transformJsonFile("packages/firehorse-pi/package.json", (json) => {
-      const manifest = json as {
-        files?: string[];
-        pi?: { skills?: string[]; prompts?: string[] };
-      };
-      manifest.files = mergeGeneratedManifestEntries(
-        manifest.files,
-        ["agents"],
-        "agents",
-      );
-      manifest.pi ??= {};
-      manifest.pi.skills = mergeGeneratedManifestEntries(
-        manifest.pi.skills,
-        entries.packagePiSkills,
-        "./skills/firehorse/",
-      );
-      manifest.pi.prompts = mergeGeneratedManifestEntries(
-        manifest.pi.prompts,
-        entries.packagePiPrompts,
-        "./prompts/firehorse/",
-      );
-      return manifest;
-    }),
     transformJsonFile(
       "packages/firehorse-claude/.claude-plugin/plugin.json",
       (json) => {
         const manifest = json as {
           commands?: string[];
           skills?: string[];
-          agents?: string[];
         };
         manifest.commands = mergeGeneratedManifestEntries(
           manifest.commands,
@@ -253,11 +210,6 @@ async function syncManifests(
           manifest.skills,
           entries.claudeSkills,
           "./skills/firehorse/",
-        );
-        manifest.agents = mergeGeneratedManifestEntries(
-          manifest.agents,
-          entries.claudeAgents,
-          "./agents/firehorse/",
         );
         return manifest;
       },

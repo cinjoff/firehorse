@@ -21,11 +21,7 @@
   ],
   "hooks": "./hooks/hooks.json",
   "skills": [
-    "./skills/firehorse-setup",
-    "./skills/firehorse/feedback-loop"
+    "./skills/firehorse-setup"
   ],
-  "commands": [
-    "./commands/firehorse/horse-diagnose-fix.md",
-    "./commands/firehorse/horse-update-upstreams.md"
-  ]
+  "commands": []
 }

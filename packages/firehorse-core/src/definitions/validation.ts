@@ -22,7 +22,7 @@ export function validateDefinitionSet(
     if (existing) {
       diagnostics.push({
         code: "set.duplicate_id",
-        message: `Definition ID '${definition.frontmatter.id}' is used by both '${existing.path}' and '${definition.path}'. IDs are globally unique across workflows, skills, and agent roles.`,
+        message: `Definition ID '${definition.frontmatter.id}' is used by both '${existing.path}' and '${definition.path}'. IDs are globally unique across workflows and skills.`,
         path: definition.path,
         field: "id",
       });
@@ -61,18 +61,6 @@ export function validateDefinitionSet(
         ...validateWorkflowReferences(definition, byId, options.knownUpstreamSkills),
       );
     }
-
-    if (
-      definition.kind === "agent-role" &&
-      definition.frontmatter.name !== definition.frontmatter.id
-    ) {
-      diagnostics.push({
-        code: "agent_role.name_id_mismatch",
-        message: `Agent role name '${definition.frontmatter.name}' must match id '${definition.frontmatter.id}' in canonical definitions. Provider projections add native prefixes.`,
-        path: definition.path,
-        field: "name",
-      });
-    }
   }
 
   return diagnostics;
@@ -110,25 +98,6 @@ function validateWorkflowReferences(
         message: `Workflow '${definition.frontmatter.id}' references '${reference.id}' as a skill, but it is a '${target.kind}'.`,
         path: definition.path,
         field: "supportingSkills",
-      });
-    }
-  }
-
-  for (const reference of definition.frontmatter.agentRoles ?? []) {
-    const target = byId.get(reference.id);
-    if (!target) {
-      diagnostics.push({
-        code: "references.agent_role_missing",
-        message: `Workflow '${definition.frontmatter.id}' references missing agent role '${reference.id}'.`,
-        path: definition.path,
-        field: "agentRoles",
-      });
-    } else if (target.kind !== "agent-role") {
-      diagnostics.push({
-        code: "references.agent_role_wrong_kind",
-        message: `Workflow '${definition.frontmatter.id}' references '${reference.id}' as an agent role, but it is a '${target.kind}'.`,
-        path: definition.path,
-        field: "agentRoles",
       });
     }
   }

@@ -2,13 +2,12 @@ import { z } from "zod";
 
 export const DEFINITION_SCHEMA_VERSION = 1;
 
-export const definitionKinds = ["workflow", "skill", "agent-role"] as const;
+export const definitionKinds = ["workflow", "skill"] as const;
 export type DefinitionKind = (typeof definitionKinds)[number];
 
 export const definitionKindDirectories = {
   workflow: "workflows",
   skill: "skills",
-  "agent-role": "agent-roles",
 } as const satisfies Record<DefinitionKind, string>;
 
 export const definitionIdSchema = z
@@ -131,7 +130,6 @@ export const workflowFrontmatterSchema = commonDefinitionFrontmatterSchema
     kind: z.literal("workflow"),
     argumentHint: z.string().min(1).optional(),
     supportingSkills: z.array(definitionReferenceSchema).optional(),
-    agentRoles: z.array(definitionReferenceSchema).optional(),
     upstreamSkills: z.array(upstreamSkillReferenceSchema).optional(),
   })
   .strict();
@@ -144,45 +142,9 @@ export const skillFrontmatterSchema = commonDefinitionFrontmatterSchema
   })
   .strict();
 
-export const thinkingLevelSchema = z.enum([
-  "off",
-  "minimal",
-  "low",
-  "medium",
-  "high",
-  "xhigh",
-]);
-
-export const systemPromptModeSchema = z.enum(["replace", "append"]);
-export const defaultContextSchema = z.enum(["fresh", "fork"]);
-
-export const agentRoleFrontmatterSchema = commonDefinitionFrontmatterSchema
-  .extend({
-    kind: z.literal("agent-role"),
-    name: definitionIdSchema,
-    package: definitionIdSchema.optional(),
-    tools: z.array(z.string().min(1)).optional(),
-    extensions: z.array(z.string().min(1)).optional(),
-    model: z.string().min(1).optional(),
-    fallbackModels: z.array(z.string().min(1)).optional(),
-    thinking: thinkingLevelSchema.optional(),
-    systemPromptMode: systemPromptModeSchema.optional(),
-    inheritProjectContext: z.boolean().optional(),
-    inheritSkills: z.boolean().optional(),
-    defaultContext: defaultContextSchema.optional(),
-    skills: z.array(definitionIdSchema).optional(),
-    output: z.string().min(1).optional(),
-    defaultReads: z.array(z.string().min(1)).optional(),
-    defaultProgress: z.boolean().optional(),
-    interactive: z.boolean().optional(),
-    maxSubagentDepth: z.number().int().nonnegative().optional(),
-  })
-  .strict();
-
 export const definitionFrontmatterSchema = z.discriminatedUnion("kind", [
   workflowFrontmatterSchema,
   skillFrontmatterSchema,
-  agentRoleFrontmatterSchema,
 ]);
 
 export type CapabilityDeclaration = z.infer<typeof capabilityDeclarationSchema>;
@@ -192,7 +154,6 @@ export type UpstreamSkillReference = z.infer<
 >;
 export type WorkflowFrontmatter = z.infer<typeof workflowFrontmatterSchema>;
 export type SkillFrontmatter = z.infer<typeof skillFrontmatterSchema>;
-export type AgentRoleFrontmatter = z.infer<typeof agentRoleFrontmatterSchema>;
 export type DefinitionFrontmatter = z.infer<typeof definitionFrontmatterSchema>;
 
 export interface DefinitionDiagnostic {
@@ -230,15 +191,8 @@ export type WorkflowDefinition = FirehorseDefinitionBase<
   WorkflowFrontmatter
 >;
 export type SkillDefinition = FirehorseDefinitionBase<"skill", SkillFrontmatter>;
-export type AgentRoleDefinition = FirehorseDefinitionBase<
-  "agent-role",
-  AgentRoleFrontmatter
->;
 
-export type FirehorseDefinition =
-  | WorkflowDefinition
-  | SkillDefinition
-  | AgentRoleDefinition;
+export type FirehorseDefinition = WorkflowDefinition | SkillDefinition;
 
 export const requiredSectionsByKind = {
   workflow: [
@@ -260,18 +214,6 @@ export const requiredSectionsByKind = {
     "Instructions",
     "Boundaries",
     "Examples",
-    "Projection Notes",
-  ],
-  "agent-role": [
-    "Mission",
-    "Responsibilities",
-    "Inputs",
-    "Outputs",
-    "Tools",
-    "Authority",
-    "Escalation",
-    "Collaboration",
-    "Boundaries",
     "Projection Notes",
   ],
 } as const satisfies Record<DefinitionKind, readonly string[]>;
