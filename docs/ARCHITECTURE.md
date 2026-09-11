@@ -1,6 +1,7 @@
 # Architecture
 
-Firehorse is personal tooling packaged as one Claude Code plugin (D-155). It
+Firehorse is a thin layer over installed agent skills, for anyone building
+software (D-170), packaged as one Claude Code plugin (D-155). It
 holds a small set of workflow definitions and a projector that turns them into
 Claude-native commands. Everything a user invokes is a generated slash command.
 

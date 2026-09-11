@@ -6,8 +6,9 @@ notes live in `CLAUDE.md` and defer here for the substance.
 
 ## What this repo is
 
-Personal Claude-only tooling, packaged as a Claude Code plugin (D-155), shipped
-as a pnpm monorepo with three packages:
+A thin layer over installed agent skills, for anyone building software (D-170),
+packaged as a Claude Code plugin (D-155) and shipped as a pnpm monorepo with
+three packages:
 
 - **`packages/firehorse-core`** (`firehorse` on npm) — TypeScript core library.
   Canonical definitions, the projection generator, the manifest schema, and the
