@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+## v0.5.0 — 2026-09-11
+
+### Added
+
+- Added `/firehorse:memory`, which opens your self-hosted supermemory store as an
+  interactive graph in a browser. It starts a local server, or reuses one that is
+  already running, and hands back the URL. Read-only: nothing in it writes to the
+  store. This is for looking at what was stored when you cannot yet phrase the
+  question — `firehorse-recall` remains the deliberate-recall path (D-144).
+- Added `packages/firehorse-graph`, a private Vite + React app behind that
+  command. It reads through a local proxy rather than from the browser, because
+  the self-hosted supermemory server sends no CORS headers and because the API
+  key must not reach the page. Three jobs get equal standing in the UI: search
+  across the top, a project rail with per-project document and memory counts down
+  the left, and a graph/list switch between the network view and a dense table.
+
+  The app names a project by parsing its container tag — the supermemory plugin
+  generates `repo_<name>__<sha256(remote)[:16]>`, so the name is already in the
+  tag and needs no lookup.
+
+### Fixed
+
+- Session documents no longer display the raw transcript as their title. Captures
+  from a coding session store the whole transcript in `title`, starting
+  `<|turn_start|>…`; they now read as the time the session ran.
+
+### Changed
+
+- `AGENTS.md` and `CLAUDE.md` describe three packages rather than two, and record
+  that tool config files (`tsup.config.ts`, `vite.config.ts`) are the one place a
+  default export is allowed, since their loaders require it.
+
 ## v0.4.0 — 2026-09-11
 
 ### Changed
