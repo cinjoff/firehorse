@@ -21,6 +21,18 @@ Create a GitHub issue in `cinjoff/firehorse`.
 
 Run `gh issue view <number> --comments` and inspect the issue body, labels, and comments.
 
+## Parked concepts
+
+An idea whose surface shipped, changed, or is not ready to act on stays as an open
+issue labelled `concept` and `parked`, rather than being closed. Closing a stale
+issue then does not lose the idea, because the concept issue inherits it and the
+closing comment points there. `#57`-`#62` are the current set.
+
+A parked concept is not a work item. It carries no frontier position, no assignee
+and no dependencies, and it is not a `wayfinder` ticket. It becomes work when a
+map is chartered against it, which is how `#61` became
+[#122](https://github.com/cinjoff/firehorse/issues/122).
+
 ## Wayfinding operations
 
 `mattpocock-skills:wayfinder` keeps a map and its child tickets on the tracker
