@@ -1,0 +1,16 @@
+# Session Audit reports are local-only artifacts.
+#
+# They quote session transcripts, absolute paths, cost accounting, and — because
+# memory injection is one of the things they audit — observations that bled in
+# from unrelated projects. This repository is public. Concept issue #58 already
+# records that these reports are excluded from the tracker for that reason and
+# points at this file; the file itself was never committed, so the exclusion it
+# assumed was not in force.
+#
+# To share a finding, quote it into the relevant issue after reading it. Do not
+# commit a report wholesale. To keep one deliberately, force-add it only after a
+# human privacy review of that specific file.
+
+*.md
+*.json
+!.gitignore
