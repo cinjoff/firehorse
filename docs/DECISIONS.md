@@ -3296,8 +3296,11 @@ reference: "Required body sections are the parser-enforced headings in
 additions without a new version. `## Handoff` is the first one, required for
 `workflow` and not for `skill`.
 **Rationale:** The alternative reading, that the accepted list froze at nine
-headings, would make every future section a schema version, and D-135 could have
-listed the nine if that had been the intent. Recording the reading matters more
+headings, would make every future section a schema version. D-135 states the
+rule by reference to the constant rather than by listing the headings, and the
+enumeration in `docs/FIREHORSE-DEFINITION-FORMAT.md` documents what the constant
+held at the time. That doc is therefore downstream of the constant and is
+updated with it, which this decision requires. Recording the reading matters more
 than which way it went: an unstated reading gets relitigated by whoever next
 wants to add a section.
 **Scope:** Additions only, and only where every definition in the repo already

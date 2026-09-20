@@ -15,6 +15,7 @@ import {
   stripAuthoringOnlySections,
   validateDefinitionSet,
 } from "./index.js";
+import { requiredSectionsByKind } from "./types.js";
 
 const packageRoot = process.cwd();
 const repoRoot = nodePath.dirname(nodePath.dirname(packageRoot));
@@ -148,6 +149,23 @@ describe("Firehorse definitions", () => {
     expect(docs).toContain("pnpm definitions:check");
     expect(docs).toContain("firehorseSourceSha256");
     expect(docs).toContain("Firehorse runtime loading or execution");
+  });
+
+  it("keeps the documented section lists in step with requiredSectionsByKind", async () => {
+    // D-180 makes the constant the contract and the prose downstream of it.
+    // Without this, adding a heading silently leaves two docs describing a
+    // format the parser no longer accepts.
+    const [format, architecture] = await Promise.all([
+      readFile(nodePath.join(repoRoot, "docs/FIREHORSE-DEFINITION-FORMAT.md"), "utf8"),
+      readFile(nodePath.join(repoRoot, "docs/ARCHITECTURE.md"), "utf8"),
+    ]);
+
+    for (const [index, section] of requiredSectionsByKind.workflow.entries()) {
+      expect(format, `${section} missing from the format doc`).toContain(
+        `${index + 1}. \`## ${section}\``,
+      );
+      expect(architecture, `${section} missing from ARCHITECTURE.md`).toContain(section);
+    }
   });
 
   it("reports invalid frontmatter with actionable diagnostics", () => {

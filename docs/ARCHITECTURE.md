@@ -39,7 +39,7 @@ parses it with `gray-matter`, validates the frontmatter against a Zod schema in
 `types.ts`, checks that the file's path matches its `kind` and `id`, and requires
 the section headings listed in `requiredSectionsByKind` — for a workflow:
 Purpose, Usage, Inputs, Outputs, Supporting Capabilities, Orchestration Intent,
-Safety Gates, Procedure, Projection Notes. IDs are globally unique across kinds,
+Safety Gates, Procedure, Handoff, Projection Notes. IDs are globally unique across kinds,
 and `validation.ts` enforces that plus alias collisions and `replacedBy` targets.
 
 `projection.ts` emits one file per definition, to a root chosen by the
