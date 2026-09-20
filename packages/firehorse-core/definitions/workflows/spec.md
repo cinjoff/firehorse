@@ -1,0 +1,159 @@
+---
+schemaVersion: 1
+id: spec
+kind: workflow
+title: Spec
+description: Turn a map whose way is clear into the spec its slices get cut from — decisions read out of the map's own record, seams confirmed against the codebase graph, published to the tracker.
+argumentHint: "[map issue URL or number]"
+requires:
+  tools:
+    - read
+    - bash
+  environment:
+    - filesystem
+    - git
+optional:
+  tools:
+    - grep
+    - ls
+    - write
+    - edit
+    - mcp:codebase-memory-mcp
+  orchestration:
+    - subagents
+  environment:
+    - github
+    - node
+    - pnpm
+upstreamSkills:
+  - upstream: mattpocock-skills
+    id: to-spec
+  - upstream: mattpocock-skills
+    id: domain-modeling
+  - upstream: mattpocock-skills
+    id: codebase-design
+---
+
+# Spec
+
+## Purpose
+
+Use this workflow when a map's way is clear and the work still has to be built. `wayfinder` produces decisions and stops; `/firehorse:build` takes a slice. This workflow writes the artifact between them.
+
+`to-spec` synthesises the current conversation. A map is a different input, and this workflow adds what that difference needs:
+
+- A **completeness gate**. A map with an open child or fog left in `## Not yet specified` is not ready to be specified, and the answer is another `/firehorse:map` session rather than a spec that invents the missing decision.
+- **Decisions read from the record**, not from this session's memory.
+- **Seams confirmed against the graph.** `to-spec` asks you to sketch the seams the feature will be tested at. This workflow says where they come from.
+
+The spec records decisions. It never makes them.
+
+## Usage
+
+Invoke the generated command with a map issue URL or number. `$ARGUMENTS` carries it. With no argument, query the tracker for open `wayfinder:map` issues and ask which one — unless this session has just grilled a piece of work small enough to need no map, in which case the conversation is the input and you say so in the first line.
+
+## Inputs
+
+- `$ARGUMENTS`: a map issue reference, or nothing.
+- The map issue: `## Destination`, `## Notes`, `## Decisions so far`, `## Not yet specified`, `## Out of scope`.
+- Every closed child ticket of that map: its question, its resolution comment, and any asset linked from it.
+- `docs/agents/issue-tracker.md` — which tracker this repo uses and the verbs that reach it, including its **Wayfinding operations** section for how children and frontier are queried. Absent → say so and ask, rather than assuming GitHub.
+- `docs/agents/triage-labels.md` for the label this repo files a spec under.
+- `CONTEXT.md` for the vocabulary, the ADRs covering the area, and `DESIGN.md` when the work has a UI surface.
+- The codebase graph, through `codebase-memory-mcp`: `get_architecture` for the modules this feature crosses, then the seams themselves.
+- `docs/DECISIONS.md` — what this repo has already bound, and what it has retired.
+
+## Outputs
+
+- A spec issue on the tracker, written to `to-spec`'s template, labelled as `docs/agents/triage-labels.md` maps it.
+- A seam list inside the spec's Testing Decisions, each seam carrying the query that confirmed it or marked unconfirmed.
+- The spec linked from the map, so the chain from idea to slices is one thread of issues.
+- Or, where the map is not complete: no spec, a named list of what is still open, and the ticket filed for anything that was missing rather than merely unresolved.
+
+## Supporting Capabilities
+
+- `to-spec` owns the spec's shape and template. It is user-invoked only, so read its `SKILL.md` at the path in the resolved table and follow it rather than invoking it.
+- `domain-modeling` keeps the spec in this repo's vocabulary, and coins a term where the spec needs one the repo does not have.
+- `codebase-design` is for the case where the seam's depth is itself in question — a spec that names a shallow pass-through as its test seam will produce slices that cannot be tested.
+- `codebase-memory-mcp` is optional here and load-bearing when present: without it the seams are grep results, and they say so.
+- **Graph reference:** the `codebase-memory` skill carries the `search_graph` and `query_graph` syntax, the edge-type vocabulary, and the multi-hop examples. `codebase-memory-mcp` installs it, so it is present wherever the server is — invoke it when you need the query form rather than guessing one. This workflow says when to query, not how.
+
+## Orchestration Intent
+
+You drive the sequence. The completeness gate and the seam confirmation are this workflow's; the spec's content and template are `to-spec`'s. Where the repo supports subagents, read the closed tickets through one so the resolutions arrive as a digest rather than as a transcript in your context.
+
+## Safety Gates
+
+- **A question you want to ask the user is a map ticket, not a spec paragraph.** `to-spec` forbids the interview for a reason: an answer invented here is a decision nobody made. File it as a child of the map, say so, and stop.
+- **An incomplete map gets no spec.** An open child, or a non-empty `## Not yet specified`, ends the run. Name which, and offer `/firehorse:map`.
+- **An unconfirmed seam carries what would confirm it**, so the slices cut from this spec inherit a route rather than a dead end.
+- **A binding decision outranks this spec.** Where the map's record points one way and `docs/DECISIONS.md` another, the decision wins and the contradiction is the finding: name the decision, and stop rather than writing a spec that quietly retires it.
+- **The spec lives in the tracker**, the way `docs/agents/issue-tracker.md` records, never as a markdown draft committed beside the code.
+- **One spec per map, amended rather than replaced.** A map that has closed tickets since its spec was written gets those decisions appended as a dated amendment. A second, separate spec for the same destination means the destination was two destinations; redraw the map instead.
+
+## Gotchas
+
+- `Decisions so far` gists and links. A spec written from those one-liners alone loses the reasoning that makes a decision survive contact with a slice. Read the closed tickets.
+- A prototype's artifact often encodes a decision more precisely than prose can. `to-spec` allows inlining the decision-rich part of it: take the state shape or the schema, not the working demo.
+- A map whose destination was a decision rather than a change needs no spec at all. Say so and stop; not every map ends in code.
+- A stale graph answers confidently. `index_status` behind HEAD means the seams describe an older tree, so re-index or mark everything the run found.
+
+## Procedure
+
+1. **Resolve the map.** From `$ARGUMENTS`, or by querying open `wayfinder:map` issues and asking. Read its body in full.
+   → Done when: the map's destination is in hand, in one sentence, or you have stated that this run works from the conversation instead.
+
+2. **Run the completeness gate, then route.** Query the map's children through the tracker doc's Wayfinding operations. Any open child, or any content under `## Not yet specified`, and the map is still being walked: stop and offer `/firehorse:map`. Otherwise read what the map already carries and pick the run:
+
+   | the map has | this run |
+   | --- | --- |
+   | no spec, closed children | writes the spec |
+   | a spec, tickets closed since | amends that spec, dated |
+   | a spec, nothing closed since | stops, and routes to `/firehorse:tickets` |
+   | no closed children at all | stops: a complete map with an empty record has nothing to write a spec from |
+
+   → Done when: the map has no open children and no fog, and this run knows which of the four rows it is.
+
+3. **Read the record.** Every closed child: the question, the resolution comment, and the assets linked from it. Keep the reasoning, not the transcript.
+   → Done when: every closed ticket has been read, its decision is in hand, and each has been checked against `docs/DECISIONS.md` for a binding decision it contradicts.
+
+4. **Confirm the seams.** Open with `get_architecture` for the modules this feature crosses: a spec covers a whole feature, which makes its seam list an architecture question before it is a symbol question. Then for each behaviour, `search_graph` for the symbol and `trace_path` for its callers, `index_status` for freshness, and `check_index_coverage` on every path you intend to cite. Prefer an existing seam to a new one, and the highest one available; consult `codebase-design` where the seam's depth is the open question. Put the list to the user, as `to-spec` requires.
+   → Done when: the user has confirmed the seam list, and every seam carries either its confirming query, or the word unconfirmed with what would confirm it, or the word proposed where the boundary does not exist yet and `codebase-design` placed it.
+
+5. **Write the spec.** Read `to-spec`'s `SKILL.md` and follow its template: Problem Statement, Solution, User Stories, Implementation Decisions, Testing Decisions, Out of Scope. Decisions come from step 3, seams from step 4, vocabulary from `CONTEXT.md`, and Out of Scope from the map. The map's `## Notes` preferences go into Implementation Decisions, where they bind the build, rather than into a paragraph of their own.
+   → Done when: every section is filled, and every Implementation Decision traces to a closed ticket or to a standing preference in the map's Notes.
+
+6. **Publish and link.** File the spec through the tracker doc's verbs. `to-spec` step 3 applies `ready-for-agent` here and this workflow overrides that: label the spec as `docs/agents/triage-labels.md` maps a document a human reads next, or leave it unlabelled where the repo has no such label. Then link it from the map the way the tracker doc records a resolution, by editing the map's body to carry the link and commenting on the map. Never as a native sub-issue and never as a dependency: a map's completeness is measured in open children, so a spec wired as a child would leave the map permanently incomplete and put itself on the map's own frontier.
+   → Done when: the spec has an id, carries no `ready-for-agent` label, and the map's body points at it, all three re-read rather than trusted.
+
+7. **Report** the spec by its title with the link inside the title, the number of closed tickets it was written from, and every seam you marked unconfirmed.
+   → Done when: the report names all three.
+
+## Handoff
+
+Close the run with this block, after the step-7 report and with nothing following it.
+
+````
+───────────────────────────────────────────────
+## ▶ Next · <spec title>
+
+**Slice it** · cut the spec into tracer-bullet tickets
+
+/clear then:
+
+/firehorse:tickets <spec>
+
+**Also available:**
+- `/firehorse:map <map>` · a decision surfaced while writing; resolve it first
+- `/firehorse:build <spec>` · only where the spec is one behaviour at one confirmed seam
+───────────────────────────────────────────────
+````
+
+- **Clear first.** This session's context is a map and a dozen closed tickets. The next one's is the spec, which now holds everything worth carrying. That is what publishing it bought.
+- **The gate stopping the run takes the block with it.** A map that failed step 2 gets the `/firehorse:map` line as its only offer, naming the open child or the fog that stopped it.
+- **The build route is conditional, and `/firehorse:tickets` is the default.** Offer `/firehorse:build <spec>` only where the spec names one behaviour at one confirmed seam. `build` consumes a triaged slice carrying a seam line and an AFK or HITL marking, so a wider spec reaches it through `/firehorse:tickets`, a short run when there is one slice to cut.
+- **Advisory voice.** The block offers a command. It never says the user must run it, and this workflow never runs it.
+
+## Projection Notes
+
+Upstream skills are referenced, not inlined, so a changed upstream needs no rewrite here — `/firehorse:upstreams-check` reports when one moves.

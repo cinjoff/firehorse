@@ -5,32 +5,34 @@ Concept by concept against the shipped surface. Verified on 2026-09-20 against
 `.firehorse/manifest.json` in the `outgoing-painter` worktree, not inferred from
 the docs, several of which are stale.
 
-Firehorse ships nine definitions: eight workflows and one skill. Six workflows
-project to user commands; `ship` and `upstreams-check` are maintainer-only per
-D-152.
+Firehorse shipped nine definitions when these notes were written: eight workflows
+and one skill, six of them projecting to user commands, with `ship` and
+`upstreams-check` maintainer-only per D-152. As of 2026-09-20 it ships thirteen:
+eleven workflows and two skills, eight commands and three maintainer workflows.
 
 ## The mapping
 
-| Concept | Firehorse's answer | State |
-|---|---|---|
-| Communication gap | `grilling`, invoked by `map` and `new-project` | Works |
-| Map and fog of war | `map`, wrapping `wayfinder` and adding the Notes block | Works |
-| One ticket per session | `wayfinder`'s rule, carried through `map` | Works |
-| Smart zone | The same rule, plus splitting planning across sessions | Works |
-| Ubiquitous language | `domain-modeling` on grilling tickets; `CONTEXT.md` | Works |
-| Deep modules | `codebase-design`, invoked by `build` | Works |
-| Momento-driven development | `index`, writing `docs/codebase/` anchors and memory | Graph half works, memory half broken here |
-| Tracer bullets, vertical slices | `build`, implementing test-first | Works, subject to #226 |
-| Automated review | `code-review`, inside `build` and `ship` | Works, undeclared in `build` frontmatter |
-| Spec then tickets | Nothing | Missing, #222 |
-| Gardening, entropy | Nothing shipped | Missing |
-| Observability over agents | Nothing shipped | Missing, #211 owns it |
-| Ralph loops | Nothing, and nothing needed | Out of scope |
-| Day shift, night shift | Nothing. A working style, not a workflow | Out of scope |
+| Concept                         | Firehorse's answer                                               | State                                     |
+| ------------------------------- | ---------------------------------------------------------------- | ----------------------------------------- |
+| Communication gap               | `grilling`, invoked by `map` and `new-project`                   | Works                                     |
+| Map and fog of war              | `map`, wrapping `wayfinder` and adding the Notes block           | Works                                     |
+| One ticket per session          | `wayfinder`'s rule, carried through `map`                        | Works                                     |
+| Smart zone                      | The same rule, plus splitting planning across sessions           | Works                                     |
+| Ubiquitous language             | `domain-modeling` on grilling tickets; `CONTEXT.md`              | Works                                     |
+| Deep modules                    | `codebase-design`, invoked by `build`                            | Works                                     |
+| Momento-driven development      | `index`, writing `docs/codebase/` anchors and memory             | Graph half works, memory half broken here |
+| Tracer bullets, vertical slices | `build`, implementing test-first                                 | Works, subject to #226                    |
+| Automated review                | `code-review`, inside `build` and `ship`                         | Works, undeclared in `build` frontmatter  |
+| Spec then tickets               | `spec` and `tickets`, wrapping `to-spec`, `to-tickets`, `triage` | Shipped 2026-09-20, unexercised, D-181    |
+| Gardening, entropy              | Nothing shipped                                                  | Missing                                   |
+| Observability over agents       | Nothing shipped                                                  | Missing, #211 owns it                     |
+| Ralph loops                     | Nothing, and nothing needed                                      | Out of scope                              |
+| Day shift, night shift          | Nothing. A working style, not a workflow                         | Out of scope                              |
 
 ## The gaps, in the order they cost you
 
 ### The memory half of `index` reports success it did not earn
+
 The manifest records `index.supermemory: true`. In the run that set it, the graph
 half completed cleanly while the documents queued for the memory store all failed
 within hours. Searches kept returning results, which masked it, because the hits
@@ -43,12 +45,19 @@ it, so every map charted since inherits a recall instruction pointing at anchors
 that are not there. Filed on [#220](https://github.com/cinjoff/firehorse/issues/220).
 
 ### `build` and `fix-bug` require a graph this repo cannot query
+
 Both declare `mcp:codebase-memory-mcp` under `requires` and open by querying the
 graph for the affected seam. `index.graph` is `false` here and the indexed project
 points at a different worktree, so the first step of each has nothing to read.
 [#117](https://github.com/cinjoff/firehorse/issues/117) owns it.
 
 ### No path from an idea to tickets
+
+**Superseded 2026-09-20.** `/firehorse:spec` and `/firehorse:tickets` now carry this
+route, and `map`'s Handoff routes to them; see D-181. The finding below is left as it
+stood when these notes were written, because it is what the shipped surface looked like
+then. Neither workflow has been run against a real map yet.
+
 A map produces decisions. `build` expects a ticket. Nothing spans the gap.
 Upstream `to-spec`, `to-tickets`, and `triage` are installed and unused, and the
 five triage labels `new-project` creates are read by nothing Firehorse ships. This
@@ -56,6 +65,7 @@ is the largest structural gap against the source, which treats spec-to-tickets a
 the ordinary path. [#222](https://github.com/cinjoff/firehorse/issues/222).
 
 ### Two dead skill pointers
+
 `research` is instructed in the `map` body and undeclared in its frontmatter;
 `code-review` is invoked in the `build` body and undeclared in its frontmatter.
 Both are invisible to `pnpm upstreams:check`. The `map` body also names
@@ -63,11 +73,13 @@ Both are invisible to `pnpm upstreams:check`. The `map` body also names
 `map` cannot contain it, so the rule contradicts itself.
 
 ### `firehorse-recall` is orphaned
+
 Its only mention in any workflow says it is a different path. Nothing reads back
 what `index` writes, and `map` reimplements recall as prose instead of calling the
 skill.
 
 ### The gardening loop is missing
+
 The source runs an architecture-improvement skill every morning and turns the
 proposal into tickets. `improve-codebase-architecture` is installed upstream and
 Firehorse never calls it. Worth treating as an evaluation candidate rather than an

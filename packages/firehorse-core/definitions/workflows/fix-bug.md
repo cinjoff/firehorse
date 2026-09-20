@@ -132,7 +132,7 @@ Close the run with this block, after the step-9 report and with nothing followin
 /firehorse:ship
 
 **Also available:**
-- `/firehorse:map` · claim the next ticket, in a fresh session
+- `/firehorse:build <n>` · the next unblocked slice, read from the spec's children, in a fresh session
 - `/firehorse:fix-bug <n>` · another bug onto this branch first
 ───────────────────────────────────────────────
 ````

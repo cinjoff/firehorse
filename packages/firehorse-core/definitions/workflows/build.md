@@ -56,7 +56,7 @@ Use this workflow to take one ticket from the tracker to a committed, verified c
 
 ## Usage
 
-Invoke the generated command with a ticket reference — whatever this repo's tracker uses, an issue URL or number where that tracker is GitHub — or a path to a spec. `$ARGUMENTS` carries it. One ticket per invocation.
+Invoke the generated command with a ticket reference — whatever this repo's tracker uses, an issue URL or number where that tracker is GitHub — or a spec. `$ARGUMENTS` carries it. One slice per invocation: a spec that has been sliced is read for its frontier and handed back, never built whole.
 
 ## Inputs
 
@@ -89,6 +89,7 @@ You drive the sequence; `implement` and `tdd` run inline. `prototype` produces a
 - **Structure first, files second.** The seam list from step 3 exists before you open a source file.
 - **Confirmed seams only.** `tdd` runs at the seams the user confirmed in step 3, and nowhere else.
 - **Shape before pixels.** While "what should this look like" is still open, the artifact is a prototype.
+- **A spec is not a slice.** Build one only where it names a single behaviour at a single confirmed seam. A spec with published children is read for its frontier and handed back, because building a whole feature in one session is what the slices exist to prevent.
 - **Cite only what you opened.** `check_index_coverage` confirms every path the graph returns before you quote it.
 - **Evidence closes work, claims do not.** The gate output goes on the issue; a red gate is the result of the run.
 - **Planning lives in the tracker** — issues and their comments, the way the tracker doc records them, never a markdown draft committed beside the code.
@@ -102,8 +103,10 @@ You drive the sequence; `implement` and `tdd` run inline. `prototype` produces a
 
 ## Procedure
 
-1. **Read the ticket** through the tracker `docs/agents/issue-tracker.md` records — `gh issue view <number> --comments` where that is GitHub. Name the behaviour that must change. A wayfinder child issue also means loading its map's `## Notes` and obeying what it says.
-   → Done when: the behaviour under change is written in one sentence.
+1. **Read the ticket** through the tracker `docs/agents/issue-tracker.md` records — `gh issue view <number> --comments` where that is GitHub. Name the behaviour that must change. A ticket that reaches a map, directly as a wayfinder child or through the spec it was cut from, also means loading that map's `## Notes` and obeying what it says; a slice that carries its own gate command already has the part that matters.
+
+   Given a spec rather than a slice, read its children first and branch on what you find: children already published means this run builds nothing, and instead reports the frontier and names the slice to start with. No children and one behaviour at one confirmed seam means build it. No children and anything wider means route to `/firehorse:tickets` and stop.
+   → Done when: the behaviour under change is written in one sentence, or the run has reported a frontier and stopped.
 
 2. **Query the graph.** The graph is how you learn this codebase's architecture and the impact of the change before touching it. For every symbol the ticket names, `search_graph`; for each hit, `trace_path` for its callers; `get_architecture` when the ticket crosses modules. Then `index_status` for freshness and `check_index_coverage` on every path you intend to cite.
    → Done when: every named symbol has a trace, and the index's freshness is recorded.
@@ -142,7 +145,7 @@ Close the run with this block, after the step-9 report and with nothing followin
 /firehorse:ship
 
 **Also available:**
-- `/firehorse:map` · claim the next ticket, in a fresh session
+- `/firehorse:build <n>` · the next unblocked slice, read from the spec's children, in a fresh session
 - `/firehorse:build <n>` · build another ticket onto this branch first
 ───────────────────────────────────────────────
 ````

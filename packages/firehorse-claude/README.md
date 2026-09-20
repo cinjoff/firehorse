@@ -5,12 +5,16 @@ Claude-adapted variants of firehorse's commands, skills, and hooks.
 
 ## Status
 
-Shipping. The plugin carries seven generated workflow commands
-(`/firehorse:build`, `/firehorse:fix-bug`, `/firehorse:index`,
-`/firehorse:map`, `/firehorse:new-project`, `/firehorse:ship`,
-`/firehorse:upstreams-check`), two skills
-(`firehorse-setup` and `firehorse-recall`), and two `SessionStart` hooks — one
+Shipping. The plugin carries eight generated workflow commands
+(`/firehorse:new-project`, `/firehorse:index`, `/firehorse:map`,
+`/firehorse:spec`, `/firehorse:tickets`, `/firehorse:build`,
+`/firehorse:fix-bug`, `/firehorse:memory`), three skills (`firehorse-setup`,
+`firehorse-recall`, and `skill-audit`), and two `SessionStart` hooks — one
 that checks repo setup state, one that checks for a newer Firehorse release.
+
+`ship`, `triage`, and `upstreams-check` are maintainer workflows. They declare
+`audience: maintainer`, so they project into the repository's own
+`.claude/commands/` rather than into this plugin.
 
 It declares three dependencies — `mattpocock-skills`, `impeccable`, and
 `supermemory` — so Claude Code installs all three alongside it.

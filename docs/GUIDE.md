@@ -8,9 +8,10 @@ shapes never matched.
 Nothing in that session was a typing mistake. Every file compiled. The failure was
 structural, and it was decided before the first line was written.
 
-Firehorse gives you six commands for front-loading those decisions: chart a map, index the
-codebase, build a ticket, fix a bug, open the memory graph, and stand up a new project.
-Most days you will use two of them.
+Firehorse gives you eight commands for front-loading those decisions: stand up a new
+project, index the codebase, chart a map, write the spec the map arrives at, cut that spec
+into slices, build one, fix a bug, and open the memory graph. Most days you will use two
+of them.
 
 The commands are the easy part. What makes them work is a set of ideas about how agents
 fail, drawn mostly from three books written before anyone had an agent. That is not
@@ -83,7 +84,28 @@ You will be interviewed about where you are going, and the session ends with a m
 on your tracker and a handful of tickets under it. It will not write code. That is the
 point.
 
-Pick one ticket and, in a **fresh session**:
+Those tickets are questions, not work. Each one is a decision, a piece of research, or a
+prototype, and you resolve them one per session with `/firehorse:map <map>` until nothing
+is left to decide. If the first session surfaces nothing to decide at all, the map does not
+get created and you are sent straight on: the work fits in one session.
+
+When the way is clear, in a **fresh session**:
+
+```
+/firehorse:spec <map>
+```
+
+That reads every decision the map recorded and writes the spec: what the feature does, the
+seams it will be tested at, and what is out of scope. Then:
+
+```
+/firehorse:tickets <spec>
+```
+
+That cuts the spec into vertical slices, each a thin path through every layer, sized to one
+session, and asks you to approve the breakdown before it publishes anything.
+
+Now pick the first slice and, in another **fresh session**:
 
 ```
 /firehorse:build <ticket>
@@ -91,9 +113,9 @@ Pick one ticket and, in a **fresh session**:
 
 One ticket, one session. When it is done, clear the context and take the next one.
 
-**After this you have:** a repo Firehorse knows, a map of where you are going, and one
-ticket shipped from it. That is the whole loop. The rest of this guide is why each step is
-shaped the way it is, and when to skip one.
+**After this you have:** a repo Firehorse knows, a map of where you are going, a spec of
+what arriving means, a set of slices, and one of them shipped. That is the whole loop. The
+rest of this guide is why each step is shaped the way it is, and when to skip one.
 
 ---
 
@@ -160,7 +182,7 @@ what past sessions decided.
 
 ### 5. Name it once, and the same way
 
-Eric Evans' ubiquitous language, from the first chapters of *Domain-Driven Design*, pays
+Eric Evans' ubiquitous language, from the first chapters of _Domain-Driven Design_, pays
 twice with agents. First, a precise domain term replaces three sentences of explanation in
 every prompt from then on. Second, if the term is also in the code, the agent can find the
 relevant functions by grep.
@@ -177,13 +199,14 @@ build, and `CONTEXT.md` as the place the vocabulary lives.
 
 ### 6. Get feedback across the boundary early
 
-This is the failure this guide opened with. *The Pragmatic Programmer* calls the fix a
+This is the failure this guide opened with. _The Pragmatic Programmer_ calls the fix a
 tracer bullet: get something end to end that you can watch land, then improve it. A
 vertical slice through every layer beats a finished layer, because the integration is
 where the wrong assumptions are hiding.
 
-**Firehorse's answer:** `/firehorse:build`, which implements test-first and asks for
-evidence rather than assurances.
+**Firehorse's answer:** `/firehorse:tickets`, which cuts the spec into vertical slices and
+puts the thinnest end-to-end path first, then `/firehorse:build`, which implements
+test-first and asks for evidence rather than assurances.
 
 **Where the source is unsettled, and you should be too.** Pocock ships a TDD skill and
 recommends it, then argues it aims at the wrong problem for agents: TDD supports a small
@@ -211,7 +234,7 @@ time.
 
 ### 8. You are your agents' platform team
 
-*The Pragmatic Programmer* named software entropy long before agents. Pocock's observation
+_The Pragmatic Programmer_ named software entropy long before agents. Pocock's observation
 is that agents produce it faster than anything before, because they cannot think
 strategically and will happily add the fourth way of doing something. He also notes, after
 Jared Friedman, that you can now have serious tech debt in a tiny codebase, which used to
@@ -233,11 +256,11 @@ This is the part worth keeping somewhere you can find it.
 
 Before any piece of work, ask how expensive it would be to be wrong.
 
-| The work | What to do |
-|---|---|
-| Small, and cheap to undo | Do not grill. Let it run, align afterwards. |
-| Fits in one session, hard to undo | Grill first, then build. |
-| Spans several sessions | Chart a map. |
+| The work                          | What to do                                  |
+| --------------------------------- | ------------------------------------------- |
+| Small, and cheap to undo          | Do not grill. Let it run, align afterwards. |
+| Fits in one session, hard to undo | Grill first, then build.                    |
+| Spans several sessions            | Chart a map.                                |
 
 The reasoning behind the middle row is the one to internalise: if the agent gets a big
 thing wrong, the wrong code sits in its context window influencing everything that comes
@@ -253,6 +276,9 @@ five-line change or moving a button does not need a planning session.
 - **Budget planning against the project.** A month of work justifies a day or two of
   planning. A day of work justifies none. (Gergely Orosz's framing, which Pocock endorses.)
 - **One ticket per session,** then clear the context.
+- **A map ends at a spec, not at code.** Its tickets are questions; the slices come from
+  `/firehorse:tickets` afterwards. If you want to build straight off a map ticket, the map
+  was the wrong tool for that piece of work.
 - **Prototype before you specify.** Build three or four rough versions and pick one.
   Prototyping is part of writing the spec, not a phase after it. Slop is cheap now, so
   throwing versions away is cheap too.
@@ -273,14 +299,14 @@ or unproven today, each linked to the issue that owns it.
   graph half indexed cleanly while every document queued for the memory store later failed,
   and searches kept returning hits from a different source, which masked it for three days.
   Check the report; do not assume a pass.
-  [#220](https://github.com/cinjoff/firehorse/issues/220)
+  [#232](https://github.com/cinjoff/firehorse/issues/232)
 - **`build` and `fix-bug` expect a queryable codebase graph.** If `/firehorse:index` has not
   succeeded, their first step has nothing to read.
-  [#117](https://github.com/cinjoff/firehorse/issues/117)
-- **There is no path from an idea to a set of tickets.** A map produces decisions and
-  `build` expects a ticket, and nothing spans the gap today. The upstream `to-spec` and
-  `to-tickets` skills exist and Firehorse does not call them.
-  [#222](https://github.com/cinjoff/firehorse/issues/222)
+  [#233](https://github.com/cinjoff/firehorse/issues/233)
+- **The path from a map to a set of slices is new and unexercised.**
+  `/firehorse:spec` and `/firehorse:tickets` shipped on 2026-09-20 (D-181) and no real map
+  has been through them yet. Expect the completeness gate on the map to be the part that
+  needs tuning. [#222](https://github.com/cinjoff/firehorse/issues/222)
 - **`firehorse-recall` is not wired into the workflows.** The memory a session writes is not
   read back automatically. Invoke recall yourself when you need it.
 - **Nothing measures whether any of this works.** There is no harness reporting how often
@@ -303,11 +329,11 @@ books he points at.
 
 The three he recommends:
 
-- **Andy Hunt and Dave Thomas, *The Pragmatic Programmer***: tracer bullets, software
+- **Andy Hunt and Dave Thomas, _The Pragmatic Programmer_**: tracer bullets, software
   entropy.
-- **John Ousterhout, *A Philosophy of Software Design***: tactical versus strategic
+- **John Ousterhout, _A Philosophy of Software Design_**: tactical versus strategic
   programming, deep modules.
-- **Eric Evans, *Domain-Driven Design***: ubiquitous language. Pocock recommends roughly
+- **Eric Evans, _Domain-Driven Design_**: ubiquitous language. Pocock recommends roughly
   the first three chapters and is not a fan of the code-focused half.
 
 Also named: **Dex Horthy** for the smart zone, **Jeffrey Huntley** for Ralph loops,

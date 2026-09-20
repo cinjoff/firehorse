@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Firehorse flow</title>
+    <style>
+      :root {
+        --bg: #0e1014;
+        --panel: #161a21;
+        --panel-2: #1c212a;
+        --line: #2a313d;
+        --ink: #e6e9ef;
+        --ink-2: #9aa4b5;
+        --ink-3: #6b7484;
+        --ok: #4ade80;
+        --broken: #fbbf24;
+        --missing: #60a5fa;
+        --gap: #f87171;
+        --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+      }
+      :root[data-theme="light"] {
+        --bg: #f7f8fa;
+        --panel: #ffffff;
+        --panel-2: #f0f2f6;
+        --line: #dde1e8;
+        --ink: #14181f;
+        --ink-2: #5a6474;
+        --ink-3: #8a93a3;
+        --ok: #15803d;
+        --broken: #b45309;
+        --missing: #1d4ed8;
+        --gap: #b91c1c;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 15px;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 32px 16px 80px;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: flex-end;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      h1 {
+        font-size: 26px;
+        margin: 0;
+        letter-spacing: -0.02em;
+      }
+      .sub {
+        color: var(--ink-2);
+        margin: 6px 0 0;
+        max-width: 60ch;
+      }
+      .controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      button {
+        font: inherit;
+        font-size: 13px;
+        color: var(--ink-2);
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 7px 12px;
+        cursor: pointer;
+      }
+      button[aria-pressed="true"] {
+        color: var(--ink);
+        background: var(--panel-2);
+        border-color: var(--ink-3);
+      }
+      button:hover {
+        color: var(--ink);
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin: 22px 0 28px;
+        padding: 12px 14px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        font-size: 13px;
+        color: var(--ink-2);
+      }
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+      .dot.ok {
+        background: var(--ok);
+      }
+      .dot.broken {
+        background: var(--broken);
+      }
+      .dot.missing {
+        background: var(--missing);
+      }
+      .dot.gap {
+        background: var(--gap);
+      }
+      h2 {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--ink-3);
+        margin: 36px 0 14px;
+        font-weight: 600;
+      }
+      .spine {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .node {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--line);
+        border-radius: 10px;
+        padding: 14px 16px;
+      }
+      .node.ok {
+        border-left-color: var(--ok);
+      }
+      .node.broken {
+        border-left-color: var(--broken);
+      }
+      .node.missing {
+        border-left-color: var(--missing);
+        border-style: dashed;
+        background: transparent;
+      }
+      .node.gap {
+        border-left-color: var(--gap);
+        border-style: dashed;
+        background: transparent;
+      }
+      .node-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 10px;
+      }
+      .name {
+        font-family: var(--mono);
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .kind {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--ink-3);
+      }
+      .new-badge {
+        font-size: 11px;
+        color: var(--missing);
+        border: 1px solid var(--missing);
+        border-radius: 999px;
+        padding: 1px 7px;
+      }
+      .note {
+        color: var(--ink-2);
+        font-size: 13.5px;
+        margin: 8px 0 0;
+      }
+      ul.steps {
+        list-style: none;
+        margin: 10px 0 0;
+        padding: 0;
+        display: grid;
+        gap: 5px;
+      }
+      ul.steps li {
+        display: flex;
+        gap: 9px;
+        align-items: baseline;
+        font-size: 13.5px;
+        color: var(--ink-2);
+      }
+      ul.steps li .dot {
+        flex: none;
+        transform: translateY(-1px);
+      }
+      ul.steps li.added {
+        color: var(--ink);
+      }
+      .tickets {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 10px;
+      }
+      a.ticket {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        text-decoration: none;
+        color: var(--ink-2);
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 2px 9px;
+      }
+      a.ticket:hover {
+        color: var(--ink);
+        border-color: var(--ink-3);
+      }
+      a.ticket .state {
+        color: var(--broken);
+      }
+      a.ticket .state.closed {
+        color: var(--ok);
+      }
+      .arrow {
+        height: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--ink-3);
+        font-size: 15px;
+      }
+      .branch {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      @media (max-width: 680px) {
+        .branch {
+          grid-template-columns: 1fr;
+        }
+      }
+      .rail {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 10px;
+      }
+      .rail .node {
+        border-left-width: 3px;
+      }
+      .loops {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 12px;
+      }
+      footer {
+        margin-top: 48px;
+        padding-top: 18px;
+        border-top: 1px solid var(--line);
+        color: var(--ink-3);
+        font-size: 12.5px;
+      }
+      footer code {
+        font-family: var(--mono);
+        color: var(--ink-2);
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div>
+          <h1>Firehorse: the flow</h1>
+          <p class="sub">
+            One spine, two states. Today is what <code>/firehorse:*</code> does now. Target is where
+            the Matt Pocock research points, with the ticket that owns each addition.
+          </p>
+        </div>
+        <div class="controls">
+          <button id="today" aria-pressed="true">Today</button>
+          <button id="target" aria-pressed="false">Target</button>
+          <button id="theme" aria-pressed="false" title="Light or dark">&#9680;</button>
+        </div>
+      </header>
+
+      <div class="legend">
+        <span><i class="dot ok"></i> shipped, works</span>
+        <span><i class="dot broken"></i> shipped, broken in this repo</span>
+        <span><i class="dot missing"></i> target, not built</span>
+        <span><i class="dot gap"></i> gap, nothing spans it</span>
+        <span style="margin-left: auto">issue state as of 2026-09-20</span>
+      </div>
+
+      <h2 id="spine-label">The spine, today</h2>
+      <div class="spine" id="spine"></div>
+
+      <h2>Wired into nothing</h2>
+      <div class="rail" id="rail"></div>
+
+      <div id="loops-section">
+        <h2>The loops back</h2>
+        <div class="loops" id="loops"></div>
+      </div>
+
+      <footer>
+        Source of truth is the table in <code>README.md</code> under “The flow”. Edit
+        <code>DATA</code> at the bottom of this file when a node moves. Refresh the issue states
+        with <code>gh issue list --state all --json number,state,title</code>.
+      </footer>
+    </div>
+
+    <script>
+      const ISSUES = {
+        113: ["OPEN", "Organize the docs into a structure we can follow reliably"],
+        211: [
+          "OPEN",
+          "Make Firehorse skills measurably good: a standard, and a way to know it works",
+        ],
+        222: ["OPEN", "Does Firehorse get a path from idea to tickets?"],
+        226: ["OPEN", "Does build demand TDD, or demand TDD evidence?"],
+        227: ["OPEN", "Wire an eval suite into the Firehorse plugin so claude plugin eval runs"],
+        231: ["OPEN", "Session-history reader that surfaces missed skill activations"],
+        232: ["OPEN", "index records index.supermemory true for a pass that failed"],
+        233: ["OPEN", "build and fix-bug require a graph this repo cannot query"],
+        234: ["OPEN", "map.md instructs the research skill without declaring it"],
+        235: ["OPEN", "code-review is invoked undeclared in build.md"],
+        237: ["OPEN", "firehorse-recall is orphaned and map.md reimplements recall as prose"],
+        242: ["OPEN", "Add a /firehorse:research workflow with a committed source ledger"],
+        248: ["OPEN", "Port the session retro into the firehorse plugin as a versioned artifact"],
+        250: ["OPEN", "A retro finding reaches the tracker without a manual rescue"],
+        252: ["OPEN", "Tell the user what to do next when a session ends"],
+        257: ["OPEN", "Decide what the Stop hook checks and what makes it stay silent"],
+        261: ["OPEN", "Make the session retro a Firehorse artifact that keeps what it finds"],
+        263: ["OPEN", "Ship the triage pass as /firehorse:triage for any tracker"],
+      };
+
+      // ---- DATA: one entry per node. `when` is "both", "today" or "target". ----
+      const SPINE = [
+        {
+          name: "/firehorse:new-project",
+          kind: "command, once per repo",
+          state: "ok",
+          when: "both",
+          steps: [
+            ["ok", "remote, tracker, the five triage labels"],
+            ["ok", "CONTEXT.md, DESIGN.md by interview"],
+            ["ok", "writes .firehorse/manifest.json"],
+          ],
+        },
+        {
+          name: "/firehorse:index",
+          kind: "command, once per repo",
+          state: "broken",
+          when: "today",
+          steps: [
+            ["broken", "graph pass: records false in this repo, so build has nothing to read"],
+            ["broken", "memory pass: records a pass whose documents failed"],
+            ["ok", "docs/codebase/ anchors, freshness by commit ancestry"],
+          ],
+          tickets: [232, 233],
+        },
+        {
+          name: "/firehorse:index",
+          kind: "command, once per repo",
+          state: "missing",
+          when: "target",
+          steps: [
+            ["missing", "graph queryable, so build and fix-bug open on a real seam"],
+            ["missing", "memory pass reports what it measured, not what it intended"],
+            ["missing", "anchors kept current, because a stale anchor misteaches every session"],
+          ],
+          tickets: [232, 233, 113],
+        },
+        {
+          name: "/firehorse:research",
+          kind: "command",
+          state: "missing",
+          when: "target",
+          isNew: true,
+          note: "An idea gets its sources before it gets a map, and the ledger is committed.",
+          tickets: [242],
+        },
+        {
+          name: "/firehorse:map",
+          kind: "command",
+          state: "ok",
+          when: "both",
+          steps: [
+            ["ok", "grilling, domain-modeling, wayfinder"],
+            ["ok", "the Notes block, written from the manifest"],
+          ],
+          note: "Produces a map issue and decision tickets: grilling, research, prototype, task. None of them is a slice, so the handoff routes to the next decision, or to /firehorse:spec once the way is clear.",
+        },
+        {
+          name: "/firehorse:spec",
+          kind: "command",
+          state: "ok",
+          when: "both",
+          steps: [
+            ["ok", "completeness gate: an open child or leftover fog ends the run"],
+            ["ok", "decisions read from the closed tickets, not from this session"],
+            ["ok", "seams confirmed against the graph, or marked unconfirmed"],
+            ["ok", "spec published to the tracker and linked from the map"],
+          ],
+          note: "Wraps to-spec. Shipped 2026-09-20, not yet run against a real map.",
+          tickets: [222],
+        },
+        {
+          name: "/firehorse:tickets",
+          kind: "command",
+          state: "ok",
+          when: "both",
+          steps: [
+            ["ok", "tracer bullet first, prefactor before the work it eases"],
+            ["ok", "vertical slices sized to one session, blocking edges wired"],
+            ["ok", "AFK or HITL on every slice; the user approves before publish"],
+            ["ok", "triage labels applied, so ready-for-agent means something"],
+          ],
+          note: "Wraps to-tickets and triage. Shipped 2026-09-20, not yet run against a real spec.",
+          tickets: [222],
+        },
+        {
+          name: "/firehorse:triage",
+          kind: "command",
+          state: "missing",
+          when: "target",
+          isNew: true,
+          note: "Judged with Jev. Exists today as a maintainer command for this repo only; the target is any tracker, and the five labels finally get a reader.",
+          tickets: [263],
+        },
+      ];
+
+      const BRANCH = {
+        today: [
+          {
+            name: "/firehorse:build",
+            kind: "command",
+            state: "broken",
+            when: "today",
+            steps: [
+              ["broken", "seam from the graph, before a file is opened"],
+              ["ok", "prototype when the shape is unsure"],
+              ["ok", "tdd, then implement"],
+              ["broken", "code-review, invoked but undeclared in frontmatter"],
+              ["ok", "evidence report: commands and their output"],
+            ],
+            tickets: [233, 235],
+          },
+          {
+            name: "/firehorse:fix-bug",
+            kind: "command",
+            state: "broken",
+            when: "today",
+            steps: [
+              ["broken", "callers from the graph, before hypothesising"],
+              ["ok", "reproduce loop first"],
+              ["ok", "regression test at the seam"],
+              ["ok", "red on old code, green on new, both pasted"],
+            ],
+            tickets: [233],
+          },
+        ],
+        target: [
+          {
+            name: "/firehorse:build",
+            kind: "command",
+            state: "missing",
+            when: "target",
+            steps: [
+              ["missing", "recall first: what past sessions already settled"],
+              ["ok", "seam from the graph"],
+              ["ok", "prototype when the shape is unsure"],
+              ["missing", "proof the change did it, tests optional rather than mandatory"],
+              ["ok", "evidence report"],
+            ],
+            tickets: [237, 226],
+          },
+          {
+            name: "/firehorse:fix-bug",
+            kind: "command",
+            state: "missing",
+            when: "target",
+            steps: [
+              ["missing", "recall first"],
+              ["ok", "callers from the graph"],
+              ["ok", "reproduce loop, regression test"],
+              ["ok", "red and green evidence"],
+            ],
+            tickets: [237],
+          },
+        ],
+      };
+
+      const SHIP = {
+        name: "/ship",
+        kind: "command, maintainer only",
+        state: "ok",
+        when: "both",
+        note: "Review, PR, merge, changelog, version bump in step, two tags, release, close the issues it resolved.",
+      };
+
+      const RAIL = [
+        {
+          name: "/firehorse:memory",
+          kind: "command",
+          state: "ok",
+          note: "The store as a graph you can look at. The only workflow that leaves something running.",
+        },
+        {
+          name: "/triage",
+          kind: "maintainer command",
+          state: "ok",
+          note: "This repo only, judged with Jev.",
+          tickets: [263],
+        },
+        {
+          name: "/upstreams-check",
+          kind: "maintainer command",
+          state: "ok",
+          note: "Upstream drift, and which of your definitions it makes wrong.",
+        },
+        {
+          name: "firehorse-recall",
+          kind: "skill",
+          state: "broken",
+          note: "Orphaned. No workflow invokes it, and map reimplements recall as prose.",
+          tickets: [237],
+        },
+        {
+          name: "skill-audit",
+          kind: "skill",
+          state: "ok",
+          note: "Backtests the roster against real session history. Standalone.",
+        },
+        {
+          name: "session retro",
+          kind: "not shipped",
+          state: "broken",
+          note: "Writes .planning/, versioned nowhere.",
+          tickets: [248, 250, 261],
+        },
+      ];
+
+      const LOOPS = [
+        {
+          name: "session retro",
+          kind: "loop back",
+          state: "missing",
+          note: "A versioned artifact whose findings reach the tracker without a manual rescue.",
+          tickets: [248, 250, 261],
+        },
+        {
+          name: "gardening",
+          kind: "loop back",
+          state: "missing",
+          note: "improve-codebase-architecture on a schedule, proposal becomes tickets. Installed upstream, never called. No ticket owns it.",
+        },
+        {
+          name: "measurement",
+          kind: "loop back",
+          state: "missing",
+          note: "Evals, a session reader, and a standard, so something says whether any of this works.",
+          tickets: [211, 227, 231],
+        },
+        {
+          name: "next action",
+          kind: "loop back",
+          state: "missing",
+          note: "A Stop hook that names the next step, so the next session starts where this one stopped.",
+          tickets: [252, 257],
+        },
+      ];
+
+      // ---- render ----
+      const el = (h) => {
+        const d = document.createElement("div");
+        d.innerHTML = h.trim();
+        return d.firstChild;
+      };
+      const tickets = (ns) =>
+        !ns || !ns.length
+          ? ""
+          : `<div class="tickets">${ns
+              .map((n) => {
+                const [state, title] = ISSUES[n] || ["OPEN", ""];
+                return `<a class="ticket" target="_blank" title="${title.replace(/"/g, "&quot;")}"
+             href="https://github.com/cinjoff/firehorse/issues/${n}">#${n}
+             <span class="state ${state.toLowerCase()}">${state === "OPEN" ? "open" : "closed"}</span></a>`;
+              })
+              .join("")}</div>`;
+
+      function node(n) {
+        const steps = (n.steps || [])
+          .map(
+            ([s, t]) =>
+              `<li class="${s === "missing" ? "added" : ""}"><i class="dot ${s}"></i><span>${t}</span></li>`,
+          )
+          .join("");
+        return el(`<div class="node ${n.state}">
+          <div class="node-head">
+            <span class="name">${n.name}</span>
+            <span class="kind">${n.kind}</span>
+            ${n.isNew ? '<span class="new-badge">new</span>' : ""}
+          </div>
+          ${n.note ? `<p class="note">${n.note}</p>` : ""}
+          ${steps ? `<ul class="steps">${steps}</ul>` : ""}
+          ${tickets(n.tickets)}
+        </div>`);
+      }
+      const arrow = () => el('<div class="arrow">&#9660;</div>');
+
+      function render(view) {
+        const spine = document.getElementById("spine");
+        spine.textContent = "";
+        const nodes = SPINE.filter((n) => n.when === "both" || n.when === view);
+        nodes.forEach((n, i) => {
+          if (i) spine.appendChild(arrow());
+          spine.appendChild(node(n));
+        });
+        spine.appendChild(arrow());
+        const branch = el('<div class="branch"></div>');
+        BRANCH[view].forEach((n) => branch.appendChild(node(n)));
+        spine.appendChild(branch);
+        spine.appendChild(arrow());
+        spine.appendChild(node(SHIP));
+
+        document.getElementById("spine-label").textContent =
+          view === "today" ? "The spine, today" : "The spine, target";
+        document.getElementById("loops-section").classList.toggle("hidden", view === "today");
+
+        const rail = document.getElementById("rail");
+        rail.textContent = "";
+        RAIL.forEach((n) => rail.appendChild(node(n)));
+        const loops = document.getElementById("loops");
+        loops.textContent = "";
+        LOOPS.forEach((n) => loops.appendChild(node(n)));
+
+        document.getElementById("today").setAttribute("aria-pressed", String(view === "today"));
+        document.getElementById("target").setAttribute("aria-pressed", String(view === "target"));
+      }
+
+      document.getElementById("today").onclick = () => render("today");
+      document.getElementById("target").onclick = () => render("target");
+      document.getElementById("theme").onclick = () => {
+        const r = document.documentElement;
+        r.dataset.theme = r.dataset.theme === "light" ? "dark" : "light";
+      };
+      render("today");
+    </script>
+  </body>
+</html>

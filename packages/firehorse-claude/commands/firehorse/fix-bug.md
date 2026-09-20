@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "fix-bug"
 firehorseSource: "packages/firehorse-core/definitions/workflows/fix-bug.md"
-firehorseSourceSha256: "29c2633c7ba91020154c348e2783c9cd80fdde6699e3a6717d5658f8f2e36d5d"
+firehorseSourceSha256: "21065f9aee8e68fa4fb857ed73d8f7e4ea7bf239e43de4893775a12617cd7dc8"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/fix-bug.md
 Definition ID: fix-bug
 Definition kind: workflow
-Source SHA-256: 29c2633c7ba91020154c348e2783c9cd80fdde6699e3a6717d5658f8f2e36d5d
+Source SHA-256: 21065f9aee8e68fa4fb857ed73d8f7e4ea7bf239e43de4893775a12617cd7dc8
 -->
 
 # Fix Bug
@@ -130,7 +130,7 @@ Close the run with this block, after the step-9 report and with nothing followin
 /firehorse:ship
 
 **Also available:**
-- `/firehorse:map` · claim the next ticket, in a fresh session
+- `/firehorse:build <n>` · the next unblocked slice, read from the spec's children, in a fresh session
 - `/firehorse:fix-bug <n>` · another bug onto this branch first
 ───────────────────────────────────────────────
 ````

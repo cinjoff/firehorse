@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "map"
 firehorseSource: "packages/firehorse-core/definitions/workflows/map.md"
-firehorseSourceSha256: "ef9a047ab4ded2c1e2fb3d135cff1024d6c2174c7e18eb78be9b7979a413ce6e"
+firehorseSourceSha256: "3aae0090d67e901d24556ce6da696e59cf35feb703c79a473304bc4eea720dde"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/map.md
 Definition ID: map
 Definition kind: workflow
-Source SHA-256: ef9a047ab4ded2c1e2fb3d135cff1024d6c2174c7e18eb78be9b7979a413ce6e
+Source SHA-256: 3aae0090d67e901d24556ce6da696e59cf35feb703c79a473304bc4eea720dde
 -->
 
 # Map
@@ -76,6 +76,8 @@ You run the probe and write the Notes block yourself, then read `wayfinder`'s `S
 - **A pass that last failed is not a preference.** `index.graph` or `index.supermemory` false or absent → omit that paragraph rather than naming the tool.
 - **The map and its tickets live in the tracker** the tracker doc records, never a markdown draft committed beside the code.
 - **One ticket per session**, research tickets excepted.
+- **No fog means no map.** Charting that fans out and surfaces nothing to decide is `wayfinder` telling you the journey fits one session. Do not create the map: say so, and offer `/firehorse:spec`.
+- **A wayfinder child is a question, never a slice.** Its types are research, prototype, grilling and task. `/firehorse:build` takes a slice from `/firehorse:tickets`, so no run of this workflow hands it a child.
 - **The map indexes; the ticket holds the detail.** A decision is recorded once.
 
 ## Notes block
@@ -138,25 +140,58 @@ No anchor is `true` → the Domain line is the `CONTEXT.md` sentence alone. `anc
 
 ## Handoff
 
-Close the run with this block, after the step-6 report and with nothing following it.
+Close the run with this block, after the step-6 report and with nothing following it. Route on what the map holds now, not on what this session did.
 
 ````
 ───────────────────────────────────────────────
 ## ▶ Next · <map title>
 
-**Build #<ticket>** · <ticket title>
+**Resolve #<ticket>** · <ticket title>
 
 /clear then:
 
-/firehorse:build <ticket>
+/firehorse:map <map> <ticket>
 
 **Also available:**
-- `/firehorse:fix-bug <ticket>` · the frontier ticket is a bug report
-- `/firehorse:map` · claim a different ticket
+- `/firehorse:map <map>` · let the next session pick from the frontier
 ───────────────────────────────────────────────
 ````
 
-- **Clear first.** This session's context is the frontier and the Notes block; the next one's is a single ticket and a graph trace. Nothing carries over worth the tokens, and the Notes block exists precisely so the next session inherits the preferences without inheriting the transcript.
-- **Name the ticket the map leaves open,** not the one step 5 resolved. Resolving a wayfinding question is what this workflow does; the frontier ticket it exposes is what the next session builds.
-- **No frontier ticket** because the map is complete or every child is blocked → say so and offer `/firehorse:ship` or nothing at all. Do not invent a ticket to fill the block.
+The map with no open children and nothing under `## Not yet specified` is complete, and the block becomes this one instead:
+
+````
+───────────────────────────────────────────────
+## ▶ Next · <map title>
+
+**Spec it** · the way is clear; write what the slices get cut from
+
+/clear then:
+
+/firehorse:spec <map>
+
+**Also available:**
+- `/firehorse:map <map>` · one more decision surfaced; reopen the map for it
+───────────────────────────────────────────────
+````
+
+A complete map that already carries a spec routes past it. Where tickets have closed since that spec was written, the block offers `/firehorse:spec <map>` to amend it; where nothing has closed since, the work is already specified and the block is this one:
+
+````
+───────────────────────────────────────────────
+## ▶ Next · <map title>
+
+**Slice it** · this map is already specified
+
+/clear then:
+
+/firehorse:tickets <spec>
+───────────────────────────────────────────────
+````
+
+- **Clear first.** This session's context is the frontier and the Notes block; the next one's is a single ticket, or the whole map's record. Nothing carries over worth the tokens, and the Notes block exists precisely so the next session inherits the preferences without inheriting the transcript.
+- **Name the ticket the map leaves open,** not the one step 5 resolved. Resolving a wayfinding question is what this workflow does; the frontier ticket it exposes is what the next session resolves.
+- **Never offer `/firehorse:build` for a child of this map.** A child is a decision, and build takes a vertical slice. The route from a complete map to a slice runs `/firehorse:spec` then `/firehorse:tickets`, and skipping them hands build a question it cannot implement.
+- **The one exception is an effort whose `## Notes` carries execution into the map** — `wayfinder` allows that override. Then a child may be buildable, and the block names `/firehorse:build` plus the Notes line that authorises it.
+- **Every child blocked and none takeable** → say so, name what unblocks the frontier, and offer nothing else. Do not invent a ticket to fill the block.
+- **The destination was a decision rather than a change** → the map ends at step 6. Say so and offer nothing; not every map ends in code.
 - **Advisory voice.** The block offers a command. It never says the user must run it, and this workflow never runs it.
