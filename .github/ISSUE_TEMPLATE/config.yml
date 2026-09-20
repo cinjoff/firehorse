@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Wayfinder ticket
+    url: https://github.com/cinjoff/firehorse/issues/new
+    about: Maps, decisions, research, prototypes and tasks use a blank issue and the wayfinder labels. See docs/agents/issue-tracker.md.

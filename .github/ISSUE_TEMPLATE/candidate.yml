@@ -1,0 +1,113 @@
+name: Evaluation candidate
+description: Propose a tool, repo, skill, or workflow for Firehorse to evaluate
+title: "Candidate: "
+labels: ["candidate", "eval:proposed"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One candidate per issue. Fill the five required fields and file it; the
+        rest can be filled during triage. The framework these fields come from
+        is `docs/EVALUATION-FRAMEWORK.md` — read it if a field is unclear.
+
+        A candidate is a claim, not a wish. If you cannot say what would prove
+        it wrong, it is not ready to file.
+
+  - type: input
+    id: source
+    attributes:
+      label: Source
+      description: Repo, docs page, post, or paper. The thing itself, not an article about it.
+      placeholder: https://github.com/owner/repo
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - skill
+        - workflow
+        - tool or CLI
+        - MCP server
+        - harness or runtime
+        - model or hosted service
+        - convention or doc
+    validations:
+      required: true
+
+  - type: dropdown
+    id: dependency
+    attributes:
+      label: External dependency
+      description: >
+        Anything other than "none" means adoption must be configurable per
+        project and globally, and the issue gets the `optional-dep` label.
+      options:
+        - none — runs on what a Firehorse user already has
+        - optional — Jev / System One
+        - optional — other third-party service
+        - required — third-party service with no fallback
+    validations:
+      required: true
+
+  - type: textarea
+    id: claim
+    attributes:
+      label: Claim under test
+      description: One sentence, in the form "adding X makes Y better by Z". Name the workflow it would touch.
+      placeholder: Adding a codebase-map tool to /firehorse:build cuts wrong-file edits on unfamiliar repos.
+    validations:
+      required: true
+
+  - type: textarea
+    id: refuting-test
+    attributes:
+      label: Cheapest test that could refute it
+      description: >
+        The smallest experiment whose result you would actually accept.
+        Name the baseline arm — what the run looks like without this candidate.
+      placeholder: |
+        Baseline: /firehorse:build on fixture `unfamiliar-repo`, 10 runs, no map tool.
+        Treatment: same fixture, same model and gate, map tool installed.
+        Refuted if wrong-file edit rate does not drop, or if tokens rise more than 20% for a flat rate.
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence so far
+      description: What the authors measured, who is using it, what our own research found. Say "none" if none.
+
+  - type: textarea
+    id: overlap
+    attributes:
+      label: What it replaces or overlaps
+      description: Existing Firehorse workflows, upstream skills, or other candidates that cover the same ground.
+
+  - type: textarea
+    id: cost
+    attributes:
+      label: Cost to try, cost to revert, cost to keep
+      description: >
+        Setup time, tokens loaded at idle, money, latency, and reviewer load.
+        A candidate that is hard to remove needs a higher bar than one that is not.
+
+  - type: textarea
+    id: risk
+    attributes:
+      label: Risks
+      description: Data retention, privacy, lock-in, upstream drift, licence.
+
+  - type: dropdown
+    id: origin
+    attributes:
+      label: Where this came from
+      options:
+        - research sweep
+        - session retro
+        - upstream release
+        - recommendation
+        - other

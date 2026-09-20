@@ -69,6 +69,9 @@ Before starting work, read:
 - `docs/agents/` — tracker, domain, and label conventions the skills read.
 - `docs/MEMORY.md` — the self-hosted supermemory runbook. Read it before
   changing anything that touches recall, and when a session recalls nothing.
+- `docs/EVALUATION-FRAMEWORK.md` — how a new tool, skill, or workflow earns its
+  way in, and the session-retro loop that finds most of them. Read it before
+  proposing or trialling anything from outside this repo.
 
 Planning lives in the tracker, not in repo drafts (D-168) — for this repo that
 tracker is GitHub Issues, as `docs/agents/issue-tracker.md` records, and the
