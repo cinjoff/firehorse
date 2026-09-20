@@ -33,7 +33,8 @@
     "format": "prettier --write .",
     "definitions:write": "tsx scripts/definitions.ts --write",
     "definitions:check": "tsx scripts/definitions.ts --check",
-    "upstreams:check": "tsx scripts/upstreams.ts"
+    "upstreams:check": "tsx scripts/upstreams.ts",
+    "triage": "tsx scripts/triage.ts"
   },
   "dependencies": {
     "beautiful-mermaid": "1.1.3",
