@@ -138,6 +138,31 @@ No anchor is `true` → the Domain line is the `CONTEXT.md` sentence alone. `anc
 6. **Report** the map by its title with the link inside the title, the ticket you resolved, and the Notes block you wrote or left alone.
    → Done when: the report names all three.
 
+## Handoff
+
+Close the run with this block, after the step-6 report and with nothing following it.
+
+````
+───────────────────────────────────────────────
+## ▶ Next · <map title>
+
+**Build #<ticket>** · <ticket title>
+
+/clear then:
+
+/firehorse:build <ticket>
+
+**Also available:**
+- `/firehorse:fix-bug <ticket>` · the frontier ticket is a bug report
+- `/firehorse:map` · claim a different ticket
+───────────────────────────────────────────────
+````
+
+- **Clear first.** This session's context is the frontier and the Notes block; the next one's is a single ticket and a graph trace. Nothing carries over worth the tokens, and the Notes block exists precisely so the next session inherits the preferences without inheriting the transcript.
+- **Name the ticket the map leaves open,** not the one step 5 resolved. Resolving a wayfinding question is what this workflow does; the frontier ticket it exposes is what the next session builds.
+- **No frontier ticket** because the map is complete or every child is blocked → say so and offer `/firehorse:ship` or nothing at all. Do not invent a ticket to fill the block.
+- **Advisory voice.** The block offers a command. It never says the user must run it, and this workflow never runs it.
+
 ## Projection Notes
 
 `wayfinder` and the skills named in the Notes block load through Claude's own skill mechanism; this definition creates no execution graph.

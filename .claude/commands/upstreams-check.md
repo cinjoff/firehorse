@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "upstreams-check"
 firehorseSource: "packages/firehorse-core/definitions/workflows/upstreams-check.md"
-firehorseSourceSha256: "5139690809ff7efa35ab2b9a30bbe04d9e19c549e492120771b7af610c73180b"
+firehorseSourceSha256: "bf53349d0cd51f4cb251080f18615f0a30ee8411d7815b4b4ec08b0af61c01a8"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/upstreams-check.md
 Definition ID: upstreams-check
 Definition kind: workflow
-Source SHA-256: 5139690809ff7efa35ab2b9a30bbe04d9e19c549e492120771b7af610c73180b
+Source SHA-256: bf53349d0cd51f4cb251080f18615f0a30ee8411d7815b4b4ec08b0af61c01a8
 -->
 
 # Upstreams Check
@@ -108,3 +108,24 @@ Both severities are maintainer-facing, and only ever that. Firehorse defines the
 
 8. **Report** the comparison that ran, the breaking findings, the advisory findings, the per-step impact, and the tickets you opened.
    → Done when: all five are present.
+
+## Handoff
+
+Render this block only when step 6 filed tickets. A clean comparison, or one whose findings were all advisory, ends at the step-8 report.
+
+````
+───────────────────────────────────────────────
+## ▶ Next · <repo name>
+
+**Work the drift** · <n> breaking findings filed
+
+/clear then:
+
+/firehorse:map
+───────────────────────────────────────────────
+````
+
+- **Nothing filed, no block.** Drift that changed nothing here is a report, not a handoff.
+- **Advisory findings are not a handoff either.** They stay in the report unless a step-4 verdict failed, which is what makes them breaking.
+- **Never offer `pnpm upstreams:check --write`.** Step 7 accepts the baseline on request only, and a block that suggests it invites accepting drift the tickets have not absorbed yet.
+- **Advisory voice.** The block offers a command. It never says the user must run it, and this workflow never runs it.

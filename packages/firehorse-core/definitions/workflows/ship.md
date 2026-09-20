@@ -165,6 +165,26 @@ grep -rn '"version"' package.json packages/*/package.json \
 12. **Report** the PR, both tags, the release, and every issue you closed.
     → Done when: all four are named.
 
+## Handoff
+
+Close the run with this block, after the step-12 report and with nothing following it.
+
+````
+───────────────────────────────────────────────
+## ▶ Next · <repo name>
+
+**Back to the map** · v<version> closed <n> issues
+
+/clear then:
+
+/firehorse:map
+───────────────────────────────────────────────
+````
+
+- **Clear first.** The release is out and every artifact it produced is on GitHub. Nothing in this session's context helps the next ticket.
+- **No block where the merge did not happen.** A blocked PR, a red gate at step 1, or a review that found something all end the run in place. Report the blocker; recommending the next map would step over it.
+- **Advisory voice.** The block offers a command. It never says the user must run it, and this workflow never runs it.
+
 ## Projection Notes
 
 This definition records the release sequence as instructions; it runs no release automation and adds no hook.

@@ -129,6 +129,28 @@ You drive the sequence; `implement` and `tdd` run inline. `prototype` produces a
 9. **Report on the ticket.** Comment with the seam list, the prototype link when there was one, the gate commands with their output, and what you did not verify. Leave the issue open for `/firehorse:ship` to close.
    → Done when: the comment is posted and the issue is still open.
 
+## Handoff
+
+Close the run with this block, after the step-9 report and with nothing following it.
+
+````
+───────────────────────────────────────────────
+## ▶ Next · <repo name>
+
+**Ship #<ticket>** · open the PR, merge it, cut the release, close the issue
+
+/firehorse:ship
+
+**Also available:**
+- `/firehorse:map` · claim the next ticket, in a fresh session
+- `/firehorse:build <n>` · build another ticket onto this branch first
+───────────────────────────────────────────────
+````
+
+- **No `/clear` here.** `/firehorse:ship` reviews the diff this session just produced and re-runs the same gate. The seam list from step 3 and the gate output from step 7 are still worth having, so clearing costs more than it saves.
+- **A red gate ends the run at step 7,** and the block goes with it. Name the gate that failed and the command that reproduces it; offer no next workflow until it is green.
+- **Advisory voice.** The block offers a command. It never says the user must run it, and this workflow never runs it.
+
 ## Projection Notes
 
 Upstream skills are referenced, not inlined, so a changed upstream needs no rewrite here — `/firehorse:upstreams-check` reports when one moves.

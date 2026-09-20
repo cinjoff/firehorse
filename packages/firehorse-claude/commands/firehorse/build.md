@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "build"
 firehorseSource: "packages/firehorse-core/definitions/workflows/build.md"
-firehorseSourceSha256: "8112c356efbffd43666564f3b82dd82bb6fcc88b382883576cf3adfd9ab33832"
+firehorseSourceSha256: "249d69cc6c979f28f88facc4fe7a86e1a64f0aa613fe51558e220bd51b28bfa1"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/build.md
 Definition ID: build
 Definition kind: workflow
-Source SHA-256: 8112c356efbffd43666564f3b82dd82bb6fcc88b382883576cf3adfd9ab33832
+Source SHA-256: 249d69cc6c979f28f88facc4fe7a86e1a64f0aa613fe51558e220bd51b28bfa1
 -->
 
 # Build
@@ -120,3 +120,25 @@ You drive the sequence; `implement` and `tdd` run inline. `prototype` produces a
 
 9. **Report on the ticket.** Comment with the seam list, the prototype link when there was one, the gate commands with their output, and what you did not verify. Leave the issue open for `/firehorse:ship` to close.
    → Done when: the comment is posted and the issue is still open.
+
+## Handoff
+
+Close the run with this block, after the step-9 report and with nothing following it.
+
+````
+───────────────────────────────────────────────
+## ▶ Next · <repo name>
+
+**Ship #<ticket>** · open the PR, merge it, cut the release, close the issue
+
+/firehorse:ship
+
+**Also available:**
+- `/firehorse:map` · claim the next ticket, in a fresh session
+- `/firehorse:build <n>` · build another ticket onto this branch first
+───────────────────────────────────────────────
+````
+
+- **No `/clear` here.** `/firehorse:ship` reviews the diff this session just produced and re-runs the same gate. The seam list from step 3 and the gate output from step 7 are still worth having, so clearing costs more than it saves.
+- **A red gate ends the run at step 7,** and the block goes with it. Name the gate that failed and the command that reproduces it; offer no next workflow until it is green.
+- **Advisory voice.** The block offers a command. It never says the user must run it, and this workflow never runs it.

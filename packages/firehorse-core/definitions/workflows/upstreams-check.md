@@ -116,6 +116,27 @@ Both severities are maintainer-facing, and only ever that. Firehorse defines the
 8. **Report** the comparison that ran, the breaking findings, the advisory findings, the per-step impact, and the tickets you opened.
    → Done when: all five are present.
 
+## Handoff
+
+Render this block only when step 6 filed tickets. A clean comparison, or one whose findings were all advisory, ends at the step-8 report.
+
+````
+───────────────────────────────────────────────
+## ▶ Next · <repo name>
+
+**Work the drift** · <n> breaking findings filed
+
+/clear then:
+
+/firehorse:map
+───────────────────────────────────────────────
+````
+
+- **Nothing filed, no block.** Drift that changed nothing here is a report, not a handoff.
+- **Advisory findings are not a handoff either.** They stay in the report unless a step-4 verdict failed, which is what makes them breaking.
+- **Never offer `pnpm upstreams:check --write`.** Step 7 accepts the baseline on request only, and a block that suggests it invites accepting drift the tickets have not absorbed yet.
+- **Advisory voice.** The block offers a command. It never says the user must run it, and this workflow never runs it.
+
 ## Projection Notes
 
 The drift mechanics live in the `pnpm upstreams:check` script, not in this body — this definition describes when to run it and what to do with what it says.
