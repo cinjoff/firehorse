@@ -1,7 +1,8 @@
 # firehorse
 
-A thin, opinionated layer over the agent skills you already have installed: six
-workflows that hold the shape of a job — plan it, build it, verify it — and hand
+A thin, opinionated layer over the agent skills you already have installed: eight
+workflows that hold the shape of a job — plan it, spec it, slice it, build it,
+verify it — and hand
 the craft to those skills, adding memory, a codebase map, and UI critique around
 them.
 
@@ -73,6 +74,9 @@ That sets the repo up once — tracker labels, agent docs, a `DESIGN.md` intervi
 the Firehorse manifest — and indexes it. Every later workflow reads what it
 recorded.
 
+New to this? [Working with Firehorse](./docs/GUIDE.md) is the guide: the quickstart,
+the ideas each workflow implements, the decision rules, and what is still broken.
+
 Everything is idempotent, so re-running repairs rather than duplicates. To see
 what is and is not set up without writing anything, ask Claude from any session:
 
@@ -88,6 +92,7 @@ From a clone, `./install.sh --check` reports the same thing plus the memory stac
 | `--yes`           | Accept every prompt. For non-interactive runs. |
 | `--skip-memory`   | Leave the self-hosted supermemory stack alone. |
 | `--skip-superset` | Leave Superset MCP alone.                      |
+| `--no-statusline` | Leave your status line alone.                  |
 
 <details>
 <summary>What the installer does, before you pipe it to bash</summary>
@@ -105,10 +110,14 @@ From a clone, `./install.sh --check` reports the same thing plus the memory stac
   entries Claude Code needs in `~/.claude/settings.json`.
 - **Superset MCP** — only when Superset is detected, and always through a
   `headersHelper`, so the API key never lands in a config file.
+- **The status line** — `~/.claude/statusline/`, plus `ccstatusline` globally if
+  npm is there, and `statusLine.command` pointed at it. If you already have a
+  status line, it says so and leaves yours alone; `--force-statusline` replaces
+  it.
 
 Everything it writes lives under your home directory: `~/.claude/settings.json`,
-`~/.config/firehorse/`, `~/.local/bin/`, `~/.supermemory/`, and one
-`~/Library/LaunchAgents/` plist. It touches no repo until you run
+`~/.claude/statusline/`, `~/.config/firehorse/`, `~/.local/bin/`,
+`~/.supermemory/`, and one `~/Library/LaunchAgents/` plist. It touches no repo until you run
 `/firehorse:new-project`. From a clone, run `./install.sh` instead of piping.
 
 </details>
@@ -121,21 +130,210 @@ so and carries on rather than failing.
 
 ## What you get
 
-| Command                      | What it does                                                                             |
-| ---------------------------- | ---------------------------------------------------------------------------------------- |
-| `/firehorse:new-project`     | Set a repo up once: remote, tracker, labels, manifest, `DESIGN.md`, first index.         |
-| `/firehorse:index`           | Make the repo queryable and searchable, and record how fresh that claim is.              |
-| `/firehorse:map`             | Chart or work a wayfinder map, carrying this repo's standing preferences into its Notes. |
-| `/firehorse:build`           | Take one ticket to a committed, verified change.                                         |
-| `/firehorse:fix-bug`         | Go from a bug report to a fix proven to have changed the behaviour.                      |
-| `/firehorse:memory`          | Open the supermemory store as an interactive graph to see what it holds.                 |
+| Command                  | What it does                                                                             |
+| ------------------------ | ---------------------------------------------------------------------------------------- |
+| `/firehorse:new-project` | Set a repo up once: remote, tracker, labels, manifest, `DESIGN.md`, first index.         |
+| `/firehorse:index`       | Make the repo queryable and searchable, and record how fresh that claim is.              |
+| `/firehorse:map`         | Chart or work a wayfinder map, carrying this repo's standing preferences into its Notes. |
+| `/firehorse:spec`        | Turn a map whose way is clear into the spec its slices get cut from.                     |
+| `/firehorse:tickets`     | Cut a spec into tracer-bullet slices, wired and triaged.                                 |
+| `/firehorse:build`       | Take one ticket to a committed, verified change.                                         |
+| `/firehorse:fix-bug`     | Go from a bug report to a fix proven to have changed the behaviour.                      |
+| `/firehorse:memory`      | Open the supermemory store as an interactive graph to see what it holds.                 |
 
 Plus two skills: `firehorse-recall`, for asking what past sessions decided, and
 `firehorse-setup`, for checking this machine's setup.
 
-Two more workflows exist and are not shipped: `ship` and `upstreams-check` are
-maintainer tools for this repo, declared `audience: maintainer`, so they project
-into this repo's own `.claude/commands/` rather than into the plugin.
+And a status line, on by default:
+
+```text
+Opus 5 (1M) │ firehorse ⎇ main │ ███████░░░ 98K/150K 65% (10% of 1000K) │ ⚙ map, build
+2hr 8m · Cost: $1.23 · ↻ 1 · Session: 12.0% · Block: 4hr 39m · Weekly: 4.0% · Weekly Reset: 3d 17hr
+```
+
+The first line is Firehorse's: model, repo and branch, context used, and the
+skills this session has loaded. The bar measures context against a 150K budget
+rather than against the model's window, because a 1M window makes a 200K session
+look cheap when it is already degrading — set `CLAUDE_CTX_BUDGET` to move it.
+The second line is [ccstatusline](https://github.com/sirmalloc/ccstatusline),
+rendered against a config Firehorse owns at
+`~/.claude/statusline/ccstatusline.json`, so a ccstatusline you already
+configured stays untouched. It runs out of band and is served from a cache, so
+the status line renders in about 50ms rather than ccstatusline's 1.2 seconds.
+
+Three more workflows exist and are not shipped: `ship`, `triage`, and
+`upstreams-check` are maintainer tools for this repo, declared
+`audience: maintainer`, so they project into this repo's own `.claude/commands/`
+rather than into the plugin.
+
+## The flow
+
+Two pictures of one spine. The first is what `/firehorse:*` does today; the
+second is where [the Matt Pocock research](./docs/research/matt-pocock-ai-skills/firehorse-fit.md)
+points, with every addition tagged by the ticket that owns it. They are ASCII so
+a diff shows exactly what moved, and so an agent reads them without rendering
+anything. [`docs/flow.html`](./docs/flow.html) is the same thing as a page you
+can keep open: `open docs/flow.html`, then toggle between today and target.
+
+```text
+LEGEND
+  [ok] shipped, works here       ──►  hand-off: an artifact passes on
+  [!]  shipped, broken here      ┄┄►  reads a record it did not produce
+  [+]  target, not built yet      ╳   gap: nothing spans it
+  (#n) github.com/cinjoff/firehorse/issues/n
+```
+
+### Today
+
+```text
+  ONCE PER REPO
+  ┌────────────────────┐    ┌───────────────────────────┐
+  │ /new-project  [ok] │───►│ /index                    │
+  │  remote, tracker   │    │  graph pass      [!] #233 │
+  │  triage labels     │    │  memory pass     [!] #232 │
+  │  CONTEXT, DESIGN   │    │  docs/codebase/* anchors  │
+  └────────────────────┘    └─────────────┬─────────────┘
+                                          │ writes
+                          .firehorse/manifest.json, docs/codebase/*
+                                          ┆
+  idea                                    ┆ every workflow below reads it
+   │                                      ┆
+   ▼                                      ┆
+  ┌───────────────────────────────┐┄┄┄┄┄┄┄┘
+  │ /map                     [ok] │
+  │  grilling, domain-modeling    │──► map issue: destination, milestones,
+  │  wayfinder + the Notes block  │    grilling/research/prototype tickets
+  └───────────────┬───────────────┘
+                  │
+                  │  the way is clear: no open children, no fog
+                  ▼
+  ┌───────────────────────────────┐
+  │ /spec                    [ok] │  to-spec, against the map's record
+  │  completeness gate            │  an open child or fog stops the run
+  │  seams from the graph         │──► spec issue, linked from the map
+  └───────────────┬───────────────┘
+                  ▼
+  ┌───────────────────────────────┐
+  │ /tickets                 [ok] │  to-tickets, then triage
+  │  tracer bullet first          │  vertical slices, one session each
+  │  AFK or HITL on each          │──► slice issues, wired and labelled
+  └───────────────┬───────────────┘
+                  │
+      ┌───────────┴────────────┐
+      ▼                        ▼
+  ┌─────────────────────┐  ┌──────────────────────┐
+  │ /build              │  │ /fix-bug             │
+  │  seam ◄ graph  [!]  │  │  callers ◄ graph [!] │
+  │  prototype if the   │  │  reproduce loop [ok] │
+  │   shape is unsure   │  │  regression test[ok] │
+  │  tdd, implement[ok] │  │  fix                 │
+  │  code-review   #235 │  │  red/green evidence  │
+  │  evidence report    │  │   from both sides    │
+  └──────────┬──────────┘  └──────────┬───────────┘
+             └────────────┬───────────┘
+                          ▼
+          ┌──────────────────────────────────┐
+          │ /ship        maintainer-only [ok]│
+          │  review, PR, merge, changelog,   │
+          │  version bump, tags, release,    │
+          │  close the issues it resolved    │
+          └──────────────────────────────────┘
+
+  OFF TO THE SIDE, reached by hand, wired into nothing
+    /memory          [ok] the store as a graph you can look at
+    /triage          [ok] this repo only, judged with Jev          (#263)
+    /upstreams-check [ok] upstream drift and what it costs here
+    firehorse-recall      orphaned: no workflow invokes it         (#237)
+    skill-audit           standalone backtest of the roster
+    session retro         writes .planning/, versioned nowhere     (#248)
+```
+
+### Target
+
+```text
+  ONCE PER REPO
+  ┌────────────────────┐    ┌───────────────────────────┐
+  │ /new-project       │───►│ /index                    │
+  └────────────────────┘    │  graph queryable     #233 │
+                            │  memory pass honest  #232 │
+                            └─────────────┬─────────────┘
+                                          ┆ anchors kept current   (#113)
+  idea ──► /research  [+] (#242)          ┆ so the leading words land
+   │        sources in a committed ledger ┆
+   ▼                                      ┆
+  ┌───────────────────────────────┐┄┄┄┄┄┄┄┘
+  │ /map                          │──► map issue
+  └───────────────┬───────────────┘
+                  ▼
+  ┌───────────────────────────────┐
+  │ /spec  ──►  /tickets     [ok] │  shipped 2026-09-20, not yet run
+  │                               │  against a real map               (#274)
+  └───────────────┬───────────────┘
+                  ▼
+  ┌───────────────────────────────┐
+  │ /triage, any tracker      [+] │  the five labels finally get a reader
+  └───────────────┬───────────────┘                                  (#263)
+                  │
+      ┌───────────┴────────────┐
+      ▼                        ▼
+  ┌─────────────────────┐  ┌──────────────────────┐
+  │ /build              │  │ /fix-bug             │
+  │  recall first   [+] │  │  recall first    [+] │
+  │   what past sessions│  │                  #237│
+  │   already settled   │  │  callers ◄ graph     │
+  │  seam ◄ graph       │  │  reproduce loop      │
+  │  proof, not tests   │  │  regression test     │
+  │   as the gate   [+] │  │  red/green evidence  │
+  │                 #226│  │                      │
+  └──────────┬──────────┘  └──────────┬───────────┘
+             └────────────┬───────────┘
+                          ▼
+                      ┌────────┐
+                      │ /ship  │
+                      └───┬────┘
+                          │
+  ═══════════ THE LOOPS BACK, none of which exist today ═══════════
+                          │
+   ┌──────────────────────┴───────────────────────────────────┐
+   ▼                            ▼                             ▼
+  session retro           gardening              measurement of the
+  as an artifact  [+]     improve-codebase-      workflows themselves
+  findings reach the      architecture on a      [+] evals, a session
+  tracker on their own    schedule, proposal     reader, a standard
+  (#248, #250, #261)      becomes tickets  [+]   (#211, #227, #231)
+                          no ticket owns it
+   │                            │                             │
+   └────────────► back into /map and the tracker ◄────────────┘
+
+  AND AT THE EDGE OF EVERY SESSION
+    a Stop hook that says what to do next, so the next session
+    starts where this one stopped                     [+] (#252, #257)
+```
+
+### The same thing as a table
+
+One row per node. This is the part to edit when something moves.
+
+| Node                 | Today                              | Target                                    | Ticket     |
+| -------------------- | ---------------------------------- | ----------------------------------------- | ---------- |
+| `/new-project`       | Works                              | Unchanged                                 |            |
+| `/index` graph       | Records `false` in this repo       | Queryable, so `build` has a first step    | #233       |
+| `/index` memory      | Records a pass that failed         | Reports what it measured                  | #232       |
+| Anchors              | `docs/codebase/*`, drifting        | Current, because stale ones misteach      | #113       |
+| `/research`          | Absent                             | A workflow with a source ledger           | #242       |
+| `/map`               | Works, carries the Notes block     | Unchanged                                 |            |
+| Spec                 | `/firehorse:spec`, unexercised     | Run against a real map                    | #274       |
+| Ticket generation    | `/firehorse:tickets`, unexercised  | Run against a real spec                   | #274       |
+| `/triage`            | This repo only                     | Shipped for any tracker                   | #263       |
+| `/build` gate        | `tdd` first, always                | Proof the change did it, tests optional   | #226       |
+| `/build` code-review | Invoked, undeclared in frontmatter | Declared                                  | #235       |
+| `firehorse-recall`   | Orphaned                           | The opening step of `build` and `fix-bug` | #237       |
+| `/fix-bug`           | Works, minus the graph             | Unchanged, once the graph answers         | #233       |
+| `/ship`              | Works, maintainer-only             | Unchanged                                 |            |
+| Session retro        | Untracked files under `.planning/` | A versioned artifact that files issues    | #248, #250 |
+| Gardening            | Absent                             | Architecture proposal becomes tickets     | none yet   |
+| Measurement          | Absent                             | Evals, a session reader, a standard       | #211       |
+| Next action          | A session just ends                | A Stop hook that names the next step      | #252, #257 |
 
 ## How it fits together
 

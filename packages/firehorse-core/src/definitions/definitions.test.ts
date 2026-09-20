@@ -15,33 +15,17 @@ import {
   stripAuthoringOnlySections,
   validateDefinitionSet,
 } from "./index.js";
+import { requiredSectionsByKind } from "./types.js";
 
 const packageRoot = process.cwd();
 const repoRoot = nodePath.dirname(nodePath.dirname(packageRoot));
 const definitionsRoot = nodePath.join(packageRoot, "definitions");
 const knownUpstreamSkills = new Set(["mattpocock-skills:diagnose"]);
 
-const workflowSections = [
-  "Purpose",
-  "Usage",
-  "Inputs",
-  "Outputs",
-  "Supporting Capabilities",
-  "Orchestration Intent",
-  "Safety Gates",
-  "Procedure",
-  "Projection Notes",
-];
-const skillSections = [
-  "Purpose",
-  "Usage",
-  "Inputs",
-  "Outputs",
-  "Instructions",
-  "Boundaries",
-  "Examples",
-  "Projection Notes",
-];
+// Derived, not restated. A hand-maintained copy drifts from the constant the
+// moment a section is added, which is the failure D-180 asks this file to catch.
+const workflowSections = requiredSectionsByKind.workflow;
+const skillSections = requiredSectionsByKind.skill;
 
 function bodyWithSections(sections: readonly string[]): string {
   return sections.map((section) => `## ${section}\n\nContent.`).join("\n\n");
@@ -147,6 +131,33 @@ describe("Firehorse definitions", () => {
     expect(docs).toContain("pnpm definitions:check");
     expect(docs).toContain("firehorseSourceSha256");
     expect(docs).toContain("Firehorse runtime loading or execution");
+  });
+
+  it("keeps the documented section lists in step with requiredSectionsByKind", async () => {
+    // D-180 makes the constant the contract and the prose downstream of it.
+    // Without this, adding a heading silently leaves two docs describing a
+    // format the parser no longer accepts.
+    const [format, architecture] = await Promise.all([
+      readFile(nodePath.join(repoRoot, "docs/FIREHORSE-DEFINITION-FORMAT.md"), "utf8"),
+      readFile(nodePath.join(repoRoot, "docs/ARCHITECTURE.md"), "utf8"),
+    ]);
+
+    // The format doc numbers both kinds; ARCHITECTURE.md names only the
+    // workflow set, so it is checked against that kind alone.
+    for (const [kind, sections] of Object.entries(requiredSectionsByKind)) {
+      for (const [index, section] of sections.entries()) {
+        expect(format, `${kind}: ${section} missing from the format doc`).toContain(
+          `${index + 1}. \`## ${section}\``,
+        );
+      }
+    }
+
+    // ARCHITECTURE.md names the workflow set as one ordered sentence, wrapped
+    // across lines. Assert the whole sequence rather than each word: a bare
+    // substring match passes on a word surviving anywhere else in the doc.
+    expect(architecture.replace(/\s+/g, " "), "ARCHITECTURE.md lists a stale workflow set").toContain(
+      requiredSectionsByKind.workflow.join(", "),
+    );
   });
 
   it("reports invalid frontmatter with actionable diagnostics", () => {

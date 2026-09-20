@@ -80,9 +80,17 @@ _Avoid_: GSD map, memory cache, one-off audit
 A prebuilt application starting point used to create an initial codebase when the user opts into scaffolding.
 _Avoid_: Framework mandate, generated docs, GSD template
 
+**Decision Ticket**:
+A child of a wayfinder map that asks a question whose resolution is a decision, typed research, prototype, grilling, or task. It is closed by an answer, never by a commit, and `/firehorse:build` never receives one.
+_Avoid_: Ticket, task ticket, work item
+
+**Spec**:
+The destination document a completed map produces: problem, solution, user stories, implementation decisions, testing decisions with their seams, and what is out of scope. It records decisions already made and is cut into Vertical Slices; it is not an editable source that code is regenerated from.
+_Avoid_: PRD, plan, source of truth
+
 **Vertical Slice**:
-An independently grabbable issue that delivers a thin, complete path through the product.
-_Avoid_: Layer task, component task, horizontal slice
+An independently grabbable issue that delivers a thin, complete path through the product. Cut from a Spec, sized to one session, resolved by a commit.
+_Avoid_: Layer task, component task, horizontal slice, Decision Ticket
 
 **PRD Draft**:
 A local reviewable product-requirements artifact produced before publishing work to an issue tracker.
@@ -114,6 +122,7 @@ _Avoid_: Timestamp-only confidence, implicit freshness, memory cache
 - The canonical `new-project` **Workflow** projects to the provider-native `new-project` invocation name.
 - The **Projection Generator** updates provider manifests so **Generated Mirrors** are exposed by their distributions.
 - A **Project Anchor** captures durable context for future workflows without depending on GSD.
+- A **Spec** is cut into **Vertical Slices**; a **Decision Ticket** is resolved into the **Spec** and is never cut into anything.
 - A **Codebase Map** is stored as `docs/codebase/` **Project Anchors** and can be produced independently of `new-project`.
 - A **Codebase Map** includes **Freshness Metadata** such as source commit/hash and timestamp.
 - A **Starter Template** may create the first codebase, but product discovery and **Project Anchors** can exist before scaffolding.

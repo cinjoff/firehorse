@@ -127,6 +127,27 @@ A reader of the manifest applies this, so the report states it:
 8. **Report each pass** as succeeded or failed, the anchors written, the manifest fields set, and the [freshness rule](#freshness-rule) a reader should apply.
    → Done when: the report names all three passes explicitly, including any that did not run.
 
+## Handoff
+
+Close the run with this block, after the step-8 report and with nothing following it.
+
+````
+───────────────────────────────────────────────
+## ▶ Next · <repo name>
+
+**Chart the map** · the graph and anchors describe <commit>
+
+/clear then:
+
+/firehorse:map
+───────────────────────────────────────────────
+````
+
+- **Skip the block entirely when `/firehorse:new-project` called this run** at its step 6. That workflow carries its own handoff, and two in a row is noise.
+- **Clear first.** Indexing fills a session with graph output and anchor drafts that the map session has no use for. The manifest fields from step 6 are the handoff; the transcript is not.
+- **A failed pass changes the recommendation.** Where the graph pass failed, offer the fix rather than the map: a map charted against a missing index sends every later session to a dead pointer.
+- **Advisory voice.** The block offers a command. It never says the user must run it, and this workflow never runs it.
+
 ## Projection Notes
 
 The graph tools reach Claude through the `codebase-memory-mcp` MCP server and supermemory through its CLI; this definition adds no transport of its own.

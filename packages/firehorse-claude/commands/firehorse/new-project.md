@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "new-project"
 firehorseSource: "packages/firehorse-core/definitions/workflows/new-project.md"
-firehorseSourceSha256: "975837ca3b02c0d5ac197af5e7773d5e388d40ff6afd405d978c605599eae33b"
+firehorseSourceSha256: "f497ea956554f8cb2fca4b51f9b7e8e63184ec4c7e6300a6748f39cddf53237e"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/new-project.md
 Definition ID: new-project
 Definition kind: workflow
-Source SHA-256: 975837ca3b02c0d5ac197af5e7773d5e388d40ff6afd405d978c605599eae33b
+Source SHA-256: f497ea956554f8cb2fca4b51f9b7e8e63184ec4c7e6300a6748f39cddf53237e
 -->
 
 # New Project
@@ -133,3 +133,24 @@ Machine-specific facts stay out. Whether supermemory or the graph is reachable o
 
 8. **Report what exists and what is absent:** the remote, the `docs/agents/` files, the labels you created versus the ones already there, the manifest fields, whether `DESIGN.md` exists, and the `/firehorse:index` result.
    → Done when: every one of those six is stated, including the absences.
+
+## Handoff
+
+Close the run with this block, after the step-8 report and with nothing following it.
+
+````
+───────────────────────────────────────────────
+## ▶ Next · <repo name>
+
+**Chart the first map**
+
+/clear then:
+
+/firehorse:map
+───────────────────────────────────────────────
+````
+
+- **Clear first.** Setup is the longest session Firehorse runs, and none of it is context the map needs. Everything that survives is on disk: the manifest, `DESIGN.md`, the anchors, the labels.
+- **Do not offer `/firehorse:index`.** Step 6 already ran it.
+- **`DESIGN.md` absent** because the user declined the interview → say so inside the block. It is the one anchor `/firehorse:index` must not write, so a later session has no way to discover it is missing.
+- **Advisory voice.** The block offers a command. It never says the user must run it, and this workflow never runs it.

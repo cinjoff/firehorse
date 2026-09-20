@@ -1,0 +1,153 @@
+---
+schemaVersion: 1
+id: skill-audit
+kind: skill
+title: Skill audit
+description: "Backtest a skill roster against real session history with Jev: replay past prompts, score which skill should have loaded on each, and classify every entry for pruning. Use it when installed skills never fire, or when deciding what to prune or scope to another repo."
+compatibility: Requires TYPESAFE_API_KEY and network access to api.typesafe.ai, plus readable Claude Code transcripts under ~/.claude/projects. Optional per project and globally; nothing else in Firehorse depends on it.
+requires:
+  tools:
+    - bash
+    - read
+  environment:
+    - filesystem
+    - node
+---
+
+# Skill audit
+
+## Purpose
+
+Use this skill to replace instinct with evidence on three questions: which skills
+fired when they should have, which never fire at all, and which are worth removing.
+
+An agent picks from its roster on almost no information, because each skill reaches
+it as one truncated description line. A **backtest** replays real prompts against
+that roster and scores what should have loaded, so the roster's failures become
+countable instead of anecdotal.
+
+The method is TypeSafe's skill-suggestion cookbook pointed backwards at history
+rather than forwards at the next turn. The `suggest()` function that scores the
+backtest is the one a UserPromptSubmit hook would call, so a good backtest is also
+the evidence for shipping the hook.
+
+## Usage
+
+Invoke by intent: "audit my skills", "which skills do I never use", "what should I
+prune", "would a suggestion hook help here".
+
+Run it after a stretch of real work. It measures use, and a fresh roster has none.
+
+## Inputs
+
+- Recent session transcripts under `~/.claude/projects`, read directly.
+- The roster as the agent actually saw it, parsed out of a transcript's own system
+  reminder rather than from what is installed today.
+- `TYPESAFE_API_KEY`, and a model name in `TYPESAFE_MODEL` when pinning matters.
+- A profile paragraph naming the repos and the recurring work, passed with
+  `--profile`. The answers sharpen considerably with it.
+
+## Outputs
+
+- `units.json`, one record per real user prompt with the skills that loaded after it.
+- `backtest.json`, the suggestion the recipe would have made for each prompt.
+- `adjudicated.json`, a verdict per turn judged against what the agent then did.
+- `pruned.json`, a fit and loss score per roster entry.
+- A printed report: confident misses, coverage, per-prompt cost, and on request a
+  threshold sweep.
+
+## Instructions
+
+Run `roster_audit.py --help` for the stages and flags. The procedure below is the
+part the flags do not tell you.
+
+### Read the sessions and build the roster
+
+List the candidate sessions first and have the user confirm the window covers the
+work they meant, because every later verdict is scoped to it.
+
+Extraction keeps only what the user actually typed. Four things masquerade as
+prompts in a transcript: injected skill bodies, hook notices, teammate messages,
+and the replay of earlier turns that a compact writes back. Getting those out
+matters more than any threshold.
+
+The ground truth for a turn is the skill the agent loaded after it, or the slash
+command the user typed. A turn where the user named the skill measures nothing
+about selection: selection never happened.
+
+### Score each prompt
+
+Two requests per prompt. The first ranks the whole roster with one Choice and asks
+four Noul questions about the turn. The second rereads the top three with their
+full descriptions and asks, per candidate, whether it does the specific thing the
+request asked for.
+
+Keep the two apart when reading results. The Choice settles which skill; the Nouls
+settle whether to say anything at all. They disagree often, and the disagreement is
+informative.
+
+Done when every prompt carries a suggestion or a stated reason for silence.
+
+### Judge the turn against what happened
+
+Adjudication shows the model the request, the candidates, and the tool calls the
+agent actually made, then asks what should have happened. This is the stage that
+turns a disagreement into a finding: a suggestion the agent ignored is a **confident
+miss** only if the work it then did was worse for the absence.
+
+Report the verdicts at 0.55 confidence and above. Treat the rest as the model
+declining to commit, and say how many there were.
+
+Done when every confident miss has been checked against its own transcript.
+
+### Classify the roster
+
+Scoring covers two separate claims: whether the work an entry serves occurs in
+these repos, and what would be lost by removing it. Ask them as two literal
+questions and combine in code. Asked as one compound Choice, the answers collapse
+onto delete and the middle options never fire.
+
+Prefer scoping to deleting. A skill set belonging to another stack costs context
+here and nothing elsewhere, so stop loading it in this repo and leave it installed.
+
+### Report, then change one thing
+
+Name the two or three changes the evidence supports, make one, and leave the rest
+for the next audit to attribute.
+
+## Boundaries
+
+- Read-only. It reports; the user changes the configuration.
+- Verdicts hold for the kind of work the window contained. State what that was, and
+  scope every conclusion to it: a testing skill unused across five research sessions
+  has been measured as unused in research.
+- Thresholds are local. The defaults came from one 28-prompt run; calibrate with a
+  sweep before quoting a hit rate.
+- Typed answers guarantee the shape of a verdict, not its truth.
+- Cost is small and real: two requests per prompt, about 1.6 seconds and 8,000
+  tokens each on a 135-entry roster.
+
+## Examples
+
+Audit the last five sessions end to end:
+
+```sh
+python3 roster_audit.py all --limit 5 --out .firehorse/skill-audit \
+  --profile "Solo dev on an agentic skills framework: pnpm/TypeScript monorepo, no deploy target. Daily work is web research into docs/research, GitHub issues via gh, authoring skills, publishing guides."
+```
+
+Widen the window, reusing the stages already scored, then calibrate:
+
+```sh
+python3 roster_audit.py units --limit 20 --out .firehorse/skill-audit-wide
+python3 roster_audit.py backtest --out .firehorse/skill-audit-wide
+python3 roster_audit.py report --out .firehorse/skill-audit-wide --sweep
+```
+
+## Projection Notes
+
+`roster_audit.py` ships beside the projected `SKILL.md` and is the whole
+implementation. Paths in the examples are relative to the skill directory.
+
+The audit is optional in every projection. Without `TYPESAFE_API_KEY` the script
+exits with that one sentence, and no other Firehorse workflow is affected.

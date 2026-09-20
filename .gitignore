@@ -33,5 +33,10 @@ Thumbs.db
 
 # Local planning / scratch
 .firehorse/local/
+.planning/
 .firecrawl
 .pi-lens
+
+# Python bytecode from the skill-audit harness
+__pycache__/
+*.pyc

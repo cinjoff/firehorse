@@ -4,7 +4,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "memory"
 firehorseSource: "packages/firehorse-core/definitions/workflows/memory.md"
-firehorseSourceSha256: "6090c43b68aac6bdfdfefec7b911354a542bad2de911506db11a262d6ac6044c"
+firehorseSourceSha256: "51052c6a3a95c0e5f33fdbcd7550676e0f25836a25da9e7225493ba924a8c78a"
 firehorseSchemaVersion: 1
 ---
 
@@ -14,7 +14,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/memory.md
 Definition ID: memory
 Definition kind: workflow
-Source SHA-256: 6090c43b68aac6bdfdfefec7b911354a542bad2de911506db11a262d6ac6044c
+Source SHA-256: 51052c6a3a95c0e5f33fdbcd7550676e0f25836a25da9e7225493ba924a8c78a
 -->
 
 # Memory
@@ -83,3 +83,11 @@ Check, build if needed, start, report. There is no judgement in this workflow an
 
 6. **Report the URL and the project count** the health check returned. One line — the user is going to look at the app, not read about it.
    → Done when: both are in one line.
+
+## Handoff
+
+This workflow renders no handoff block, and that is deliberate.
+
+`/firehorse:memory` is a place the user goes to look at something, not a step in a sequence. It has no successor to name, and a "what next" line on top of a one-line report is noise. It is also the one workflow that leaves something running.
+
+Instead, the step-6 line carries what a handoff would otherwise have to say: the URL, the project count, and the fact that the server keeps running after this session ends, with the command that stops it.

@@ -133,6 +133,27 @@ Machine-specific facts stay out. Whether supermemory or the graph is reachable o
 8. **Report what exists and what is absent:** the remote, the `docs/agents/` files, the labels you created versus the ones already there, the manifest fields, whether `DESIGN.md` exists, and the `/firehorse:index` result.
    → Done when: every one of those six is stated, including the absences.
 
+## Handoff
+
+Close the run with this block, after the step-8 report and with nothing following it.
+
+````
+───────────────────────────────────────────────
+## ▶ Next · <repo name>
+
+**Chart the first map**
+
+/clear then:
+
+/firehorse:map
+───────────────────────────────────────────────
+````
+
+- **Clear first.** Setup is the longest session Firehorse runs, and none of it is context the map needs. Everything that survives is on disk: the manifest, `DESIGN.md`, the anchors, the labels.
+- **Do not offer `/firehorse:index`.** Step 6 already ran it.
+- **`DESIGN.md` absent** because the user declined the interview → say so inside the block. It is the one anchor `/firehorse:index` must not write, so a later session has no way to discover it is missing.
+- **Advisory voice.** The block offers a command. It never says the user must run it, and this workflow never runs it.
+
 ## Projection Notes
 
 `packages/firehorse-core/src/setup/` owns the schema that validates the manifest shape above, and `packages/firehorse-claude/hooks/check-setup.mjs` reads it without importing from the workspace.

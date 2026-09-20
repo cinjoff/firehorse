@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "fix-bug"
 firehorseSource: "packages/firehorse-core/definitions/workflows/fix-bug.md"
-firehorseSourceSha256: "04504b6d4559500eb76fab1034d7f51bfbcc97e3bac858a58a2e5e84bd01cdfd"
+firehorseSourceSha256: "9d354324dc880b9bfca1a74c50a1d7f5a4276699df9352aae7588aa920ca240c"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/fix-bug.md
 Definition ID: fix-bug
 Definition kind: workflow
-Source SHA-256: 04504b6d4559500eb76fab1034d7f51bfbcc97e3bac858a58a2e5e84bd01cdfd
+Source SHA-256: 9d354324dc880b9bfca1a74c50a1d7f5a4276699df9352aae7588aa920ca240c
 -->
 
 # Fix Bug
@@ -116,3 +116,25 @@ You run `diagnosing-bugs` phase by phase and insert the graph trace between Phas
 
 9. **Report on the ticket.** Comment with the loop, the call-site list, the confirmed cause, the regression evidence, the test path, and anything you did not verify. Leave the issue open for `/firehorse:ship` to close.
    → Done when: the comment is posted and the issue is still open.
+
+## Handoff
+
+Close the run with this block, after the step-9 report and with nothing following it.
+
+````
+───────────────────────────────────────────────
+## ▶ Next · <repo name>
+
+**Ship the fix for #<ticket>** · open the PR, merge it, cut the release, close the issue
+
+/firehorse:ship
+
+**Also available:**
+- `/clear` then `/firehorse:map <map>` · pick the next ticket from the frontier
+- `/firehorse:fix-bug <n>` · another bug onto this branch first
+───────────────────────────────────────────────
+````
+
+- **No `/clear` here.** `/firehorse:ship` re-runs the gate this session just ran, and the regression evidence from step 7 is what its PR body quotes.
+- **An unreproduced bug is not a handoff.** Where the step-2 loop never went red, the run stops there and the block does not render; report what you tried instead.
+- **Advisory voice.** The block offers a command. It never says the user must run it, and this workflow never runs it.

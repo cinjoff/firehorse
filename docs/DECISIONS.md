@@ -2940,7 +2940,7 @@ constraint moves from length to whether a line would change what a session does.
 - Delete the constraint outright — rejected: the block is loaded every session,
   and nothing would then stop reference material accumulating in it.
 - Keep the cap and define a home for overflow — rejected: `## Settled in
-  charting` is what that already produced, and wayfinder's template has no
+charting` is what that already produced, and wayfinder's template has no
   section for it.
 
 ## D-154 — The provider and orchestrator adapter trees are deleted
@@ -2979,7 +2979,7 @@ survives. This also closes the migration map's open question about
 ## D-155 — Firehorse is Claude-only tooling packaged as a plugin
 
 **Date:** 2026-09-11
-**Decision:** **Invalidated by D-170.** Firehorse is packaged as one Claude Code plugin. Recorded in the migration plan as D-136, where it also framed Firehorse as *personal* tooling: release ceremony, version parity, and the external-user framing were dropped with it.
+**Decision:** **Invalidated by D-170.** Firehorse is packaged as one Claude Code plugin. Recorded in the migration plan as D-136, where it also framed Firehorse as _personal_ tooling: release ceremony, version parity, and the external-user framing were dropped with it.
 **Rationale:** The "one source across ecosystems" premise died with Pi. Packaging as a plugin stands; the personal-tooling framing does not, and D-170 reverses it.
 **Alternatives considered:**
 
@@ -3252,3 +3252,169 @@ Every citation in the repo was ambiguous until you knew which file it meant.
   two logs stay two logs, and the next session has to learn which is which.
 - Leave both and disambiguate citations — rejected: every future citation pays
   the cost.
+
+## D-179 — An optional dependency never degrades the default path
+
+**Date:** 2026-09-20
+**Decision:** Any candidate that needs a third-party service is packaged as
+strictly optional. Firehorse works fully without it and a user who has never
+heard of the dependency sees no degraded workflow and no prompt to enable one.
+Adoption is configurable per project and globally, chosen at Firehorse setup or
+at project setup, never defaulted on. A trial of such a candidate reports both
+arms, and the arm without the dependency is the one that has to stand on its
+own. A candidate that cannot beat a deterministic baseline does not ship behind
+a flag either. Tracked on the tracker by the `optional-dep` label.
+**Rationale:** Jev forced the question, since it is interesting for exactly the
+branch-point decisions Firehorse makes and has no zero data retention policy
+today. The rule has to be general, because Jev will not be the last one. Making
+it a packaging rule rather than a per-vendor judgement means each new
+third-party candidate inherits the constraint instead of reopening it.
+**Scope:** This is the packaging constraint only. Firehorse's standing position
+on decision models is open at
+[#197](https://github.com/cinjoff/firehorse/issues/197) and this decision does
+not pre-empt it. The no-flag-for-a-losing-candidate clause restates
+[#203](https://github.com/cinjoff/firehorse/issues/203) and generalises it
+beyond Jev.
+**Alternatives considered:**
+
+- Decide per vendor as each arrives — rejected: relitigates the same question
+  every time, and the answer would drift with how much we liked the tool.
+- Allow a default-on optional dependency when the user has already configured
+  it elsewhere — rejected: "already configured" is not consent for this repo to
+  send it data, and it makes the default path depend on machine state.
+- Leave the rule in `docs/EVALUATION-FRAMEWORK.md` only — rejected: prose in a
+  framework doc is advice, and this needs to be the kind of thing a future
+  session is told not to relitigate.
+
+## D-180 — Required body sections may be added within Definition Format v1
+
+**Date:** 2026-09-20
+**Decision:** Adding a heading to `requiredSectionsByKind` is a v1-compatible
+change and does not bump `schemaVersion`. D-135 accepts the v1 body contract by
+reference: "Required body sections are the parser-enforced headings in
+`requiredSectionsByKind`." The constant is the contract, so the contract admits
+additions without a new version. `## Handoff` is the first one, required for
+`workflow` and not for `skill`.
+**Rationale:** The alternative reading, that the accepted list froze at nine
+headings, would make every future section a schema version. D-135 states the
+rule by reference to the constant rather than by listing the headings, and the
+enumeration in `docs/FIREHORSE-DEFINITION-FORMAT.md` documents what the constant
+held at the time. That doc is therefore downstream of the constant and is
+updated with it, which this decision requires. Recording the reading matters more
+than which way it went: an unstated reading gets relitigated by whoever next
+wants to add a section.
+**Scope:** Additions only, and only where every definition in the repo already
+complies so the change is green on landing. Removing or renaming a required
+section changes what an existing definition means and is not covered here.
+Nothing about frontmatter fields, whose compatibility rules are unchanged.
+**Consequence:** `Handoff` is required for workflows as of this decision, so a
+workflow without one fails `pnpm definitions:check` with
+`body.missing_section`. "Required" means present, not non-empty: `memory.md`
+legitimately has no successor and its section says so. Skills keep eight
+sections, because a skill is a capability something else invokes rather than a
+step in a sequence.
+**Alternatives considered:**
+
+- Bump `schemaVersion` to 3 — rejected: adding a required section breaks any
+  definition that lacks one, which is a real compatibility argument, but the
+  only definitions in existence are in this repo and all eight already comply.
+  The bump would be one nothing consumes, and it would set the precedent that
+  every section costs a version.
+- Leave `Handoff` a convention enforced by review — rejected: this is GSD's
+  position, and GSD duplicates its handoff block across 65 command files while
+  `scripts/lint-command-contract.cjs` checks frontmatter and `@`-refs but never
+  the block. The failure is silent, which is the worst property for a section
+  whose whole job is to be there.
+- Make `Handoff` required for skills too — rejected: most of this repo's skills
+  have no natural successor, so the section would say "none" in nearly every
+  one and teach the reader nothing.
+
+---
+
+## D-181 — The route from a map to a slice runs through a spec
+
+**Date:** 2026-09-20
+**Decision:** A `wayfinder` map never hands a ticket to `/firehorse:build`. The
+route is `map` → `spec` → `tickets` → `build`, carried by two new workflows,
+`/firehorse:spec` and `/firehorse:tickets`, wrapping upstream `to-spec` and
+`to-tickets` plus `triage`. `map`'s Handoff block routes on the map's state: an
+open child sends the next session back to `/firehorse:map`, a map with no open
+children and no fog sends it to `/firehorse:spec`. This answers
+[#222](https://github.com/cinjoff/firehorse/issues/222).
+**Rationale:** The two artifacts were both called tickets and are not the same
+thing. A wayfinder child is a question — its types are research, prototype,
+grilling and task — resolved by a decision, and wayfinder states outright that
+it produces decisions, not deliverables. A `to-tickets` ticket is a tracer-bullet
+vertical slice resolved by a commit. `map.md`'s Handoff block named
+`/firehorse:build <frontier ticket>` for every run, which handed `build` a
+question it cannot implement, and on a completed map it offered `/firehorse:ship`
+for work that had produced no code. Wayfinder already names the missing artifact:
+a map's destination "might be a spec to hand off and iterate on". The map body
+cannot be that spec, because Destination is one or two lines and Decisions-so-far
+is an index that never restates a decision.
+**Scope:** The completeness gate belongs to `spec`: an open child or a non-empty
+`## Not yet specified` ends the run and sends you back to `map`. A question
+surfaced while writing the spec is filed as a child of the map, never decided in
+the spec, because `to-spec` forbids the interview. Seams are confirmed against
+the graph or carry the word unconfirmed. `tickets` owns the slicing, the user's
+approval of the breakdown, and the triage labels, which until now nothing read.
+**Consequence:** Eight user-facing commands, up from six. The spec is published
+to the tracker as upstream `to-spec` does it, so a repo now carries three kinds
+of issue — map, spec, slice — and `docs/agents/issue-tracker.md` governs the
+verbs for each. Neither workflow has been run against a real map yet, so the
+completeness gate is the part most likely to need tuning.
+**Alternatives considered:**
+
+- Make the map its own spec, adding a section to the map body — rejected: the
+  map is defined as an index, not a store, and a spec inside it would restate
+  decisions that live in their tickets, which is the one thing wayfinder forbids
+  of the map body.
+- Let `build` take a wayfinder child directly when the child is a `task` —
+  rejected: `task` is manual work that unblocks a decision, like provisioning
+  access. It is not a slice of the destination, so `build`'s seam-first procedure
+  has nothing to bite on.
+- Call `to-spec` and `to-tickets` from inside `map` — rejected: each is a
+  session's work at a different altitude, and the smart-zone rule that gives the
+  map one ticket per session applies to the spec and the breakdown too.
+- Wait for the gardening and measurement gaps to be filled first — rejected:
+  this is the gap the workflows hit on every real effort, and the other two are
+  loops back that only matter once work is flowing.
+
+## D-182 — Firehorse stores no session position on disk
+
+**Date:** 2026-09-20
+**Decision:** A session's position is not written to a file. It crosses `/clear`
+because the user reads the handoff block before clearing, and a `Stop` hook that
+needs it reads `last_assistant_message` to see whether a block was rendered and
+derives the rest from git and the tracker. No workflow writes position, so there
+is no staleness, no reaping, no gitignore question and no second file under
+`.firehorse/`. Scope is a session's position only: D-182 does not decide where a
+rolling summary lives, which #258 owns.
+**Rationale:** Two of the three candidates fail on evidence. `scratchpad_dir` is
+absent from the `Stop` payload on CLI 2.1.278, despite being documented as
+available since 2.1.257. A file keyed by `cwd` fails because #264 established
+that `cwd` is the only field surviving `/clear`, and co-located concurrent
+sessions are the norm here rather than an edge case: 19 of the 26 project
+directories holding two or more timestamped sessions contain an overlapping
+pair, worktrees isolate the git checkout and not concurrent sessions, and this
+workspace alone has 21 sessions with 24 overlapping pairs. A `cwd`-keyed file
+would be read by the wrong session routinely.
+
+That left the question the ticket had not asked. Once position stops crossing
+`/clear` and records only what a workflow knows at its `Handoff` step, the
+workflow has already put that in its final message and `Stop` fires immediately
+after with that message in hand. The file buys only cross-turn memory, and the
+branch name plus `gh issue view` supply that without going stale.
+**Alternatives considered:**
+
+- `.firehorse/local/sessions/<session_id>.json`, one file per session — rejected:
+  `session_id` is unique but `/clear` mints a new one with no back-pointer
+  (#264), so the state is lost exactly when it is wanted.
+- One `.firehorse/session.json` per repo — rejected: last writer wins between
+  live sibling sessions, and neither knows.
+- Derive position from git and the tracker on every turn — accepted in part.
+  This is what the hook does; the rejected half was doing it on a schedule
+  rather than when a check needs it.
+- Keep a file anyway for the workflow-crashed-mid-run case — rejected: a file
+  written only at a successful `Handoff` step never represents a crashed run, so
+  the case it was meant to cover does not arise.

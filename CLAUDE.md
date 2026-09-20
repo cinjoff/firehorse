@@ -58,6 +58,13 @@ recorded there too. See `docs/agents/issue-tracker.md`.
 The five canonical triage roles, each label string equal to its name. See
 `docs/agents/triage-labels.md`.
 
+### Evaluation candidates
+
+New tools, skills, and workflows are filed through the `Evaluation candidate`
+issue form and move through the `eval:` label lifecycle. The intake gate, the
+paired-trial method, and the session-retro loop are in
+`docs/EVALUATION-FRAMEWORK.md`.
+
 ### Domain docs
 
 Single-context: one `CONTEXT.md` at the repo root, no `docs/adr/` yet. See

@@ -33,6 +33,32 @@ and no dependencies, and it is not a `wayfinder` ticket. It becomes work when a
 map is chartered against it, which is how `#61` became
 [#122](https://github.com/cinjoff/firehorse/issues/122).
 
+## Evaluation candidates
+
+A tool, repo, skill, or workflow proposed for Firehorse to take in is filed
+through the `Evaluation candidate` issue form, not as a free-form issue. The
+form lands it with `candidate` and `eval:proposed` and requires the five fields
+the intake gate asks for. The gate, the trial method, and the retro loop that
+generates most candidates are in
+[`docs/EVALUATION-FRAMEWORK.md`](../EVALUATION-FRAMEWORK.md).
+
+```sh
+gh issue create --template candidate.yml                 # file one
+gh issue list --label candidate --state open             # the backlog
+gh issue list --label eval:shortlisted --state open      # what is waiting on a trial
+gh issue list --label optional-dep --state open          # needs a third-party dependency
+```
+
+A candidate carries exactly one `eval:` label at a time and moves
+`eval:proposed` to `eval:shortlisted` to `eval:trialling` to `eval:adopted` or
+`eval:rejected`. Both terminal states need the trial's numbers in the issue; a
+rejection without a number is just an opinion and gets re-proposed in a month.
+`parked` defers a candidate without closing it, as it does for concepts.
+
+`retro` marks a finding that came out of reading session history rather than
+from outside. A retro finding that points at an external tool gets a
+`candidate` issue too, which is how the two loops connect.
+
 ## Wayfinding operations
 
 `mattpocock-skills:wayfinder` keeps a map and its child tickets on the tracker
@@ -40,8 +66,8 @@ and leaves the physical expression to this file. Here it is GitHub Issues, and
 every command below was run against this repo.
 
 **The map** is an issue labelled `wayfinder:map`. Its tickets are **native
-sub-issues** of it, labelled `wayfinder:decision`, `wayfinder:research`,
-`wayfinder:prototype`, `wayfinder:grilling`, or `wayfinder:task`.
+sub-issues** of it, labelled `wayfinder:research`, `wayfinder:prototype`,
+`wayfinder:grilling`, or `wayfinder:task`.
 
 ```sh
 gh issue list --label wayfinder:map --state open        # find the maps

@@ -32,7 +32,8 @@
   ],
   "skills": [
     "./skills/firehorse-setup",
-    "./skills/firehorse/firehorse-recall"
+    "./skills/firehorse/firehorse-recall",
+    "./skills/firehorse/skill-audit"
   ],
   "commands": [
     "./commands/firehorse/build.md",
@@ -40,6 +41,8 @@
     "./commands/firehorse/index.md",
     "./commands/firehorse/map.md",
     "./commands/firehorse/memory.md",
-    "./commands/firehorse/new-project.md"
+    "./commands/firehorse/new-project.md",
+    "./commands/firehorse/spec.md",
+    "./commands/firehorse/tickets.md"
   ]
 }

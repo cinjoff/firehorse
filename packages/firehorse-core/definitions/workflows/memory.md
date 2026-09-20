@@ -85,6 +85,14 @@ Check, build if needed, start, report. There is no judgement in this workflow an
 6. **Report the URL and the project count** the health check returned. One line — the user is going to look at the app, not read about it.
    → Done when: both are in one line.
 
+## Handoff
+
+This workflow renders no handoff block, and that is deliberate.
+
+`/firehorse:memory` is a place the user goes to look at something, not a step in a sequence. It has no successor to name, and a "what next" line on top of a one-line report is noise. It is also the one workflow that leaves something running.
+
+Instead, the step-6 line carries what a handoff would otherwise have to say: the URL, the project count, and the fact that the server keeps running after this session ends, with the command that stops it.
+
 ## Projection Notes
 
 This definition creates no execution graph and loads no skills — the whole workflow is three shell commands and a health check.

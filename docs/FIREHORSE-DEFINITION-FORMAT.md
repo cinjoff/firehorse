@@ -87,7 +87,10 @@ Required body sections, each as a `##` heading spelled exactly:
 6. `## Orchestration Intent`
 7. `## Safety Gates`
 8. `## Procedure`
-9. `## Projection Notes` — required to author, never shipped: the projector
+9. `## Handoff` — workflows only. Names the command that should run next, and
+   the conditions under which it names nothing. Required to be present, not to
+   be non-empty: a workflow with no successor says so there.
+10. `## Projection Notes` — required to author, never shipped: the projector
    strips it, because the running agent is told by the generated notice that the
    file is generated.
 

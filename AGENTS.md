@@ -69,6 +69,9 @@ Before starting work, read:
 - `docs/agents/` — tracker, domain, and label conventions the skills read.
 - `docs/MEMORY.md` — the self-hosted supermemory runbook. Read it before
   changing anything that touches recall, and when a session recalls nothing.
+- `docs/EVALUATION-FRAMEWORK.md` — how a new tool, skill, or workflow earns its
+  way in, and the session-retro loop that finds most of them. Read it before
+  proposing or trialling anything from outside this repo.
 
 Planning lives in the tracker, not in repo drafts (D-168) — for this repo that
 tracker is GitHub Issues, as `docs/agents/issue-tracker.md` records, and the
@@ -81,9 +84,9 @@ no plugin-cache symlinks. Keep it that way.
 
 ```sh
 pnpm install            # workspace install
-pnpm typecheck          # runs per-package typecheck
+pnpm typecheck          # definitions:check, then tsc over scripts/, then per-package
 pnpm build              # runs per-package build
-pnpm test               # vitest, when tests exist
+pnpm test               # root vitest over scripts/, then per-package test
 pnpm definitions:write  # regenerate Firehorse definition mirrors/manifests
 pnpm definitions:check  # validate definitions and generated mirror freshness
 pnpm upstreams:check    # detect upstream plugin drift against upstreams.lock.json

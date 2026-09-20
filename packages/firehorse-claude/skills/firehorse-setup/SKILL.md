@@ -1,6 +1,6 @@
 ---
 name: firehorse-setup
-description: Run once after installing Firehorse for Claude Code. Checks Firehorse setup, verifies the codebase-memory graph requirement, detects Superset, and configures the user-scoped Superset MCP server safely. Use --check for read-only status.
+description: Run once after installing Firehorse for Claude Code. Checks Firehorse setup, verifies the codebase-memory graph requirement, detects Superset, configures the user-scoped Superset MCP server safely, and installs the Firehorse status line. Use --check for read-only status.
 ---
 
 # firehorse-setup
@@ -34,6 +34,8 @@ skill to check state or to configure Superset MCP on its own.
   scope so it works across new projects and Superset workspaces.
 - Keep Superset API keys out of project files, `.mcp.json`, git worktrees, and
   chat history.
+- Install the Firehorse status line, without clobbering a status line the user
+  already configured.
 
 ## Arguments
 
@@ -43,6 +45,9 @@ Interpret the user's arguments naturally:
 - `--superset` / `--force-superset` — configure Superset MCP even if detection
   is inconclusive.
 - `--no-superset` — skip Superset MCP setup.
+- `--no-statusline` — skip the status line section.
+- `--force-statusline` — replace an existing `statusLine.command` that is not
+  Firehorse's. Without it, a foreign status line is left alone.
 
 ## Setup status mode (`--check`)
 
@@ -75,6 +80,13 @@ Check:
 6. Firehorse header helper:
    - `~/.config/firehorse/superset-mcp-headers.mjs` exists and is not
      group/world-writable on Unix-like systems.
+7. Status line:
+   - `~/.claude/statusline/statusline.js` exists and matches the copy shipped
+     beside this skill.
+   - `~/.claude/statusline/ccstatusline.json` exists.
+   - `settings.json` `statusLine.command` runs that script.
+   - `ccstatusline` resolves on `PATH` (optional; its absence costs the second
+     line, not the first).
 
 Status table shape:
 
@@ -88,6 +100,8 @@ Status table shape:
 | Secret file permissions | ✓ private / ✗ too open / ○ not present    |
 | Header helper           | ✓ configured / ✗ missing / ⚠ needs update |
 | Claude MCP config       | ✓ configured / ✗ missing / ⚠ needs update |
+| Status line             | ✓ installed / ✗ missing / ⚠ foreign       |
+| ccstatusline            | ✓ on PATH / ○ absent (line 2 disabled)    |
 ```
 
 If anything needs action, show the exact next command or file path. Then stop.
@@ -250,7 +264,116 @@ confirm the Superset server is registered.
 Verification must be non-destructive. Do not create Superset workspaces or run
 agents during setup verification.
 
-### 8. Summary
+### 8. Install the status line
+
+Skip this section if the user passed `--no-statusline`.
+
+Claude Code renders one status line, set by `statusLine.command` in
+`~/.claude/settings.json`. Firehorse ships a two-line one:
+
+```text
+Opus 5 (1M) │ firehorse ⎇ main │ ███████░░░ 98K/150K 65% (10% of 1000K) │ ⚙ map, build
+2hr 8m · Cost: $1.23 · ↻ 1 · Session: 12.0% · Block: 4hr 39m · Weekly: 4.0% · Weekly Reset: 3d 17hr
+```
+
+Line 1 is rendered by `statusline.js` from the payload Claude Code pipes in:
+model, directory and branch, context used against a budget, and the skills
+loaded this session. Line 2 is rendered by
+[ccstatusline](https://github.com/sirmalloc/ccstatusline) against a
+Firehorse-owned config: git dirty counts, session clock and cost, compaction
+count, 5-hour block usage and timer, weekly usage and reset.
+
+Four design points, so nobody "fixes" them later:
+
+- **The budget, not the window.** The bar measures
+  `context_window.total_input_tokens` against 150,000 rather than against the
+  model's window, because a 1M window makes a 200K session look cheap when it
+  is already degrading. Green under 60%, yellow at 60, orange at 85, red past
+  the budget. `CLAUDE_CTX_BUDGET` overrides the number.
+- **ccstatusline never runs in the render path.** It takes about 1.2 seconds per
+  render, which is 20x the rest of the status line. `statusline.js` serves its
+  last cached output and refreshes it in a detached child, so rendering stays
+  around 50ms and the second line lags by at most `CLAUDE_STATUSLINE_CCSL_TTL`
+  seconds (default 15). Usage windows move in hours; nobody sees the lag.
+- **Firehorse owns its own ccstatusline config.** The `--config` flag points at
+  `~/.claude/statusline/ccstatusline.json`, so a user who already runs
+  ccstatusline keeps `~/.config/ccstatusline/settings.json` untouched.
+- **Skills are read from the transcript, not from hooks.** ccstatusline has a
+  Skills widget, but it reports skill activity from hook data, so it needs a
+  hook registered before it shows anything. `statusline.js` scans the session
+  transcript for `Skill` tool calls instead, reading only the bytes appended
+  since the last render. No hook to install, and it works on the first render
+  of an existing session.
+
+#### Steps
+
+1. Copy both files from `statusline/` beside this skill — never retype them:
+
+```sh
+mkdir -p ~/.claude/statusline
+cp "<this skill's directory>/statusline/statusline.js" ~/.claude/statusline/statusline.js
+cp "<this skill's directory>/statusline/ccstatusline.json" ~/.claude/statusline/ccstatusline.json
+chmod 755 ~/.claude/statusline/statusline.js
+```
+
+Overwrite `statusline.js` on every run; it is Firehorse's file. Do **not**
+overwrite `ccstatusline.json` if it already exists — that one is the user's to
+edit.
+
+2. Point `statusLine.command` at it, preserving anything already there:
+
+```sh
+node -e '
+  const fs = require("node:fs");
+  const file = process.argv[1];
+  const settings = JSON.parse(fs.readFileSync(file, "utf8") || "{}");
+  const want = "node \"$HOME/.claude/statusline/statusline.js\"";
+  const current = settings.statusLine?.command;
+  if (current && current !== want && !current.includes("statusline/statusline.js")) {
+    console.error("FOREIGN:" + current);
+    process.exit(2);
+  }
+  settings.statusLine = { type: "command", command: want, padding: 0, refreshInterval: 10 };
+  fs.writeFileSync(file, JSON.stringify(settings, null, 2) + "\n");
+' ~/.claude/settings.json
+```
+
+Exit code 2 means the user already has a different status line. Do **not**
+replace it. Print what is there and offer `--force-statusline`. This is the
+mistake [ccstatusline #565](https://github.com/sirmalloc/ccstatusline/issues/565)
+is open about; Firehorse should not repeat it.
+
+`refreshInterval` needs Claude Code >= 2.1.97. On older versions the key is
+ignored, which costs live ticking on the block timer and nothing else.
+
+3. Install `ccstatusline` if it is missing. It is optional — without it line 1
+   still renders and line 2 is simply absent:
+
+```sh
+command -v ccstatusline >/dev/null || npm install -g ccstatusline@latest
+```
+
+Install it globally rather than leaving `npx` in the command: `npx` re-resolves
+the package on every refresh and turns a 1.2-second render into several.
+
+4. Verify without waiting for a real session. The first run writes no second
+   line, because it only schedules the refresh:
+
+```sh
+printf '{"session_id":"setup-probe","cwd":"%s","model":{"display_name":"probe"},"workspace":{"current_dir":"%s"},"context_window":{"total_input_tokens":98000,"context_window_size":200000,"used_percentage":49}}' "$PWD" "$PWD" \
+  | node ~/.claude/statusline/statusline.js
+```
+
+Run it twice a couple of seconds apart. The first call should print one line in
+well under a second; the second should print two. If the second line never
+arrives, check that `ccstatusline` is on `PATH` and that
+`~/.claude/statusline/ccstatusline.json` parses.
+
+5. Tell the user the status line appears after they restart or reload Claude
+   Code, and that `/statusline` in Claude Code will offer to rewrite the command —
+   which would replace Firehorse's.
+
+### 9. Summary
 
 Print:
 
@@ -267,6 +390,7 @@ Then summarize:
 - Claude MCP status
 - header helper path
 - API key status without printing the key
+- status line: installed / skipped / left alone, and whether ccstatusline is present
 - next command, if any
 
 ## Future setup sections

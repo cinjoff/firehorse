@@ -39,7 +39,7 @@ parses it with `gray-matter`, validates the frontmatter against a Zod schema in
 `types.ts`, checks that the file's path matches its `kind` and `id`, and requires
 the section headings listed in `requiredSectionsByKind` — for a workflow:
 Purpose, Usage, Inputs, Outputs, Supporting Capabilities, Orchestration Intent,
-Safety Gates, Procedure, Projection Notes. IDs are globally unique across kinds,
+Safety Gates, Procedure, Handoff, Projection Notes. IDs are globally unique across kinds,
 and `validation.ts` enforces that plus alias collisions and `replacedBy` targets.
 
 `projection.ts` emits one file per definition, to a root chosen by the
@@ -79,10 +79,12 @@ prefixes and sorts them, so hand-maintained entries such as
 
 ## The workflows you invoke
 
-Seven workflow definitions sit under `definitions/workflows/`, and their
-generated commands are the user-facing surface. They orchestrate upstream skills
-rather than restating them, and a workflow is the only carrier Firehorse uses for
-standing preferences (D-159).
+Twelve workflow definitions sit under `definitions/workflows/`. Eight project to
+the user-facing plugin commands; `ship`, `triage`, `upstream-scan`, and
+`upstreams-check` declare `audience: maintainer` and project into this repo's own
+`.claude/commands/`. They orchestrate upstream skills rather than restating them,
+and a workflow is the only carrier Firehorse uses for standing preferences
+(D-159).
 
 - `new-project` — stands a repo up for Firehorse: remote, tracker, the label
   vocabulary created in the tracker, `setup-matt-pocock-skills`,
@@ -95,14 +97,30 @@ standing preferences (D-159).
 - `map` — charts a wayfinder map from a loose idea, or works through an existing
   one, and fills the map's `## Notes` from what this repo actually has so later
   sessions inherit the preferences.
+- `spec` — turns a map whose way is clear into the spec its slices get cut from:
+  a completeness gate on the map, decisions read from the closed tickets, seams
+  confirmed against the graph, published to the tracker and linked from the map
+  (D-181).
+- `tickets` — cuts a spec into tracer-bullet vertical slices, wired with the
+  tracker's blocking edges, each naming its seam and marked AFK or HITL, then
+  triaged so `ready-for-agent` means a fresh session could start (D-181).
 - `build` — takes one ticket to a committed change: establish the affected seam
   from the graph, prototype first when the UI shape is uncertain, implement
   test-first, and report verification evidence.
 - `fix-bug` — builds the failing feedback loop, enumerates the failing symbol's
   callers before hypothesising, and reports regression evidence from both sides
   of the fix.
+- `memory` — opens the self-hosted supermemory store as an interactive graph,
+  starting the local proxy when it is not already running and handing back the
+  URL. Local-only by design; the runbook is `docs/MEMORY.md`.
 - `ship` — runs the release sequence behind a green gate: review, PR, merge,
   changelog entry, tag, release, and one closing comment per resolved issue.
+- `triage` — re-triages the whole open tracker, judging each issue's group, kind,
+  readiness and urgency, applying what clears its threshold and reporting what a
+  person still has to decide.
+- `upstream-scan` — sweeps your newly starred repos and what the last 30 days
+  turned up, judges each candidate with Jev against what firehorse already has,
+  renders the result as a page, and keeps dismissed candidates in a mute index.
 - `upstreams-check` — reports upstream skill drift and what it costs, naming the
   workflows whose `upstreamSkills` reference a moved skill and the body steps at
   risk.

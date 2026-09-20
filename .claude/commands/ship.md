@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "ship"
 firehorseSource: "packages/firehorse-core/definitions/workflows/ship.md"
-firehorseSourceSha256: "47ccd1247b684387ddd872990328b9ec365f438be3f443bde2c8b97eff1b9103"
+firehorseSourceSha256: "e3b76104498e5d33aca4841e34162017d14e06d64443210b03c37a5a65ce3308"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/ship.md
 Definition ID: ship
 Definition kind: workflow
-Source SHA-256: 47ccd1247b684387ddd872990328b9ec365f438be3f443bde2c8b97eff1b9103
+Source SHA-256: e3b76104498e5d33aca4841e34162017d14e06d64443210b03c37a5a65ce3308
 -->
 
 # Ship
@@ -163,3 +163,23 @@ grep -rn '"version"' package.json packages/*/package.json \
 
 12. **Report** the PR, both tags, the release, and every issue you closed.
     → Done when: all four are named.
+
+## Handoff
+
+Close the run with this block, after the step-12 report and with nothing following it.
+
+````
+───────────────────────────────────────────────
+## ▶ Next · <repo name>
+
+**Back to the map** · v<version> closed <n> issues
+
+/clear then:
+
+/firehorse:map
+───────────────────────────────────────────────
+````
+
+- **Clear first.** The release is out and every artifact it produced is on GitHub. Nothing in this session's context helps the next ticket.
+- **No block where the merge did not happen.** A blocked PR, a red gate at step 1, or a review that found something all end the run in place. Report the blocker; recommending the next map would step over it.
+- **Advisory voice.** The block offers a command. It never says the user must run it, and this workflow never runs it.

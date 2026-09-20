@@ -22,6 +22,8 @@ CHECK_ONLY=0
 ASSUME_YES=0
 SKIP_MEMORY=0
 SKIP_SUPERSET=0
+SKIP_STATUSLINE=0
+FORCE_STATUSLINE=0
 
 # Summary rows, filled in as we go: "status<TAB>component<TAB>detail".
 SUMMARY=()
@@ -184,6 +186,8 @@ Usage: install.sh [options]
 
 Options:
   --check           Report what is and is not set up. Writes nothing.
+  --no-statusline   Skip installing the Firehorse status line.
+  --force-statusline  Replace an existing statusLine.command that is not ours.
   --yes, -y         Accept every prompt. For non-interactive runs.
   --skip-memory     Do not set up the self-hosted supermemory stack.
   --skip-superset   Do not configure the Superset MCP server.
@@ -201,6 +205,8 @@ EOF
 while [ $# -gt 0 ]; do
   case "$1" in
     --check) CHECK_ONLY=1 ;;
+    --no-statusline) SKIP_STATUSLINE=1 ;;
+    --force-statusline) FORCE_STATUSLINE=1 ;;
     --yes|-y) ASSUME_YES=1 ;;
     --skip-memory) SKIP_MEMORY=1 ;;
     --skip-superset) SKIP_SUPERSET=1 ;;
@@ -321,6 +327,106 @@ else
     note "Run it by hand: claude plugin install firehorse@firehorse"
     record fail "Plugin" "install failed"
   fi
+fi
+end_step
+
+# ── 3b. Status line ──────────────────────────────────────────────────────────
+
+step "Status line"
+
+SL_DIR="$HOME/.claude/statusline"
+SL_SCRIPT="$SL_DIR/statusline.js"
+SL_CONFIG="$SL_DIR/ccstatusline.json"
+SL_SETTINGS="$HOME/.claude/settings.json"
+SL_SRC="packages/firehorse-claude/skills/firehorse-setup/statusline"
+SL_RAW="https://raw.githubusercontent.com/$FIREHORSE_REPO/main/$SL_SRC"
+
+# Works from a clone and from `curl | bash`, where there is no checkout to read.
+fetch_statusline_file() {
+  local name="$1" dest="$2"
+  if [ -f "$SL_SRC/$name" ]; then
+    cp "$SL_SRC/$name" "$dest"
+  else
+    curl -fsSL "$SL_RAW/$name" -o "$dest"
+  fi
+}
+
+if [ "$SKIP_STATUSLINE" -eq 1 ]; then
+  skip "skipped (--no-statusline)"
+  record skip "Status line" "skipped by flag"
+elif ! have node; then
+  warn "node not found; the status line needs it"
+  record skip "Status line" "node missing"
+elif would "install the Firehorse status line into $SL_DIR"; then
+  record skip "Status line" "not installed (check mode)"
+else
+  mkdir -p "$SL_DIR"
+
+  # statusline.js is ours, so it is replaced every run. ccstatusline.json is the
+  # user's to edit, so it is only written when absent.
+  if fetch_statusline_file statusline.js "$SL_SCRIPT"; then
+    chmod 755 "$SL_SCRIPT"
+    ok "installed $SL_SCRIPT"
+  else
+    fail "could not fetch statusline.js"
+  fi
+
+  if [ -f "$SL_CONFIG" ]; then
+    skip "kept your existing ccstatusline.json"
+  elif fetch_statusline_file ccstatusline.json "$SL_CONFIG"; then
+    ok "installed $SL_CONFIG"
+  else
+    warn "could not fetch ccstatusline.json; the second line will be absent"
+  fi
+
+  # ccstatusline renders the second line. Without it the first line still works,
+  # so a failure here is a warning. Global, never npx: npx re-resolves the
+  # package on every refresh and multiplies the render cost.
+  if have ccstatusline; then
+    ok "ccstatusline already on PATH"
+  elif have npm; then
+    if live "installing ccstatusline" npm install -g ccstatusline@latest; then
+      ok "installed ccstatusline"
+    else
+      warn "ccstatusline install failed; the usage line will be absent"
+    fi
+  else
+    warn "npm not found; skipping ccstatusline (the usage line will be absent)"
+  fi
+
+  # Never clobber a status line the user already chose.
+  mkdir -p "$(dirname "$SL_SETTINGS")"
+  [ -f "$SL_SETTINGS" ] || echo '{}' > "$SL_SETTINGS"
+  SL_RESULT=0
+  FIREHORSE_FORCE_STATUSLINE="$FORCE_STATUSLINE" node -e '
+    const fs = require("node:fs");
+    const file = process.argv[1];
+    const settings = JSON.parse(fs.readFileSync(file, "utf8") || "{}");
+    const want = "node \"$HOME/.claude/statusline/statusline.js\"";
+    const current = settings.statusLine?.command;
+    const ours = current === want || (current ?? "").includes("statusline/statusline.js");
+    if (current && !ours && process.env.FIREHORSE_FORCE_STATUSLINE !== "1") {
+      console.error(current);
+      process.exit(2);
+    }
+    settings.statusLine = { type: "command", command: want, padding: 0, refreshInterval: 10 };
+    fs.writeFileSync(file, JSON.stringify(settings, null, 2) + "\n");
+  ' "$SL_SETTINGS" 2>/tmp/firehorse-statusline.err || SL_RESULT=$?
+
+  if [ "$SL_RESULT" -eq 0 ]; then
+    ok "pointed statusLine.command at the Firehorse status line"
+    note "Takes effect after you restart or reload Claude Code."
+    record ok "Status line" "installed"
+  elif [ "$SL_RESULT" -eq 2 ]; then
+    warn "you already have a status line; leaving it alone"
+    note "Yours: $(cat /tmp/firehorse-statusline.err)"
+    note "Replace it with: ./install.sh --force-statusline"
+    record skip "Status line" "left your own in place"
+  else
+    fail "could not update $SL_SETTINGS"
+    record fail "Status line" "settings.json update failed"
+  fi
+  rm -f /tmp/firehorse-statusline.err
 fi
 end_step
 

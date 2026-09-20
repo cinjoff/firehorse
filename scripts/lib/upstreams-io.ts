@@ -230,10 +230,11 @@ async function resolveInstallPath(options: {
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .sort((a, b) => (a < b ? 1 : -1));
-  if (versions.length === 0) {
+  const newest = versions[0];
+  if (newest === undefined) {
     return null;
   }
-  const root = path.join(cacheDir, versions[0]);
+  const root = path.join(cacheDir, newest);
   return { path: root, version: await readManifestVersion(root) };
 }
 
@@ -298,12 +299,12 @@ async function listSkillFiles(root: string): Promise<string[]> {
 /** The frontmatter `name`, which is what an `upstreamSkills` entry references. */
 export function readFrontmatterName(content: string): string | null {
   const match = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(content);
-  if (!match) {
+  if (!match?.[1]) {
     return null;
   }
   for (const line of match[1].split(/\r?\n/)) {
     const field = /^name:\s*(.+?)\s*$/.exec(line);
-    if (field) {
+    if (field?.[1]) {
       return field[1].replace(/^["']|["']$/g, "");
     }
   }
@@ -317,12 +318,12 @@ export function readFrontmatterName(content: string): string | null {
  */
 export function readFrontmatterDisablesModelInvocation(content: string): boolean {
   const match = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(content);
-  if (!match) {
+  if (!match?.[1]) {
     return false;
   }
   for (const line of match[1].split(/\r?\n/)) {
     const field = /^disable-model-invocation:\s*(.+?)\s*$/.exec(line);
-    if (field) {
+    if (field?.[1]) {
       return field[1].replace(/^["']|["']$/g, "").toLowerCase() === "true";
     }
   }

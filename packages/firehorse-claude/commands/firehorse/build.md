@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "build"
 firehorseSource: "packages/firehorse-core/definitions/workflows/build.md"
-firehorseSourceSha256: "8112c356efbffd43666564f3b82dd82bb6fcc88b382883576cf3adfd9ab33832"
+firehorseSourceSha256: "0304ad751e2261f4483ea8b85bfc5b753af0b9272423f414af1536b1858f1801"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/build.md
 Definition ID: build
 Definition kind: workflow
-Source SHA-256: 8112c356efbffd43666564f3b82dd82bb6fcc88b382883576cf3adfd9ab33832
+Source SHA-256: 0304ad751e2261f4483ea8b85bfc5b753af0b9272423f414af1536b1858f1801
 -->
 
 # Build
@@ -26,13 +26,13 @@ Use this workflow to take one ticket from the tracker to a committed, verified c
 
 - The **seam** — the public boundary under change — is established from the codebase graph, in writing, before you open a file.
 - An uncertain **shape** — what the UI should look like, whether a state model feels right — goes through a prototype before any production code exists.
-- The report carries **evidence**: commands and their output, not a claim that the work is done.
+- The report carries **evidence**: commands and their output, including a proof that fails without the change, not a claim that the work is done.
 
 `tdd` refuses to write a test at an unconfirmed seam. This workflow is how the seam gets confirmed: from `search_graph` and `trace_path`, in writing, before the first test.
 
 ## Usage
 
-Invoke the generated command with a ticket reference — whatever this repo's tracker uses, an issue URL or number where that tracker is GitHub — or a path to a spec. `$ARGUMENTS` carries it. One ticket per invocation.
+Invoke the generated command with a ticket reference — whatever this repo's tracker uses, an issue URL or number where that tracker is GitHub — or a spec. `$ARGUMENTS` carries it. One slice per invocation: a spec that has been sliced is read for its frontier and handed back, never built whole.
 
 ## Inputs
 
@@ -47,7 +47,7 @@ Invoke the generated command with a ticket reference — whatever this repo's tr
 - A seam list: the public boundary under change and its call sites, each with the graph query that produced it.
 - A prototype linked from the issue, when the shape was the open question.
 - Small, reviewable commits on the current branch.
-- A verification block on the issue: every command run, its output, and what you did not verify.
+- A verification block on the issue: every command run, its output, the proof's `Before` and `After`, and what you did not verify.
 
 ## Supporting Capabilities
 
@@ -81,8 +81,9 @@ You drive the sequence; `implement` and `tdd` run inline. `prototype` produces a
 - **Structure first, files second.** The seam list from step 3 exists before you open a source file.
 - **Confirmed seams only.** `tdd` runs at the seams the user confirmed in step 3, and nowhere else.
 - **Shape before pixels.** While "what should this look like" is still open, the artifact is a prototype.
+- **A spec is not a slice.** Build one only where it names a single behaviour at a single confirmed seam. A spec with published children is read for its frontier and handed back, because building a whole feature in one session is what the slices exist to prevent.
 - **Cite only what you opened.** `check_index_coverage` confirms every path the graph returns before you quote it.
-- **Evidence closes work, claims do not.** The gate output goes on the issue; a red gate is the result of the run.
+- **Evidence closes work, claims do not.** The gate output and the proof go on the issue; a red gate, or a proof that passes as readily without the change, is the result of the run.
 - **Planning lives in the tracker** — issues and their comments, the way the tracker doc records them, never a markdown draft committed beside the code.
 - **Generated files come from their generator.** Where this repo generates a file from a source of truth, edit the source and re-run the generator; a hand-edit to the output is lost at the next run.
 
@@ -94,8 +95,10 @@ You drive the sequence; `implement` and `tdd` run inline. `prototype` produces a
 
 ## Procedure
 
-1. **Read the ticket** through the tracker `docs/agents/issue-tracker.md` records — `gh issue view <number> --comments` where that is GitHub. Name the behaviour that must change. A wayfinder child issue also means loading its map's `## Notes` and obeying what it says.
-   → Done when: the behaviour under change is written in one sentence.
+1. **Read the ticket** through the tracker `docs/agents/issue-tracker.md` records — `gh issue view <number> --comments` where that is GitHub. Name the behaviour that must change. A ticket that reaches a map, directly as a wayfinder child or through the spec it was cut from, also means loading that map's `## Notes` and obeying what it says; a slice that carries its own gate command already has the part that matters.
+
+   Given a spec rather than a slice, read its children first and branch on what you find: children already published means this run builds nothing, and instead reports the frontier and names the slice to start with. No children and one behaviour at one confirmed seam means build it. No children and anything wider means route to `/firehorse:tickets` and stop.
+   → Done when: the behaviour under change is written in one sentence, or the run has reported a frontier and stopped.
 
 2. **Query the graph.** The graph is how you learn this codebase's architecture and the impact of the change before touching it. For every symbol the ticket names, `search_graph`; for each hit, `trace_path` for its callers; `get_architecture` when the ticket crosses modules. Then `index_status` for freshness and `check_index_coverage` on every path you intend to cite.
    → Done when: every named symbol has a trace, and the index's freshness is recorded.
@@ -112,11 +115,35 @@ You drive the sequence; `implement` and `tdd` run inline. `prototype` produces a
 6. **Implement.** `mattpocock-skills:implement` is user-invoked only, so read its `SKILL.md` at the path in [Supporting Capabilities](#supporting-capabilities) and follow its loop yourself; invoke `mattpocock-skills:tdd` at the step-3 seams.
    → Done when: the behaviour from step 1 is in place and its tests pass.
 
-7. **Run the gate.** Derive it from this repo rather than assuming one: the typecheck, test and check scripts its manifest declares — `package.json` `scripts` for a Node repo — run through the package manager its lockfile names. No gate script, no gate: say so in one line. Keep the output verbatim.
-   → Done when: every gate is green, or a red gate is recorded and the run stops here.
+7. **Run the gate, then the proof.** Derive the gate from this repo rather than assuming one: the typecheck, test and check scripts its manifest declares — `package.json` `scripts` for a Node repo — run through the package manager its lockfile names, unless the ticket carries its own gate command, which wins. No gate script, no gate: say so in one line.
+
+   Then run the ticket's `## Proof` command. A green gate says the repo is not broken, and it was green before this slice existed; the proof is the only thing that says this slice's behaviour is now there. Keep both outputs verbatim. A ticket with no Proof block gets the gate alone and one line saying so, because a proof written after the change is a description of what you just did.
+   → Done when: every gate is green and the proof command prints the `After` the ticket named, or a red gate or a proof that did not move is recorded and the run stops here.
 
 8. **Commit.** Small, reviewable commits on the current branch.
    → Done when: the working tree is clean.
 
-9. **Report on the ticket.** Comment with the seam list, the prototype link when there was one, the gate commands with their output, and what you did not verify. Leave the issue open for `/firehorse:ship` to close.
+9. **Report on the ticket.** Comment with the seam list, the prototype link when there was one, the gate commands with their output, the proof command with its `Before` and `After`, and what you did not verify. Leave the issue open for `/firehorse:ship` to close.
    → Done when: the comment is posted and the issue is still open.
+
+## Handoff
+
+Close the run with this block, after the step-9 report and with nothing following it.
+
+````
+───────────────────────────────────────────────
+## ▶ Next · <repo name>
+
+**Ship #<ticket>** · open the PR, merge it, cut the release, close the issue
+
+/firehorse:ship
+
+**Also available:**
+- `/clear` then `/firehorse:build <n>` · the next unblocked slice, read from the spec's children
+- `/firehorse:build <n>` · another slice onto this branch first, no clear
+───────────────────────────────────────────────
+````
+
+- **No `/clear` here.** `/firehorse:ship` reviews the diff this session just produced and re-runs the same gate. The seam list from step 3 and the gate output from step 7 are still worth having, so clearing costs more than it saves.
+- **A red gate ends the run at step 7,** and the block goes with it. Name the gate that failed and the command that reproduces it; offer no next workflow until it is green.
+- **Advisory voice.** The block offers a command. It never says the user must run it, and this workflow never runs it.

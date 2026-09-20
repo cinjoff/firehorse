@@ -15,6 +15,9 @@ importers:
         specifier: 11.15.0
         version: 11.15.0
     devDependencies:
+      '@types/node':
+        specifier: ^22.7.4
+        version: 22.19.19
       prettier:
         specifier: ^3.3.3
         version: 3.8.3
@@ -24,6 +27,9 @@ importers:
       typescript:
         specifier: ^5.6.2
         version: 5.9.3
+      vitest:
+        specifier: ^2.1.2
+        version: 2.1.9(@types/node@22.19.19)(jsdom@30.0.1)(lightningcss@1.33.0)
 
   packages/firehorse-claude: {}
 
