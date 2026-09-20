@@ -65,6 +65,7 @@ Invoke the generated command with the spec: an issue URL or number where the spe
 - One issue per slice, published in dependency order, each with its blocking edges expressed the way this tracker expresses them.
 - A seam line on every slice: the boundary it changes, and the query that found it.
 - The gate command from the map's `## Notes` on every slice, so the build session runs the gate this effort settled on instead of one derived from the manifest.
+- A `## Proof` block on every slice: the end state, the command that shows it, how that command fails today, and what it prints once the slice lands.
 - A triage label on every slice, and an agent brief on the ones labelled `ready-for-agent`.
 - The frontier named in the report: the slices whose blockers are all closed.
 
@@ -93,6 +94,7 @@ You drive the sequence; `to-tickets` supplies the shape and `triage` the labels.
 
 - A stale graph answers confidently. `index_status` behind HEAD means the call-site counts describe an older tree, and a migration batch sized from them is sized wrong.
 - A spec's User Stories are not slices. They are the acceptance surface; several usually collapse into one tracer bullet, and one occasionally needs three.
+- A slice you cannot write a `Before` line for is usually not vertical. A horizontal slice delivers a layer, and a layer has no observable end state to fail against, so the missing `Before` is the tell rather than a reason to weaken the proof.
 - A slice sized by how much code it touches is sized wrong. Size it by whether one session can carry it from change to evidence, with the repo's own gate run over it.
 - Two things here are called triage. Step 6 is the upstream skill, run over the slices this session just published. A tracker-wide re-triage is a different pass with a different scope, and running it from here would re-label work this spec has nothing to do with.
 
@@ -104,8 +106,20 @@ You drive the sequence; `to-tickets` supplies the shape and `triage` the labels.
 2. **Confirm the seams and the blast radius.** `get_architecture` for the modules the spec crosses, then `search_graph` and `trace_path` for each seam it names. Where a mechanical change fans across the tree, `query_graph` for the multi-hop fan-out and count the call sites rather than estimating them, because that count is what sizes the batches in an expand-contract sequence. Then `index_status` for freshness and `check_index_coverage` before citing any path.
    → Done when: every seam is confirmed, carried forward as unconfirmed, or marked proposed where the boundary does not exist yet, and any wide refactor is identified with its call-site count.
 
-3. **Draft the slices.** Read `to-tickets`'s `SKILL.md` and follow it: tracer bullet first, prefactor before the work it eases, expand-contract for a wide refactor, blocking edges on each. Every slice then carries three things of this repo's own: its seam line, its AFK or HITL marking, and the gate command from the map's `## Notes`. A build session opens on the slice and never sees that map, so without the third it derives the gate from the manifest and misses whatever the Notes settled.
-   → Done when: every slice is vertical, sized to one session, and carries a seam, a marking, its blockers, and the gate command.
+3. **Draft the slices.** Read `to-tickets`'s `SKILL.md` and follow it: tracer bullet first, prefactor before the work it eases, expand-contract for a wide refactor, blocking edges on each. Every slice then carries four things of this repo's own: its seam line, its AFK or HITL marking, the gate command from the map's `## Notes`, and a `## Proof` block. A build session opens on the slice and never sees that map, so without the third it derives the gate from the manifest and misses whatever the Notes settled.
+
+   The Proof block is four lines:
+
+   ````
+   ## Proof
+   - End state: <one observable sentence: what is true once this works>
+   - Command: <what to run>
+   - Before: <how that command fails today>
+   - After: <what it prints once this slice lands>
+   ````
+
+   Write `Before` from what the seam does today, not from what the slice will do. A proof that already passes proves nothing, and the repo's own gate is green before the slice exists, so the gate is never the proof.
+   → Done when: every slice is vertical, sized to one session, and carries a seam, a marking, its blockers, the gate command, and a Proof block whose `Before` describes a failure that reproduces today.
 
 4. **Quiz the user.** Present the numbered breakdown with title, blocked-by, and what each slice delivers. Ask about granularity, about whether each edge genuinely gates, and about merges and splits. Iterate until approved.
    → Done when: the user has approved the breakdown as it stands.

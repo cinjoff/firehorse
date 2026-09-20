@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "build"
 firehorseSource: "packages/firehorse-core/definitions/workflows/build.md"
-firehorseSourceSha256: "45d77f1ec2fd8e64e49fabef7e7718858f8a008723cb5160e3553d04e095adc5"
+firehorseSourceSha256: "0f57c610d0d78705298d904682cfd1ca6769b06b96e54861b70279440b3033fe"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/build.md
 Definition ID: build
 Definition kind: workflow
-Source SHA-256: 45d77f1ec2fd8e64e49fabef7e7718858f8a008723cb5160e3553d04e095adc5
+Source SHA-256: 0f57c610d0d78705298d904682cfd1ca6769b06b96e54861b70279440b3033fe
 -->
 
 # Build
@@ -26,7 +26,7 @@ Use this workflow to take one ticket from the tracker to a committed, verified c
 
 - The **seam** — the public boundary under change — is established from the codebase graph, in writing, before you open a file.
 - An uncertain **shape** — what the UI should look like, whether a state model feels right — goes through a prototype before any production code exists.
-- The report carries **evidence**: commands and their output, not a claim that the work is done.
+- The report carries **evidence**: commands and their output, including a proof that fails without the change, not a claim that the work is done.
 
 `tdd` refuses to write a test at an unconfirmed seam. This workflow is how the seam gets confirmed: from `search_graph` and `trace_path`, in writing, before the first test.
 
@@ -47,7 +47,7 @@ Invoke the generated command with a ticket reference — whatever this repo's tr
 - A seam list: the public boundary under change and its call sites, each with the graph query that produced it.
 - A prototype linked from the issue, when the shape was the open question.
 - Small, reviewable commits on the current branch.
-- A verification block on the issue: every command run, its output, and what you did not verify.
+- A verification block on the issue: every command run, its output, the proof's `Before` and `After`, and what you did not verify.
 
 ## Supporting Capabilities
 
@@ -83,7 +83,7 @@ You drive the sequence; `implement` and `tdd` run inline. `prototype` produces a
 - **Shape before pixels.** While "what should this look like" is still open, the artifact is a prototype.
 - **A spec is not a slice.** Build one only where it names a single behaviour at a single confirmed seam. A spec with published children is read for its frontier and handed back, because building a whole feature in one session is what the slices exist to prevent.
 - **Cite only what you opened.** `check_index_coverage` confirms every path the graph returns before you quote it.
-- **Evidence closes work, claims do not.** The gate output goes on the issue; a red gate is the result of the run.
+- **Evidence closes work, claims do not.** The gate output and the proof go on the issue; a red gate, or a proof that passes as readily without the change, is the result of the run.
 - **Planning lives in the tracker** — issues and their comments, the way the tracker doc records them, never a markdown draft committed beside the code.
 - **Generated files come from their generator.** Where this repo generates a file from a source of truth, edit the source and re-run the generator; a hand-edit to the output is lost at the next run.
 
@@ -115,13 +115,15 @@ You drive the sequence; `implement` and `tdd` run inline. `prototype` produces a
 6. **Implement.** `mattpocock-skills:implement` is user-invoked only, so read its `SKILL.md` at the path in [Supporting Capabilities](#supporting-capabilities) and follow its loop yourself; invoke `mattpocock-skills:tdd` at the step-3 seams.
    → Done when: the behaviour from step 1 is in place and its tests pass.
 
-7. **Run the gate.** Derive it from this repo rather than assuming one: the typecheck, test and check scripts its manifest declares — `package.json` `scripts` for a Node repo — run through the package manager its lockfile names. No gate script, no gate: say so in one line. Keep the output verbatim.
-   → Done when: every gate is green, or a red gate is recorded and the run stops here.
+7. **Run the gate, then the proof.** Derive the gate from this repo rather than assuming one: the typecheck, test and check scripts its manifest declares — `package.json` `scripts` for a Node repo — run through the package manager its lockfile names, unless the ticket carries its own gate command, which wins. No gate script, no gate: say so in one line.
+
+   Then run the ticket's `## Proof` command. A green gate says the repo is not broken, and it was green before this slice existed; the proof is the only thing that says this slice's behaviour is now there. Keep both outputs verbatim. A ticket with no Proof block gets the gate alone and one line saying so, because a proof written after the change is a description of what you just did.
+   → Done when: every gate is green and the proof command prints the `After` the ticket named, or a red gate or a proof that did not move is recorded and the run stops here.
 
 8. **Commit.** Small, reviewable commits on the current branch.
    → Done when: the working tree is clean.
 
-9. **Report on the ticket.** Comment with the seam list, the prototype link when there was one, the gate commands with their output, and what you did not verify. Leave the issue open for `/firehorse:ship` to close.
+9. **Report on the ticket.** Comment with the seam list, the prototype link when there was one, the gate commands with their output, the proof command with its `Before` and `After`, and what you did not verify. Leave the issue open for `/firehorse:ship` to close.
    → Done when: the comment is posted and the issue is still open.
 
 ## Handoff
