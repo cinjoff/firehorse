@@ -66,8 +66,8 @@ and leaves the physical expression to this file. Here it is GitHub Issues, and
 every command below was run against this repo.
 
 **The map** is an issue labelled `wayfinder:map`. Its tickets are **native
-sub-issues** of it, labelled `wayfinder:decision`, `wayfinder:research`,
-`wayfinder:prototype`, `wayfinder:grilling`, or `wayfinder:task`.
+sub-issues** of it, labelled `wayfinder:research`, `wayfinder:prototype`,
+`wayfinder:grilling`, or `wayfinder:task`.
 
 ```sh
 gh issue list --label wayfinder:map --state open        # find the maps
