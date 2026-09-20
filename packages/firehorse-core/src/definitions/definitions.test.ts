@@ -30,6 +30,7 @@ const workflowSections = [
   "Orchestration Intent",
   "Safety Gates",
   "Procedure",
+  "Handoff",
   "Projection Notes",
 ];
 const skillSections = [

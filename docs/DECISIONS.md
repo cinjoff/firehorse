@@ -3285,3 +3285,42 @@ beyond Jev.
 - Leave the rule in `docs/EVALUATION-FRAMEWORK.md` only — rejected: prose in a
   framework doc is advice, and this needs to be the kind of thing a future
   session is told not to relitigate.
+
+## D-180 — Required body sections may be added within Definition Format v1
+
+**Date:** 2026-09-20
+**Decision:** Adding a heading to `requiredSectionsByKind` is a v1-compatible
+change and does not bump `schemaVersion`. D-135 accepts the v1 body contract by
+reference: "Required body sections are the parser-enforced headings in
+`requiredSectionsByKind`." The constant is the contract, so the contract admits
+additions without a new version. `## Handoff` is the first one, required for
+`workflow` and not for `skill`.
+**Rationale:** The alternative reading, that the accepted list froze at nine
+headings, would make every future section a schema version, and D-135 could have
+listed the nine if that had been the intent. Recording the reading matters more
+than which way it went: an unstated reading gets relitigated by whoever next
+wants to add a section.
+**Scope:** Additions only, and only where every definition in the repo already
+complies so the change is green on landing. Removing or renaming a required
+section changes what an existing definition means and is not covered here.
+Nothing about frontmatter fields, whose compatibility rules are unchanged.
+**Consequence:** `Handoff` is required for workflows as of this decision, so a
+workflow without one fails `pnpm definitions:check` with
+`body.missing_section`. "Required" means present, not non-empty: `memory.md`
+legitimately has no successor and its section says so. Skills keep eight
+sections, because a skill is a capability something else invokes rather than a
+step in a sequence.
+**Alternatives considered:**
+- Bump `schemaVersion` to 3 — rejected: adding a required section breaks any
+  definition that lacks one, which is a real compatibility argument, but the
+  only definitions in existence are in this repo and all eight already comply.
+  The bump would be one nothing consumes, and it would set the precedent that
+  every section costs a version.
+- Leave `Handoff` a convention enforced by review — rejected: this is GSD's
+  position, and GSD duplicates its handoff block across 65 command files while
+  `scripts/lint-command-contract.cjs` checks frontmatter and `@`-refs but never
+  the block. The failure is silent, which is the worst property for a section
+  whose whole job is to be there.
+- Make `Handoff` required for skills too — rejected: most of this repo's skills
+  have no natural successor, so the section would say "none" in nearly every
+  one and teach the reader nothing.

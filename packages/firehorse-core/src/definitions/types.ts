@@ -215,6 +215,7 @@ export const requiredSectionsByKind = {
     "Orchestration Intent",
     "Safety Gates",
     "Procedure",
+    "Handoff",
     "Projection Notes",
   ],
   skill: [
