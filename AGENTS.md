@@ -84,9 +84,9 @@ no plugin-cache symlinks. Keep it that way.
 
 ```sh
 pnpm install            # workspace install
-pnpm typecheck          # runs per-package typecheck
+pnpm typecheck          # definitions:check, then tsc over scripts/, then per-package
 pnpm build              # runs per-package build
-pnpm test               # vitest, when tests exist
+pnpm test               # root vitest over scripts/, then per-package test
 pnpm definitions:write  # regenerate Firehorse definition mirrors/manifests
 pnpm definitions:check  # validate definitions and generated mirror freshness
 pnpm upstreams:check    # detect upstream plugin drift against upstreams.lock.json

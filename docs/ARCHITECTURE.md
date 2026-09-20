@@ -79,11 +79,12 @@ prefixes and sorts them, so hand-maintained entries such as
 
 ## The workflows you invoke
 
-Eleven workflow definitions sit under `definitions/workflows/`. Eight project to
-the user-facing plugin commands; `ship`, `triage`, and `upstreams-check` declare
-`audience: maintainer` and project into this repo's own `.claude/commands/`. They orchestrate upstream skills
-rather than restating them, and a workflow is the only carrier Firehorse uses for
-standing preferences (D-159).
+Twelve workflow definitions sit under `definitions/workflows/`. Eight project to
+the user-facing plugin commands; `ship`, `triage`, `upstream-scan`, and
+`upstreams-check` declare `audience: maintainer` and project into this repo's own
+`.claude/commands/`. They orchestrate upstream skills rather than restating them,
+and a workflow is the only carrier Firehorse uses for standing preferences
+(D-159).
 
 - `new-project` — stands a repo up for Firehorse: remote, tracker, the label
   vocabulary created in the tracker, `setup-matt-pocock-skills`,
@@ -117,6 +118,9 @@ standing preferences (D-159).
 - `triage` — re-triages the whole open tracker, judging each issue's group, kind,
   readiness and urgency, applying what clears its threshold and reporting what a
   person still has to decide.
+- `upstream-scan` — sweeps your newly starred repos and what the last 30 days
+  turned up, judges each candidate with Jev against what firehorse already has,
+  renders the result as a page, and keeps dismissed candidates in a mute index.
 - `upstreams-check` — reports upstream skill drift and what it costs, naming the
   workflows whose `upstreamSkills` reference a moved skill and the body steps at
   risk.
