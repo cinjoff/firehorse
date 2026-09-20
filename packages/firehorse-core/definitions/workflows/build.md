@@ -147,8 +147,8 @@ Close the run with this block, after the step-9 report and with nothing followin
 /firehorse:ship
 
 **Also available:**
-- `/firehorse:build <n>` · the next unblocked slice, read from the spec's children, in a fresh session
-- `/firehorse:build <n>` · build another ticket onto this branch first
+- `/clear` then `/firehorse:build <n>` · the next unblocked slice, read from the spec's children
+- `/firehorse:build <n>` · another slice onto this branch first, no clear
 ───────────────────────────────────────────────
 ````
 

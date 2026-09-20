@@ -22,28 +22,10 @@ const repoRoot = nodePath.dirname(nodePath.dirname(packageRoot));
 const definitionsRoot = nodePath.join(packageRoot, "definitions");
 const knownUpstreamSkills = new Set(["mattpocock-skills:diagnose"]);
 
-const workflowSections = [
-  "Purpose",
-  "Usage",
-  "Inputs",
-  "Outputs",
-  "Supporting Capabilities",
-  "Orchestration Intent",
-  "Safety Gates",
-  "Procedure",
-  "Handoff",
-  "Projection Notes",
-];
-const skillSections = [
-  "Purpose",
-  "Usage",
-  "Inputs",
-  "Outputs",
-  "Instructions",
-  "Boundaries",
-  "Examples",
-  "Projection Notes",
-];
+// Derived, not restated. A hand-maintained copy drifts from the constant the
+// moment a section is added, which is the failure D-180 asks this file to catch.
+const workflowSections = requiredSectionsByKind.workflow;
+const skillSections = requiredSectionsByKind.skill;
 
 function bodyWithSections(sections: readonly string[]): string {
   return sections.map((section) => `## ${section}\n\nContent.`).join("\n\n");
@@ -160,10 +142,17 @@ describe("Firehorse definitions", () => {
       readFile(nodePath.join(repoRoot, "docs/ARCHITECTURE.md"), "utf8"),
     ]);
 
-    for (const [index, section] of requiredSectionsByKind.workflow.entries()) {
-      expect(format, `${section} missing from the format doc`).toContain(
-        `${index + 1}. \`## ${section}\``,
-      );
+    // The format doc numbers both kinds; ARCHITECTURE.md names only the
+    // workflow set, so it is checked against that kind alone.
+    for (const [kind, sections] of Object.entries(requiredSectionsByKind)) {
+      for (const [index, section] of sections.entries()) {
+        expect(format, `${kind}: ${section} missing from the format doc`).toContain(
+          `${index + 1}. \`## ${section}\``,
+        );
+      }
+    }
+
+    for (const section of requiredSectionsByKind.workflow) {
       expect(architecture, `${section} missing from ARCHITECTURE.md`).toContain(section);
     }
   });

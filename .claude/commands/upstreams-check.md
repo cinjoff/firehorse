@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "upstreams-check"
 firehorseSource: "packages/firehorse-core/definitions/workflows/upstreams-check.md"
-firehorseSourceSha256: "bf53349d0cd51f4cb251080f18615f0a30ee8411d7815b4b4ec08b0af61c01a8"
+firehorseSourceSha256: "c57a3ef926e09d5acf0a1175da172e1f1b6e91105dff7d0889b67b199cfcafa0"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/upstreams-check.md
 Definition ID: upstreams-check
 Definition kind: workflow
-Source SHA-256: bf53349d0cd51f4cb251080f18615f0a30ee8411d7815b4b4ec08b0af61c01a8
+Source SHA-256: c57a3ef926e09d5acf0a1175da172e1f1b6e91105dff7d0889b67b199cfcafa0
 -->
 
 # Upstreams Check
@@ -111,7 +111,7 @@ Both severities are maintainer-facing, and only ever that. Firehorse defines the
 
 ## Handoff
 
-Render this block only when step 6 filed tickets. A clean comparison, or one whose findings were all advisory, ends at the step-8 report.
+Render this block only when step 6 filed tickets, and close the run with it, with nothing following it. A clean comparison, or one whose findings were all advisory, ends at the step-8 report.
 
 ````
 ───────────────────────────────────────────────

@@ -118,7 +118,7 @@ Both severities are maintainer-facing, and only ever that. Firehorse defines the
 
 ## Handoff
 
-Render this block only when step 6 filed tickets. A clean comparison, or one whose findings were all advisory, ends at the step-8 report.
+Render this block only when step 6 filed tickets, and close the run with it, with nothing following it. A clean comparison, or one whose findings were all advisory, ends at the step-8 report.
 
 ````
 ───────────────────────────────────────────────

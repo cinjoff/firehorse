@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "build"
 firehorseSource: "packages/firehorse-core/definitions/workflows/build.md"
-firehorseSourceSha256: "0f57c610d0d78705298d904682cfd1ca6769b06b96e54861b70279440b3033fe"
+firehorseSourceSha256: "0304ad751e2261f4483ea8b85bfc5b753af0b9272423f414af1536b1858f1801"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/build.md
 Definition ID: build
 Definition kind: workflow
-Source SHA-256: 0f57c610d0d78705298d904682cfd1ca6769b06b96e54861b70279440b3033fe
+Source SHA-256: 0304ad751e2261f4483ea8b85bfc5b753af0b9272423f414af1536b1858f1801
 -->
 
 # Build
@@ -139,8 +139,8 @@ Close the run with this block, after the step-9 report and with nothing followin
 /firehorse:ship
 
 **Also available:**
-- `/firehorse:build <n>` · the next unblocked slice, read from the spec's children, in a fresh session
-- `/firehorse:build <n>` · build another ticket onto this branch first
+- `/clear` then `/firehorse:build <n>` · the next unblocked slice, read from the spec's children
+- `/firehorse:build <n>` · another slice onto this branch first, no clear
 ───────────────────────────────────────────────
 ````
 
