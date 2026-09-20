@@ -3252,3 +3252,36 @@ Every citation in the repo was ambiguous until you knew which file it meant.
   two logs stay two logs, and the next session has to learn which is which.
 - Leave both and disambiguate citations — rejected: every future citation pays
   the cost.
+
+## D-179 — An optional dependency never degrades the default path
+
+**Date:** 2026-09-20
+**Decision:** Any candidate that needs a third-party service is packaged as
+strictly optional. Firehorse works fully without it and a user who has never
+heard of the dependency sees no degraded workflow and no prompt to enable one.
+Adoption is configurable per project and globally, chosen at Firehorse setup or
+at project setup, never defaulted on. A trial of such a candidate reports both
+arms, and the arm without the dependency is the one that has to stand on its
+own. A candidate that cannot beat a deterministic baseline does not ship behind
+a flag either. Tracked on the tracker by the `optional-dep` label.
+**Rationale:** Jev forced the question, since it is interesting for exactly the
+branch-point decisions Firehorse makes and has no zero data retention policy
+today. The rule has to be general, because Jev will not be the last one. Making
+it a packaging rule rather than a per-vendor judgement means each new
+third-party candidate inherits the constraint instead of reopening it.
+**Scope:** This is the packaging constraint only. Firehorse's standing position
+on decision models is open at
+[#197](https://github.com/cinjoff/firehorse/issues/197) and this decision does
+not pre-empt it. The no-flag-for-a-losing-candidate clause restates
+[#203](https://github.com/cinjoff/firehorse/issues/203) and generalises it
+beyond Jev.
+**Alternatives considered:**
+
+- Decide per vendor as each arrives — rejected: relitigates the same question
+  every time, and the answer would drift with how much we liked the tool.
+- Allow a default-on optional dependency when the user has already configured
+  it elsewhere — rejected: "already configured" is not consent for this repo to
+  send it data, and it makes the default path depend on machine state.
+- Leave the rule in `docs/EVALUATION-FRAMEWORK.md` only — rejected: prose in a
+  framework doc is advice, and this needs to be the kind of thing a future
+  session is told not to relitigate.

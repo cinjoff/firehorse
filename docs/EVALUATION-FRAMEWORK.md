@@ -159,7 +159,7 @@ Some candidates only work with a third-party service. Jev is the current case:
 it is interesting for exactly the branch-point decisions Firehorse makes, and it
 has no zero data retention policy today.
 
-The standing rule for any candidate labelled `optional-dep`:
+The standing rule for any candidate labelled `optional-dep` (D-179):
 
 - Firehorse works fully without it. A user who has never heard of the
   dependency sees no degraded workflow and no nagging.
@@ -232,16 +232,23 @@ the same way it works for concepts.
 Stated plainly so nobody reads this document as a description of working
 machinery:
 
-- No harness runs the paired trials. The method is specified here; running it
-  is tracked work.
+- **A runner exists and we have not wired it in.** `claude plugin eval` ships a
+  no-plugin baseline arm as its default, `--ablation with-without`, with
+  `regex`, `tool_order`, `tool_used`, `file_exists`, `llm`, and `baseline`
+  graders. Verified against CLI 2.1.278 on 2026-09-20. So the paired trial does
+  not need building, it needs connecting: [#227](https://github.com/cinjoff/firehorse/issues/227)
+  wires it into this repo and [#206](https://github.com/cinjoff/firehorse/issues/206)
+  is smaller than it was written to be. Do not build a runner.
 - No fixtures exist in this repo. The `fhhs-skills` set is prior art to adapt,
   not something we currently have.
-- No session reader exists. Concept #58 is the ticket.
+- No session reader exists. Concept #58 is the ticket, and
+  [#231](https://github.com/cinjoff/firehorse/issues/231) is the build, blocked
+  until we know what transcripts contain.
 - `/retro` is not in our pinned upstream mirror. `mattpocock-skills` 1.2.3 has
   no retro skill; it was announced upstream on 2026-09-18 and our mirror
   predates it.
 
-Until the harness exists, a trial is run by hand and its numbers are pasted
+Until the suite is wired in, a trial is run by hand and its numbers are pasted
 into the issue. That is worth doing rather than waiting, because a hand-run
 paired trial with ten runs per arm already beats every adoption decision made
 on a README.
