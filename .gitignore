@@ -33,6 +33,7 @@ Thumbs.db
 
 # Local planning / scratch
 .firehorse/local/
+.planning/
 .firecrawl
 .pi-lens
 
