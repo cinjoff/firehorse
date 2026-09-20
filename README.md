@@ -73,6 +73,9 @@ That sets the repo up once — tracker labels, agent docs, a `DESIGN.md` intervi
 the Firehorse manifest — and indexes it. Every later workflow reads what it
 recorded.
 
+New to this? [Working with Firehorse](./docs/GUIDE.md) is the guide: the quickstart,
+the ideas each workflow implements, the decision rules, and what is still broken.
+
 Everything is idempotent, so re-running repairs rather than duplicates. To see
 what is and is not set up without writing anything, ask Claude from any session:
 
