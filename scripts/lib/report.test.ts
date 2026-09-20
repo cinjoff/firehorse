@@ -89,3 +89,11 @@ describe("html report", () => {
     expect(() => renderHtml([], { ...stats, pool: 0 })).not.toThrow();
   });
 });
+
+describe("the hidden pool is never silent", () => {
+  it("shows the muted count in the html as well as the markdown", () => {
+    // The spec asks for this in the page specifically: "The HTML shows how
+    // many are hidden."
+    expect(renderHtml([shortlisted], stats)).toMatch(/3 muted/);
+  });
+});

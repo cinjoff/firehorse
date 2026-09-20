@@ -9,6 +9,7 @@
 //   pnpm upstream-scan --all                # re-judge everything, ignore the ledger
 //   pnpm upstream-scan --repo owner/name    # judge named repos, starred or not
 //   pnpm upstream-scan --discovered [path]  # also judge a /last30days sweep
+//   pnpm upstream-scan --skip-discovery     # stars only, ignoring --discovered
 //   pnpm upstream-scan --record             # write the ledger after the report
 //   pnpm upstream-scan --mute <id>...       # never show these again
 //   pnpm upstream-scan --unmute <id>...     # undo that
@@ -39,13 +40,17 @@ import {
 } from "./lib/candidates.js";
 import {
   mergeEntries,
+  muteEntries,
   mutedIds,
   readLedger,
+  seenIds,
+  unmuteEntries,
   writeLedger,
   type Disposition,
   type LedgerEntry,
 } from "./lib/ledger.js";
-import { DISCOVERY_PATH, readDiscovered } from "./lib/discovery-io.js";
+import { parseArgs } from "./lib/args.js";
+import { readDiscovered } from "./lib/discovery-io.js";
 import { renderHtml, renderMarkdown } from "./lib/report.js";
 import {
   filedCandidates,
@@ -203,27 +208,23 @@ interface Target {
 }
 
 async function main(): Promise<void> {
-  const argv = process.argv.slice(2);
+  const args = parseArgs(process.argv.slice(2));
   const root = repoRoot();
 
   // Muting is a ledger edit and judges nothing, so it runs on its own and
   // returns. That is what lets you filter a report without paying to re-judge.
-  const toMute = flagValues(argv, "--mute");
-  const toUnmute = flagValues(argv, "--unmute");
-  if (toMute.length > 0 || toUnmute.length > 0) {
-    await applyMutes(root, toMute, toUnmute);
+  if (args.mute.length > 0 || args.unmute.length > 0) {
+    await applyMutes(root, args.mute, args.unmute);
     return;
   }
 
-  const all = argv.includes("--all");
-  const record = argv.includes("--record");
-  const named = parseRepos(argv);
-  const discoveredPath = discoveryPath(argv);
+  const { all, record, discovered: discoveredPath } = args;
+  const named = args.repos;
 
   const apiKey = requireApiKey();
   const [ledger, filed] = await Promise.all([readLedger(root), filedCandidates()]);
   const muted = mutedIds(ledger);
-  const judgedBefore = new Set(ledger.entries.map((entry) => entry.id));
+  const judgedBefore = seenIds(ledger);
 
   const discovered = discoveredPath ? await readDiscovered(discoveredPath) : [];
   const stars: Target[] = named.length
@@ -256,6 +257,10 @@ async function main(): Promise<void> {
 
   // Four reasons to skip, and only the first is a judgment: muted by you,
   // judged before, already filed, or not the repo a person named.
+  //
+  // Naming a repo with --repo bypasses all four, mute included. Asking for a
+  // specific repo now is a live instruction, and it outranks a mute recorded
+  // earlier; the alternative is --repo silently returning nothing.
   const targets = named.length
     ? pool
     : pool.filter((target) => {
@@ -352,9 +357,8 @@ async function main(): Promise<void> {
 /**
  * Mute or unmute by id, without judging anything.
  *
- * An id the ledger has never seen is still mutable: the id carries its own
- * kind and name, which is all a mute needs. That way you can dismiss something
- * straight from a report without having recorded the pass first.
+ * Unmuting forgets the entry rather than re-labelling it, because the pool
+ * filter skips every id the ledger has seen. See `unmuteEntries`.
  */
 async function applyMutes(
   root: string,
@@ -362,39 +366,20 @@ async function applyMutes(
   unmute: readonly string[],
 ): Promise<void> {
   const ledger = await readLedger(root);
-  const byId = new Map(ledger.entries.map((entry) => [entry.id, entry]));
-  const judgedAt = new Date().toISOString().slice(0, 10);
-
-  for (const id of mute) {
-    const prior = byId.get(id);
-    byId.set(id, {
-      ...(prior ?? {
-        id,
-        kind: id.startsWith("topic:") ? "topic" : "repo",
-        name: id.slice(id.indexOf(":") + 1),
-        judgedAt,
-        relevance: 0,
-        value: 0,
-        overlap: 0,
-      }),
-      disposition: "muted",
-    } as LedgerEntry);
-  }
+  const known = new Set(ledger.entries.map((entry) => entry.id));
   for (const id of unmute) {
-    const prior = byId.get(id);
-    if (!prior) {
-      process.stderr.write(`Not in the ledger, nothing to unmute: ${id}\n`);
-      continue;
-    }
-    // Back to below-gate rather than shortlisted: the next pass re-judges it.
-    byId.set(id, { ...prior, disposition: "below-gate" });
+    if (!known.has(id)) process.stderr.write(`Not in the ledger, nothing to unmute: ${id}
+`);
   }
 
-  const entries = [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
+  const judgedAt = new Date().toISOString().slice(0, 10);
+  const entries = unmuteEntries(muteEntries(ledger.entries, mute, judgedAt), unmute);
   await writeLedger(root, entries);
+
   const muted = entries.filter((entry) => entry.disposition === "muted").length;
   process.stdout.write(
-    `Muted ${mute.length}, unmuted ${unmute.length}. ${muted} of ${entries.length} now hidden.\n`,
+    `Muted ${mute.length}, unmuted ${unmute.length}. ${muted} of ${entries.length} now hidden.
+`,
   );
 }
 
@@ -431,36 +416,6 @@ function topicState(candidate: Candidate) {
     summary: candidate.summary,
     why_it_surfaced: candidate.signal,
   };
-}
-
-function parseRepos(argv: readonly string[]): string[] {
-  const names: string[] = [];
-  for (let i = 0; i < argv.length; i += 1) {
-    if (argv[i] !== "--repo") continue;
-    const raw = argv[i + 1] ?? "";
-    // Accept a full URL as well as owner/name; a URL is what gets pasted.
-    const match = /(?:github\.com\/)?([\w.-]+\/[\w.-]+?)(?:\.git)?\/?$/.exec(raw.trim());
-    if (match) names.push(match[1]!);
-  }
-  return names;
-}
-
-function flagValues(argv: readonly string[], flag: string): string[] {
-  const values: string[] = [];
-  for (let i = 0; i < argv.length; i += 1) {
-    if (argv[i] !== flag) continue;
-    const value = argv[i + 1];
-    if (value && !value.startsWith("--")) values.push(value.trim());
-  }
-  return values;
-}
-
-/** `--discovered` alone means the conventional path; a value overrides it. */
-function discoveryPath(argv: readonly string[]): string | null {
-  const index = argv.indexOf("--discovered");
-  if (index === -1) return null;
-  const value = argv[index + 1];
-  return value && !value.startsWith("--") ? value : DISCOVERY_PATH;
 }
 
 function round(value: number): number {

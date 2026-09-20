@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "upstream-scan"
 firehorseSource: "packages/firehorse-core/definitions/workflows/upstream-scan.md"
-firehorseSourceSha256: "179f1b64c715ff087a4125350547bdf9d68c87bb7a5f828d5311d6b82416dfa4"
+firehorseSourceSha256: "004184d427e0c31fe0a9cc8878162acbee70b1868f280ed881d7b16cca7887ee"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/upstream-scan.md
 Definition ID: upstream-scan
 Definition kind: workflow
-Source SHA-256: 179f1b64c715ff087a4125350547bdf9d68c87bb7a5f828d5311d6b82416dfa4
+Source SHA-256: 004184d427e0c31fe0a9cc8878162acbee70b1868f280ed881d7b16cca7887ee
 -->
 
 # Upstream scan
@@ -92,11 +92,13 @@ The split between the script and this body is load-bearing in one specific way. 
 - **The gate was calibrated on state that has since changed.** The thresholds come from the 2026-09-20 pass over 77 stars, when Jev saw a README and metadata. It now also sees the tree and the licence, and at least one repo moved 0.29 on that richer state. Re-read the below-gate list rather than trusting the boundary.
 - **The ledger is committed, so recording a judgment is a claim to the next session.** Record after reading the page, never before.
 - **`--record` writes the gate's verdict, not the outcome.** A candidate that was shortlisted, dived into, and rejected stays `shortlisted` in the ledger; the tracker holds the real disposition, which is why the script reads filed candidates separately.
+- **`--skip-discovery` and `--discovered` together skip.** The flag that does less wins, rather than half-running a sweep the caller asked to skip.
 - **A repo can be starred twice over by the same idea.** Check the shortlist against open `candidate` issues by subject, not only by URL. `ripwire` in #210 and `codemap` do the same job under different names, and the script's URL match cannot see that.
 
 ## Safety Gates
 
-- **A mute is yours, and the script never overturns it.** A later pass that scores a muted candidate well leaves it muted. Undo is `--unmute <id>`, and only a person runs it.
+- **A mute is yours, and the script never overturns it.** A later pass that scores a muted candidate well leaves it muted. Undo is `--unmute <id>`, which forgets the entry so the next ordinary pass judges it afresh, and only a person runs it.
+- **`--repo` ignores a mute on purpose.** Naming a repo is a live instruction and outranks a dismissal recorded earlier. It is the one way to re-examine something muted without unmuting it.
 - **Never mute on the user's behalf.** Step 6 asks. A candidate the user did not name stays visible.
 - **The deep dive is asked for, never assumed.** Step 7 stops and puts the question to a person. A shortlist of eight is up to eight research agents and eight issues, which is not a decision this workflow makes on its own.
 - **Nothing is filed from a README.** An `Evaluation candidate` issue needs a claim under test and a test that could refute it, and both come from the research note.

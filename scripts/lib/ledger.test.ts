@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { migrateLedger, mergeEntries, mutedIds, LEDGER_SCHEMA_VERSION } from "./ledger.js";
+import {
+  LEDGER_SCHEMA_VERSION,
+  mergeEntries,
+  migrateLedger,
+  muteEntries,
+  mutedIds,
+  seenIds,
+  unmuteEntries,
+} from "./ledger.js";
 
 const V1 = {
   schemaVersion: 1,
@@ -103,5 +111,51 @@ describe("merging a pass into the ledger", () => {
       { id: "repo:c/d", kind: "repo", name: "c/d", judgedAt: "2026-09-20", relevance: 0.9, value: 3, overlap: 0.1, disposition: "shortlisted" },
     ]);
     expect(merged.map((entry) => entry.id)).toEqual(["repo:a/b", "repo:c/d"]);
+  });
+});
+
+describe("unmuting restores a candidate to the pool", () => {
+  const entries = migrateLedger({
+    schemaVersion: 2,
+    entries: [
+      { id: "repo:a/b", kind: "repo", name: "a/b", judgedAt: "2026-09-20", relevance: 0.9, value: 3, overlap: 0.1, disposition: "muted" },
+      { id: "repo:c/d", kind: "repo", name: "c/d", judgedAt: "2026-09-20", relevance: 0.2, value: 1, overlap: 0.1, disposition: "below-gate" },
+    ],
+  }).entries;
+
+  it("drops the entry entirely rather than re-labelling it", () => {
+    // Leaving a below-gate row behind does not restore anything: the pool
+    // filter skips every id the ledger has seen, so the candidate stays
+    // invisible and --unmute silently does nothing.
+    const after = unmuteEntries(entries, ["repo:a/b"]);
+    expect(after.map((entry) => entry.id)).toEqual(["repo:c/d"]);
+  });
+
+  it("makes the id unseen, which is what puts it back in the next pass", () => {
+    const after = unmuteEntries(entries, ["repo:a/b"]);
+    expect(seenIds({ schemaVersion: 2, entries: after }).has("repo:a/b")).toBe(false);
+  });
+
+  it("leaves an id it was not asked about alone", () => {
+    expect(unmuteEntries(entries, ["repo:zz/zz"])).toHaveLength(2);
+  });
+});
+
+describe("muting an id the ledger has never seen", () => {
+  it("records it, so you can dismiss straight from a report", () => {
+    const after = muteEntries([], ["topic:loop-engineering"], "2026-09-20");
+    expect(after).toHaveLength(1);
+    expect(after[0]?.disposition).toBe("muted");
+    expect(after[0]?.kind).toBe("topic");
+  });
+
+  it("keeps the judged numbers when the id was judged before", () => {
+    const prior = migrateLedger({
+      schemaVersion: 2,
+      entries: [{ id: "repo:a/b", kind: "repo", name: "a/b", judgedAt: "2026-09-01", relevance: 0.9, value: 3.1, overlap: 0.1, disposition: "shortlisted" }],
+    }).entries;
+    const after = muteEntries(prior, ["repo:a/b"], "2026-09-20");
+    expect(after[0]?.value).toBe(3.1);
+    expect(after[0]?.disposition).toBe("muted");
   });
 });

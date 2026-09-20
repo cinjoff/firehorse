@@ -73,6 +73,16 @@ export function migrateLedger(raw: unknown): Ledger {
   return { schemaVersion: LEDGER_SCHEMA_VERSION, entries: migrated };
 }
 
+/**
+ * Every id the ledger has judged, whatever it decided.
+ *
+ * The pool filter skips these, so an id in here is an id you will not be shown
+ * again. That is why `unmuteEntries` deletes rather than re-labels.
+ */
+export function seenIds(ledger: Ledger): Set<string> {
+  return new Set(ledger.entries.map((entry) => entry.id));
+}
+
 export function mutedIds(ledger: Ledger): Set<string> {
   return new Set(
     ledger.entries.filter((entry) => entry.disposition === "muted").map((entry) => entry.id),
@@ -96,7 +106,54 @@ export function mergeEntries(
     if (prior?.disposition === "muted" && entry.disposition !== "muted") continue;
     byId.set(entry.id, entry);
   }
-  return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
+  return sorted(byId.values());
+}
+
+/**
+ * Mute by id, recording an id the ledger has never judged so you can dismiss
+ * something straight from a report without recording the pass first. An id
+ * judged before keeps its numbers; only the disposition changes.
+ */
+export function muteEntries(
+  existing: readonly LedgerEntry[],
+  ids: readonly string[],
+  judgedAt: string,
+): LedgerEntry[] {
+  const byId = new Map(existing.map((entry) => [entry.id, entry]));
+  for (const id of ids) {
+    const prior = byId.get(id);
+    byId.set(id, {
+      id,
+      kind: prior?.kind ?? (id.startsWith("topic:") ? "topic" : "repo"),
+      name: prior?.name ?? id.slice(id.indexOf(":") + 1),
+      judgedAt: prior?.judgedAt ?? judgedAt,
+      relevance: prior?.relevance ?? 0,
+      value: prior?.value ?? 0,
+      overlap: prior?.overlap ?? 0,
+      disposition: "muted",
+    });
+  }
+  return sorted(byId.values());
+}
+
+/**
+ * Unmute by id, by forgetting the entry entirely.
+ *
+ * Re-labelling it `below-gate` looks right and restores nothing: the pool
+ * filter skips every id the ledger has seen, so the candidate stays invisible
+ * until someone passes --all. Deleting the row makes the id unseen, which is
+ * what actually puts it back in the next ordinary pass.
+ */
+export function unmuteEntries(
+  existing: readonly LedgerEntry[],
+  ids: readonly string[],
+): LedgerEntry[] {
+  const drop = new Set(ids);
+  return sorted(existing.filter((entry) => !drop.has(entry.id)));
+}
+
+function sorted(entries: Iterable<LedgerEntry>): LedgerEntry[] {
+  return [...entries].sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export async function readLedger(root: string): Promise<Ledger> {
