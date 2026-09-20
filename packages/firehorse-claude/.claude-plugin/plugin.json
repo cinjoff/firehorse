@@ -32,7 +32,8 @@
   ],
   "skills": [
     "./skills/firehorse-setup",
-    "./skills/firehorse/firehorse-recall"
+    "./skills/firehorse/firehorse-recall",
+    "./skills/firehorse/skill-audit"
   ],
   "commands": [
     "./commands/firehorse/build.md",

@@ -35,3 +35,7 @@ Thumbs.db
 .firehorse/local/
 .firecrawl
 .pi-lens
+
+# Python bytecode from the skill-audit harness
+__pycache__/
+*.pyc
