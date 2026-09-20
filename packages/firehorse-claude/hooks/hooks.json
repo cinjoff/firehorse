@@ -1,5 +1,5 @@
 {
-  "description": "Firehorse Claude plugin hooks: setup and update checks at SessionStart, an opt-in next-action probe at Stop.",
+  "description": "Firehorse Claude plugin hooks: setup and update checks at SessionStart, plus a temporary opt-in probe at Stop that is removed when cinjoff/firehorse#253 closes.",
   "hooks": {
     "SessionStart": [
       {

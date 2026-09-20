@@ -152,9 +152,12 @@ describe("Firehorse definitions", () => {
       }
     }
 
-    for (const section of requiredSectionsByKind.workflow) {
-      expect(architecture, `${section} missing from ARCHITECTURE.md`).toContain(section);
-    }
+    // ARCHITECTURE.md names the workflow set as one ordered sentence, wrapped
+    // across lines. Assert the whole sequence rather than each word: a bare
+    // substring match passes on a word surviving anywhere else in the doc.
+    expect(architecture.replace(/\s+/g, " "), "ARCHITECTURE.md lists a stale workflow set").toContain(
+      requiredSectionsByKind.workflow.join(", "),
+    );
   });
 
   it("reports invalid frontmatter with actionable diagnostics", () => {
