@@ -13,9 +13,9 @@
     "adr": false
   },
   "index": {
-    "commit": "5813940a2d765e1763ea2d9eecff2decb1d9994a",
-    "at": "2026-09-11T17:09:26.000Z",
-    "graph": false,
-    "supermemory": true
+    "commit": "a22c83c0d4a9256d1e40491cecea4bddcaa6b89a",
+    "at": "2026-09-20T21:23:55.000Z",
+    "graph": true,
+    "supermemory": false
   }
 }
