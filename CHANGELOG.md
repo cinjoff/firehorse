@@ -1,5 +1,41 @@
 # Changelog
 
+## v0.8.0 — 2026-09-20
+
+### Added
+
+- **Two new commands carry a map to its tickets.** `/firehorse:spec` turns a map
+  whose way is clear into the spec its slices get cut from, and
+  `/firehorse:tickets` cuts that spec into tracer-bullet slices, wired and
+  triaged. Every slice has to carry a proof that fails without the change.
+  Neither command has been run against a real map yet; `docs/GUIDE.md` says so
+  under Honest limits.
+- **A skill audit you can point at your own sessions.** The `skill-audit` skill
+  backtests a skill roster against real session history and reports which skills
+  a session should have reached for and did not.
+- **A status line that shows what a session costs.** `firehorse-setup` installs
+  it. It is opt-in and it changes nothing if you decline.
+- **A guide that explains the shape, not the steps.** `docs/GUIDE.md` sets out
+  the eight ideas each workflow answers and the decision rules for picking one,
+  with its limits stated rather than implied.
+- **An evaluation framework for what Firehorse takes in.** New tools, skills and
+  workflows now arrive through an `Evaluation candidate` issue form and move
+  through an `eval:` label lifecycle with a trial number required at both
+  terminal states. See `docs/EVALUATION-FRAMEWORK.md`.
+
+### Changed
+
+- **Every workflow ends by naming the next command.** `Handoff` is a required
+  section, so a run now closes with one block that says what to do next and
+  whether to clear first, instead of leaving you to work it out.
+
+### Experimental
+
+- **An opt-in Stop hook that tests whether a banner reaches you.** Off unless
+  `FIREHORSE_NEXT_PROBE=1`. It emits one fixed string, carries no advice, and is
+  removed when cinjoff/firehorse#253 closes. If you do not set the variable, the
+  hook exits immediately and you will never see it.
+
 ## v0.7.0 — 2026-09-11
 
 ### Changed
