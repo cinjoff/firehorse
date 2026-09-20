@@ -26,10 +26,12 @@ const BANNER = [
   "  If you are reading this, the channel works.",
 ].join("\n");
 
-try {
-  process.stdout.write(`${JSON.stringify({ systemMessage: BANNER })}\n`);
-} catch {
-  // A probe must never be the reason a turn fails to end.
-}
+// `suppressOutput` matches check-update.mjs and keeps the raw JSON out of
+// verbose transcripts. Deliberately no `hookSpecificOutput.additionalContext`:
+// on Stop that restarts the turn instead of ending it (see hook-surface.md),
+// which would make the probe a reason sessions never finish.
+process.stdout.write(
+  `${JSON.stringify({ systemMessage: BANNER, suppressOutput: true })}\n`,
+);
 
 process.exit(0);

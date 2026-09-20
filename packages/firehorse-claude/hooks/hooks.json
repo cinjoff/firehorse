@@ -1,5 +1,5 @@
 {
-  "description": "Firehorse Claude plugin hooks: setup and update checks at SessionStart, the #253 next-action probe at Stop.",
+  "description": "Firehorse Claude plugin hooks: setup and update checks at SessionStart, an opt-in next-action probe at Stop.",
   "hooks": {
     "SessionStart": [
       {
@@ -8,18 +8,14 @@
           {
             "type": "command",
             "command": "node",
-            "args": [
-              "${CLAUDE_PLUGIN_ROOT}/hooks/check-setup.mjs"
-            ],
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/check-setup.mjs"],
             "timeout": 5,
             "statusMessage": "Checking Firehorse setup"
           },
           {
             "type": "command",
             "command": "node",
-            "args": [
-              "${CLAUDE_PLUGIN_ROOT}/hooks/check-update.mjs"
-            ],
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/check-update.mjs"],
             "timeout": 5,
             "statusMessage": "Checking Firehorse updates"
           }
@@ -32,11 +28,8 @@
           {
             "type": "command",
             "command": "node",
-            "args": [
-              "${CLAUDE_PLUGIN_ROOT}/hooks/next-action-probe.mjs"
-            ],
-            "timeout": 5,
-            "statusMessage": "Firehorse next-action probe (#253)"
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/next-action-probe.mjs"],
+            "timeout": 5
           }
         ]
       }
