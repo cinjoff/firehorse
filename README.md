@@ -88,6 +88,7 @@ From a clone, `./install.sh --check` reports the same thing plus the memory stac
 | `--yes`           | Accept every prompt. For non-interactive runs. |
 | `--skip-memory`   | Leave the self-hosted supermemory stack alone. |
 | `--skip-superset` | Leave Superset MCP alone.                      |
+| `--no-statusline` | Leave your status line alone.                  |
 
 <details>
 <summary>What the installer does, before you pipe it to bash</summary>
@@ -105,10 +106,14 @@ From a clone, `./install.sh --check` reports the same thing plus the memory stac
   entries Claude Code needs in `~/.claude/settings.json`.
 - **Superset MCP** — only when Superset is detected, and always through a
   `headersHelper`, so the API key never lands in a config file.
+- **The status line** — `~/.claude/statusline/`, plus `ccstatusline` globally if
+  npm is there, and `statusLine.command` pointed at it. If you already have a
+  status line, it says so and leaves yours alone; `--force-statusline` replaces
+  it.
 
 Everything it writes lives under your home directory: `~/.claude/settings.json`,
-`~/.config/firehorse/`, `~/.local/bin/`, `~/.supermemory/`, and one
-`~/Library/LaunchAgents/` plist. It touches no repo until you run
+`~/.claude/statusline/`, `~/.config/firehorse/`, `~/.local/bin/`,
+`~/.supermemory/`, and one `~/Library/LaunchAgents/` plist. It touches no repo until you run
 `/firehorse:new-project`. From a clone, run `./install.sh` instead of piping.
 
 </details>
@@ -132,6 +137,23 @@ so and carries on rather than failing.
 
 Plus two skills: `firehorse-recall`, for asking what past sessions decided, and
 `firehorse-setup`, for checking this machine's setup.
+
+And a status line, on by default:
+
+```text
+Opus 5 (1M) │ firehorse ⎇ main │ ███████░░░ 98K/150K 65% (10% of 1000K) │ ⚙ map, build
+2hr 8m · Cost: $1.23 · ↻ 1 · Session: 12.0% · Block: 4hr 39m · Weekly: 4.0% · Weekly Reset: 3d 17hr
+```
+
+The first line is Firehorse's: model, repo and branch, context used, and the
+skills this session has loaded. The bar measures context against a 150K budget
+rather than against the model's window, because a 1M window makes a 200K session
+look cheap when it is already degrading — set `CLAUDE_CTX_BUDGET` to move it.
+The second line is [ccstatusline](https://github.com/sirmalloc/ccstatusline),
+rendered against a config Firehorse owns at
+`~/.claude/statusline/ccstatusline.json`, so a ccstatusline you already
+configured stays untouched. It runs out of band and is served from a cache, so
+the status line renders in about 50ms rather than ccstatusline's 1.2 seconds.
 
 Two more workflows exist and are not shipped: `ship` and `upstreams-check` are
 maintainer tools for this repo, declared `audience: maintainer`, so they project

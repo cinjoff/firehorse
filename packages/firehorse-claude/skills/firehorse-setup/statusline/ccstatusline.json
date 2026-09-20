@@ -1,0 +1,60 @@
+{
+  "version": 4,
+  "defaultSeparator": " · ",
+  "inheritSeparatorColors": false,
+  "lines": [
+    [
+      {
+        "id": "gs",
+        "type": "git-staged",
+        "color": "green"
+      },
+      {
+        "id": "gu",
+        "type": "git-unstaged",
+        "color": "yellow"
+      },
+      {
+        "id": "gt",
+        "type": "git-untracked",
+        "color": "red"
+      },
+      {
+        "id": "sc",
+        "type": "session-clock",
+        "color": "cyan",
+        "rawValue": true
+      },
+      {
+        "id": "s$",
+        "type": "session-cost",
+        "color": "cyan"
+      },
+      {
+        "id": "cc",
+        "type": "compaction-counter",
+        "color": "magenta"
+      },
+      {
+        "id": "su",
+        "type": "session-usage",
+        "color": "blue"
+      },
+      {
+        "id": "bt",
+        "type": "block-timer",
+        "color": "blue"
+      },
+      {
+        "id": "wu",
+        "type": "weekly-usage",
+        "color": "magenta"
+      },
+      {
+        "id": "wr",
+        "type": "weekly-reset-timer",
+        "color": "magenta"
+      }
+    ]
+  ]
+}
