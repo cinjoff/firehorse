@@ -8,7 +8,9 @@ and trusting the answer.
 `thruwire/foreman` source tree, the Claude Code hook reference, and TypeSafe's skill-suggestion
 cookbook.
 
-**Status:** a design study, not a plan of record. Nothing here has been built or measured.
+**Status:** a design study, plus one measured run. The recipe in `jev-fit.md` was run against
+real session history on 2026-09-20; `measured-run.md` records what that corrected. The
+recommendation itself is still not a plan of record.
 
 ## Read in this order
 
@@ -18,6 +20,7 @@ cookbook.
 | [foreman-gates.md](foreman-gates.md) | `thruwire/foreman`'s ten gate questions, its evidence struct, and its 127-line policy. The answer to "are we done" as named probabilities plus deterministic thresholds |
 | [hook-surface.md](hook-surface.md) | What Claude Code hooks allow, and the two rules that rule out the obvious first attempt |
 | [jev-fit.md](jev-fit.md) | TypeSafe's skill-suggestion recipe, its measured numbers, and the four jaggedness modes that bite this use case |
+| [measured-run.md](measured-run.md) | The first run of the recipe against real transcripts: two design notes corrected, the jaggedness modes that showed up, measured cost |
 | [design.md](design.md) | Four stages for Firehorse, with what not to build |
 | [sources.md](sources.md) | Every source with URL, commit pin, archive location, and checksum, plus five limits on the corpus |
 

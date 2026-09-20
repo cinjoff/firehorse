@@ -24,6 +24,7 @@ SHORTLIST, EXCERPT = 3, 700
 # Calibrate on your own data with `report --sweep`; these came from a 28-prompt run.
 GATE_T, FITS_T = 0.45, 0.35
 PROJECTS = os.path.expanduser("~/.claude/projects")
+MODELS_SEEN: set[str] = set()
 
 
 def ask(state, questions):
@@ -39,6 +40,9 @@ def ask(state, questions):
             with urllib.request.urlopen(req, timeout=180) as r:
                 out = json.load(r)
                 out["_seconds"] = round(time.perf_counter() - started, 2)
+                # `jev-latest` moves. The response names what actually ran; keep it so a
+                # threshold can be traced to the version it was calibrated against.
+                MODELS_SEEN.add(out.get("model", "unknown"))
                 return out
         except urllib.error.HTTPError as e:
             if e.code in (429, 500, 502, 503) and attempt < 3:
@@ -359,6 +363,9 @@ def report(out_dir, sweep=False):
     load = lambda n: json.load(open(os.path.join(out_dir, n)))  # noqa: E731
     back = load("backtest.json")
     adj = load("adjudicated.json") if os.path.exists(os.path.join(out_dir, "adjudicated.json")) else []
+    if os.path.exists(os.path.join(out_dir, "run.json")):
+        run = load("run.json")
+        print(f"model {', '.join(run['models'])}, scored {run['at']}")
     print(f"{len(back)} prompts replayed")
     if adj:
         counts = collections.Counter(a.get("right_call") for a in adj)
@@ -439,7 +446,10 @@ def main():
         with ThreadPoolExecutor(max_workers=WORKERS) as ex:
             back = list(ex.map(lambda j: suggest(j[0], j[1], j[2], roster, by_name, profile), jobs))
         json.dump(back, open(p("backtest.json"), "w"), indent=1)
-        print(f"backtest: {len(back)} prompts, {sum(1 for b in back if 'error' in b)} errors")
+        json.dump({"models": sorted(MODELS_SEEN), "at": time.strftime("%Y-%m-%dT%H:%M:%S")},
+                  open(p("run.json"), "w"), indent=1)
+        print(f"backtest: {len(back)} prompts, {sum(1 for b in back if 'error' in b)} errors, "
+              f"model {', '.join(sorted(MODELS_SEEN))}")
 
     if args.stage in ("adjudicate", "all"):
         back = json.load(open(p("backtest.json")))
