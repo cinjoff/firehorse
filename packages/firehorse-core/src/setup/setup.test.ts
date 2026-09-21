@@ -231,6 +231,22 @@ describe("v2 to v3 migration", () => {
     expect(migrateFirehorseSetupManifest({ schemaVersion: "2" })).toEqual({ schemaVersion: "2" });
   });
 
+  it("leaves a schema version older than v2 for the validator, rather than relabelling it", () => {
+    // v1 predates a large restructuring that this migration does not reverse,
+    // so stamping it current would hand the validator a v1 shape labelled v3.
+    const v1 = { schemaVersion: 1, index: { commit: RECORDED_COMMIT, at: "now", supermemory: true } };
+
+    expect(migrateFirehorseSetupManifest(v1)).toBe(v1);
+    expect(migrateFirehorseSetupManifest({ schemaVersion: 0 })).toEqual({ schemaVersion: 0 });
+    expect(migrateFirehorseSetupManifest({ schemaVersion: -5 })).toEqual({ schemaVersion: -5 });
+  });
+
+  it("leaves a schema version newer than this build untouched", () => {
+    const future = { schemaVersion: 4, index: { commit: RECORDED_COMMIT, at: "now" } };
+
+    expect(migrateFirehorseSetupManifest(future)).toBe(future);
+  });
+
   it("still rejects a v2 manifest whose other fields are invalid", () => {
     const bad = JSON.stringify({ schemaVersion: 2, index: { commit: "nothex", at: "now" } });
 

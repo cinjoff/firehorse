@@ -157,23 +157,28 @@ export interface FirehorseSetupCheckResult {
  * numeric `schemaVersion`, or when that version is already current. Malformed
  * input is the validator's problem to report, not this function's to guess at.
  */
+/** The one schema version this migration knows how to bring forward. */
+const MIGRATABLE_SETUP_MANIFEST_SCHEMA_VERSION = 2;
+
 export function migrateFirehorseSetupManifest(parsed: unknown): unknown {
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return parsed;
 
   const manifest = parsed as Record<string, unknown>;
   const version = manifest.schemaVersion;
-  if (typeof version !== "number" || version >= FIREHORSE_SETUP_MANIFEST_SCHEMA_VERSION) {
-    return parsed;
-  }
+
+  // Only v2 migrates. Anything already current or newer needs nothing, and a
+  // v1 manifest predates the restructuring in 1ee8c25, which this function
+  // does not reverse. Stamping v1 as current would hand the validator a v1
+  // shape labelled v3 and it would report the wrong thing. Leave both alone
+  // and let the validator speak for itself.
+  if (version !== MIGRATABLE_SETUP_MANIFEST_SCHEMA_VERSION) return parsed;
 
   const migrated: Record<string, unknown> = { ...manifest };
 
-  if (version <= 2) {
-    const index = migrated.index;
-    if (typeof index === "object" && index !== null && !Array.isArray(index)) {
-      const { supermemory: _dropped, ...rest } = index as Record<string, unknown>;
-      migrated.index = rest;
-    }
+  const index = migrated.index;
+  if (typeof index === "object" && index !== null && !Array.isArray(index)) {
+    const { supermemory: _dropped, ...rest } = index as Record<string, unknown>;
+    migrated.index = rest;
   }
 
   migrated.schemaVersion = FIREHORSE_SETUP_MANIFEST_SCHEMA_VERSION;
