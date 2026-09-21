@@ -25,18 +25,18 @@ it is untracked one-off research from a later session and predates no decision.
 
 | File | Lines | Answers | Status | Inbound | Overlap |
 |---|---:|---|---|---|---|
-| `AGENTS.md` | 105 | What any LLM CLI must know before touching this repo: packages, hard rules, layout, commands | Current | repo 11, issues 9 | Package list also in `CLAUDE.md` and `ARCHITECTURE.md` |
-| `CLAUDE.md` | 75 | The Claude-specific deltas from `AGENTS.md` | Stale in part | repo 9, issues 17 | Same package list, third copy |
+| `AGENTS.md` | 125 | What any LLM CLI must know before touching this repo: packages, hard rules, layout, commands | Current | repo 11, issues 9 | Package list also in `CLAUDE.md` and `ARCHITECTURE.md` |
+| `CLAUDE.md` | 82 | The Claude-specific deltas from `AGENTS.md` | Stale in part | repo 9, issues 17 | Same package list, third copy |
 | `CONTEXT.md` | 172 | The repo's vocabulary, and what not to call each thing | Stale in part | repo 23, issues 19 | Only glossary, no overlap |
-| `README.md` | 214 | What Firehorse is for a new user, and how to install it | Current | repo 12, issues 4 | "How it fits together" restates `ARCHITECTURE.md` |
+| `README.md` | 415 | What Firehorse is for a new user, and how to install it | Current | repo 12, issues 4 | "How it fits together" restates `ARCHITECTURE.md` |
 | `CHANGELOG.md` | 358 | What changed in each release | Current | repo 6, issues 2 | None |
 
 ## docs/
 
 | File | Lines | Answers | Status | Inbound | Overlap |
 |---|---:|---|---|---|---|
-| `ARCHITECTURE.md` | 196 | How a definition becomes a command, and why the boundaries sit where they do | Current | repo 19, issues 8 | Memory section vs `MEMORY.md`; upstream section vs `UPSTREAM-SKILLS.md` |
-| `DECISIONS.md` | 3254 | Every binding project-wide decision, D-01 to D-178 | Current by construction | repo 25, issues 51 | None. Largest tracked file in the repo |
+| `ARCHITECTURE.md` | 214 | How a definition becomes a command, and why the boundaries sit where they do | Current | repo 19, issues 8 | Memory section vs `MEMORY.md`; upstream section vs `UPSTREAM-SKILLS.md` |
+| `DECISIONS.md` | 3594 | Every binding project-wide decision, D-01 to D-187 | Current by construction | repo 25, issues 51 | None. Largest tracked file in the repo |
 | `FIREHORSE-DEFINITION-FORMAT.md` | 228 | The authoring contract for a definition file | Current | repo 10, issues 4 | Frontmatter fields duplicate `types.ts`, which is the source of truth |
 | `MEMORY.md` | 361 | How claude-mem is configured here, what leaves the machine, and how to query it | Current | repo 7, issues 1 | Short version in `ARCHITECTURE.md` |
 | `MIGRATION-PLAN.md` | 269 | How Firehorse moved from cross-provider distribution to a Claude-only spine | Current as history | repo 5, issues 5 | Decisions section duplicates promoted entries in `DECISIONS.md` |
