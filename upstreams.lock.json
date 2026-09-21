@@ -1,7 +1,133 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-11T15:12:44.296Z",
+  "generatedAt": "2026-09-20T21:49:20.439Z",
   "plugins": {
+    "claude-mem": {
+      "marketplace": "thedotmack",
+      "version": "13.25.2",
+      "skills": {
+        "babysit": {
+          "path": "skills/babysit/SKILL.md",
+          "sha256": "e322b0c36fa1c62caa399170e660672096f527f9f6761fb7b6477bf8f1c106ea",
+          "nameSource": "frontmatter",
+          "modelInvocable": true
+        },
+        "ccs-align": {
+          "path": "skills/ccs-align/SKILL.md",
+          "sha256": "4f2553f971aed708d3b0cf609edaef5df94c547942d7e248d41d5fbb049995ad",
+          "nameSource": "frontmatter",
+          "modelInvocable": true
+        },
+        "cloud-sync": {
+          "path": "skills/cloud-sync/SKILL.md",
+          "sha256": "671a0723613c5f5449bcdb681e28af5c41c99b94be1837ac24a13f2bf870df5c",
+          "nameSource": "frontmatter",
+          "modelInvocable": true
+        },
+        "design-is": {
+          "path": "skills/design-is/SKILL.md",
+          "sha256": "1d6529372738c64a74e2ad1b3a8521fe354d166ca9909d448aa2ac1094fc8627",
+          "nameSource": "frontmatter",
+          "modelInvocable": true
+        },
+        "do": {
+          "path": "skills/do/SKILL.md",
+          "sha256": "993ea03d417bb8ddcc32b62f2a09408a06a6a71889466046fb05ebc0ec9a994a",
+          "nameSource": "frontmatter",
+          "modelInvocable": true
+        },
+        "how-it-works": {
+          "path": "skills/how-it-works/SKILL.md",
+          "sha256": "9214da98b56accbe765df5bc9544a2d6c62f2ccb4efe60be69391419477f1b81",
+          "nameSource": "frontmatter",
+          "modelInvocable": true
+        },
+        "knowledge-agent": {
+          "path": "skills/knowledge-agent/SKILL.md",
+          "sha256": "538de006ebe2619b8a47dd47b09c5afa51ccbe0f806f5fd17ab348609eef6fd1",
+          "nameSource": "frontmatter",
+          "modelInvocable": true
+        },
+        "learn-codebase": {
+          "path": "skills/learn-codebase/SKILL.md",
+          "sha256": "7dece1f0742473515d009d9aa5255305fcec326cabdebb4792d38c5dfb5a71c6",
+          "nameSource": "frontmatter",
+          "modelInvocable": true
+        },
+        "make-plan": {
+          "path": "skills/make-plan/SKILL.md",
+          "sha256": "5e83552aa87eb321451e1da464aff5765d84ef053f0c1062e3ff7b789b08448d",
+          "nameSource": "frontmatter",
+          "modelInvocable": true
+        },
+        "mem-search": {
+          "path": "skills/mem-search/SKILL.md",
+          "sha256": "348f365f126c429bcee5e5edb2d154f4d9a6b74648807a90ea0c2a6868471622",
+          "nameSource": "frontmatter",
+          "modelInvocable": true
+        },
+        "mode-creator": {
+          "path": "skills/mode-creator/SKILL.md",
+          "sha256": "ab6882abae4de20d087fa8c0766b414419d6e7aa2013ef1457dcc5a4bebdafbf",
+          "nameSource": "frontmatter",
+          "modelInvocable": true
+        },
+        "oh-my-issues": {
+          "path": "skills/oh-my-issues/SKILL.md",
+          "sha256": "292417dedb16cbf795f929db0d60e08ff5512efb7f58c16995c6ba15c6499566",
+          "nameSource": "frontmatter",
+          "modelInvocable": true
+        },
+        "pathfinder": {
+          "path": "skills/pathfinder/SKILL.md",
+          "sha256": "a3e17bf66e7c2eb198f4b04c06adaff29bf62b7cbd09005c7c234cdcf4ad796b",
+          "nameSource": "frontmatter",
+          "modelInvocable": true
+        },
+        "smart-explore": {
+          "path": "skills/smart-explore/SKILL.md",
+          "sha256": "89c834b9ed8881c7e22b27ec0c9ed9fc5e05b3379a8aa1f2a23265831eae7144",
+          "nameSource": "frontmatter",
+          "modelInvocable": true
+        },
+        "standup": {
+          "path": "skills/standup/SKILL.md",
+          "sha256": "2b2f8b72790cb728e3db24a91bcb229cd8a06284d4f734d09393ea13a8083335",
+          "nameSource": "frontmatter",
+          "modelInvocable": true
+        },
+        "timeline-report": {
+          "path": "skills/timeline-report/SKILL.md",
+          "sha256": "1cbd77db85e982bb1729b69bf98391835add6850df76a5d7383987e7c5da5a15",
+          "nameSource": "frontmatter",
+          "modelInvocable": true
+        },
+        "version-bump": {
+          "path": "skills/version-bump/SKILL.md",
+          "sha256": "f4fc3c5b63fc0be94c2e4a4eb7aa533f6acba57ca5bfbf35a488c7844ce53db3",
+          "nameSource": "frontmatter",
+          "modelInvocable": true
+        },
+        "weekly-digests": {
+          "path": "skills/weekly-digests/SKILL.md",
+          "sha256": "e3f711e8b8e107a3fc5a38f8c61399d31820a40f5cf2b1cea310278cec08b9f6",
+          "nameSource": "frontmatter",
+          "modelInvocable": true
+        },
+        "what-the": {
+          "path": "skills/what-the/SKILL.md",
+          "sha256": "408a7fe8df05094631b9201b97a206a25830fb88c1bb36fb2ea631eeb9719697",
+          "nameSource": "frontmatter",
+          "modelInvocable": true
+        },
+        "wowerpoint": {
+          "path": "skills/wowerpoint/SKILL.md",
+          "sha256": "0ed6e88554485922116486da89ee7a326d48bdabc83cd21a248362276b50379e",
+          "nameSource": "frontmatter",
+          "modelInvocable": true
+        }
+      }
+    },
     "impeccable": {
       "marketplace": "impeccable",
       "version": "4.3.1",
@@ -169,11 +295,6 @@
           "modelInvocable": true
         }
       }
-    },
-    "supermemory": {
-      "marketplace": "supermemory-plugins",
-      "version": "0.1.6",
-      "skills": {}
     }
   }
 }

@@ -25,8 +25,8 @@ copies them:
   earns its place.
 - **[`impeccable`](https://github.com/pbakaus/impeccable)** — interface critique
   and design system work, for any workflow step that touches a UI surface.
-- **[`supermemory`](https://github.com/supermemoryai/claude-supermemory)** — the
-  memory store, run on your own machine, that holds what past sessions decided.
+- **[`claude-mem`](https://github.com/thedotmack/claude-mem)**, the memory store
+  that holds what past sessions decided, kept on your own machine.
 
 Firehorse adds three things around them: **memory** you can ask questions of, a
 **codebase map** an agent queries before it opens a file, and **UI critique**
@@ -44,8 +44,10 @@ parts around that thing:
   condition, and a ticket closes on pasted command output rather than on "done".
 - **What does this repo already have?** Setup runs once and records it, so later
   sessions read a manifest instead of re-probing the tree.
-- **What did the last six sessions decide?** Memory is a local supermemory
-  store, and `firehorse-recall` searches it before a decision gets relitigated.
+- **What did the last six sessions decide?** The store is a local SQLite file
+  and compression runs through the local `claude` binary on the plan the session
+  already bills to (D-183). `firehorse-recall` searches it before a decision
+  gets relitigated.
 - **Does this screen actually work?** A UI change routes through `impeccable`
   against the repo's own `DESIGN.md`, so the critique has something to measure
   against.
@@ -84,30 +86,32 @@ what is and is not set up without writing anything, ask Claude from any session:
 /firehorse:firehorse-setup --check
 ```
 
-From a clone, `./install.sh --check` reports the same thing plus the memory stack.
+From a clone, `./install.sh --check` reports the same thing plus the marketplaces,
+the MCP servers, and the memory provider settings.
 
 | Flag              | Effect                                         |
 | ----------------- | ---------------------------------------------- |
 | `--check`         | Report status. Writes nothing.                 |
 | `--yes`           | Accept every prompt. For non-interactive runs. |
-| `--skip-memory`   | Leave the self-hosted supermemory stack alone. |
+| `--skip-memory`   | Do not write the memory provider settings.     |
 | `--skip-superset` | Leave Superset MCP alone.                      |
 | `--no-statusline` | Leave your status line alone.                  |
 
 <details>
 <summary>What the installer does, before you pipe it to bash</summary>
 
-- **Marketplaces** — `pbakaus/impeccable`, `supermemoryai/claude-supermemory`,
-  then `cinjoff/firehorse`. The first two come first, because Claude Code cannot
+- **Marketplaces**, `pbakaus/impeccable`, `thedotmack/claude-mem`, then
+  `cinjoff/firehorse`. The first two come first, because Claude Code cannot
   resolve a dependency from a marketplace it does not know about yet.
-- **The plugin** — `firehorse@firehorse`, which pulls `mattpocock-skills`,
-  `impeccable`, and `supermemory` with it.
-- **MCP servers** — `codebase-memory-mcp` for the structural queries the
-  workflows run, and `supermemory-docs` for supermemory's public documentation.
-- **Memory** — the self-hosted supermemory server on `localhost:6767`, the
-  `gpt-oss:20b` extraction model, the server credentials, a launchd job so it
-  survives a reboot, and the `SUPERMEMORY_API_URL` and `SUPERMEMORY_MCP_URL`
-  entries Claude Code needs in `~/.claude/settings.json`.
+- **The plugin**, `firehorse@firehorse`, which pulls `mattpocock-skills`,
+  `impeccable`, and `claude-mem` with it.
+- **MCP servers**, `codebase-memory-mcp` for the structural queries the
+  workflows run.
+- **Memory settings**, written to `~/.claude-mem/settings.json`: the provider
+  that compresses through the local `claude` binary on your own plan (D-183),
+  and the switches that turn telemetry off (D-184). There is no server binary to
+  fetch, no model to pull, and no launchd job. claude-mem's own worker starts
+  itself.
 - **Superset MCP** — only when Superset is detected, and always through a
   `headersHelper`, so the API key never lands in a config file.
 - **The status line** — `~/.claude/statusline/`, plus `ccstatusline` globally if
@@ -116,8 +120,8 @@ From a clone, `./install.sh --check` reports the same thing plus the memory stac
   it.
 
 Everything it writes lives under your home directory: `~/.claude/settings.json`,
-`~/.claude/statusline/`, `~/.config/firehorse/`, `~/.local/bin/`,
-`~/.supermemory/`, and one `~/Library/LaunchAgents/` plist. It touches no repo until you run
+`~/.claude/statusline/`, `~/.config/firehorse/`, and
+`~/.claude-mem/settings.json`. It touches no repo until you run
 `/firehorse:new-project`. From a clone, run `./install.sh` instead of piping.
 
 </details>
@@ -139,7 +143,7 @@ so and carries on rather than failing.
 | `/firehorse:tickets`     | Cut a spec into tracer-bullet slices, wired and triaged.                                 |
 | `/firehorse:build`       | Take one ticket to a committed, verified change.                                         |
 | `/firehorse:fix-bug`     | Go from a bug report to a fix proven to have changed the behaviour.                      |
-| `/firehorse:memory`      | Open the supermemory store as an interactive graph to see what it holds.                 |
+| `/firehorse:memory`      | Open claude-mem's viewer on what this repo has stored.                                   |
 
 Plus two skills: `firehorse-recall`, for asking what past sessions decided, and
 `firehorse-setup`, for checking this machine's setup.
@@ -361,7 +365,7 @@ flowchart TD
   W --> G["codebase-memory-mcp<br/>structure · callers · impact"]
   W --> T["your issue tracker<br/>tickets · wayfinder maps"]
   W --> M[".firehorse/manifest.json<br/>what this repo has"]
-  W --> R["supermemory<br/>what past sessions decided"]
+  W --> R["claude-mem<br/>what past sessions decided"]
 ```
 
 Each generated workflow carries a table resolving every upstream skill it uses
@@ -383,12 +387,11 @@ pnpm typecheck
 pnpm test
 ```
 
-Three packages: **`firehorse-core`** holds the definitions, the Firehorse
-Definition Format v1 parser, and the projector; **`firehorse-claude`** is the
-plugin, discovered through the repo-level `.claude-plugin/marketplace.json`;
-**`firehorse-graph`** is the local app `/firehorse:memory` opens. The core
-library is not a skill runtime, and nothing here is published to npm — Firehorse
-installs through the marketplace.
+Two packages: **`firehorse-core`** holds the definitions, the Firehorse
+Definition Format v1 parser, and the projector, and **`firehorse-claude`** is
+the plugin, discovered through the repo-level `.claude-plugin/marketplace.json`.
+The core library is not a skill runtime, and nothing here is published to npm.
+Firehorse installs through the marketplace.
 
 [`AGENTS.md`](./AGENTS.md) is the contract an agent working on this repo reads
 first.
@@ -397,8 +400,8 @@ first.
 
 - [Definition format](./docs/FIREHORSE-DEFINITION-FORMAT.md) — the v1 contract
 - [Architecture](./docs/ARCHITECTURE.md) — why the pieces are split this way
-- [Memory runbook](./docs/MEMORY.md) — what the memory half does, and how it
-  fails quietly
+- [Memory runbook](./docs/MEMORY.md), how claude-mem is configured here, what
+  leaves the machine, and how it fails quietly
 - [Decisions](./docs/DECISIONS.md) — the binding decision log
 - [Project vision and scope](./docs/PROJECT.md)
 - [Migration plan](./docs/MIGRATION-PLAN.md) — the settled Claude-only

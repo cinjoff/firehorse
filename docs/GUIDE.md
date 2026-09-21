@@ -10,7 +10,7 @@ structural, and it was decided before the first line was written.
 
 Firehorse gives you eight commands for front-loading those decisions: stand up a new
 project, index the codebase, chart a map, write the spec the map arrives at, cut that spec
-into slices, build one, fix a bug, and open the memory graph. Most days you will use two
+into slices, build one, fix a bug, and open the memory viewer. Most days you will use two
 of them.
 
 The commands are the easy part. What makes them work is a set of ideas about how agents
@@ -47,7 +47,7 @@ the plugin, its hooks, and the MCP servers load.
 Firehorse does not contain the craft. It installs
 [`mattpocock-skills`](https://github.com/mattpocock/skills) for the engineering
 disciplines, [`impeccable`](https://github.com/pbakaus/impeccable) for interface work, and
-[`supermemory`](https://github.com/supermemoryai/claude-supermemory) for the memory store,
+[`claude-mem`](https://github.com/thedotmack/claude-mem) for the memory store,
 and calls them at the step where each earns its place. It never copies them.
 
 ### Your first hour
@@ -72,7 +72,8 @@ Then:
 This reads your codebase into a graph an agent can query, writes anchor documents under
 `docs/codebase/`, and records what it managed to index. Check its report rather than
 assuming it worked. The memory half can fail quietly, and there is more on that under
-[honest limits](#honest-limits).
+[honest limits](#honest-limits). How memory is configured here, and what leaves the
+machine, is in the [memory runbook](./MEMORY.md).
 
 Now take a real piece of work:
 
@@ -307,8 +308,9 @@ or unproven today, each linked to the issue that owns it.
   `/firehorse:spec` and `/firehorse:tickets` shipped on 2026-09-20 (D-181) and no real map
   has been through them yet. Expect the completeness gate on the map to be the part that
   needs tuning. [#222](https://github.com/cinjoff/firehorse/issues/222)
-- **`firehorse-recall` is not wired into the workflows.** The memory a session writes is not
-  read back automatically. Invoke recall yourself when you need it.
+- **`firehorse-recall` is not wired into the workflows.** claude-mem's hooks inject an
+  index at session start, but no workflow step calls recall. Invoke it yourself when a
+  decision is about to be relitigated.
 - **Nothing measures whether any of this works.** There is no harness reporting how often
   these workflows succeed. [#211](https://github.com/cinjoff/firehorse/issues/211)
 - **The TDD stance is unresolved,** as described in idea 6.

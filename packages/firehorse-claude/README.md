@@ -16,14 +16,14 @@ that checks repo setup state, one that checks for a newer Firehorse release.
 `audience: maintainer`, so they project into the repository's own
 `.claude/commands/` rather than into this plugin.
 
-It declares three dependencies — `mattpocock-skills`, `impeccable`, and
-`supermemory` — so Claude Code installs all three alongside it.
+It declares three dependencies, `mattpocock-skills`, `impeccable`, and
+`claude-mem`, so Claude Code installs all three alongside it.
 
 ## Install
 
 Run the installer from the repository root. It adds the upstream marketplaces
 this plugin's dependencies resolve from, installs the plugin, and wires up the
-MCP servers and the local memory stack:
+MCP servers and the memory provider settings:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/cinjoff/firehorse/main/install.sh | bash
@@ -37,7 +37,7 @@ Code cannot resolve a dependency from a marketplace it does not know about yet:
 
 ```text
 /plugin marketplace add pbakaus/impeccable
-/plugin marketplace add supermemoryai/claude-supermemory
+/plugin marketplace add thedotmack/claude-mem
 /plugin marketplace add cinjoff/firehorse
 /plugin install firehorse@firehorse
 ```

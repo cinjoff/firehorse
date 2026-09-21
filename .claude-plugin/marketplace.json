@@ -10,7 +10,7 @@
   "allowCrossMarketplaceDependenciesOn": [
     "claude-plugins-official",
     "impeccable",
-    "supermemory-plugins"
+    "thedotmack"
   ],
   "plugins": [
     {
@@ -42,8 +42,8 @@
           "marketplace": "impeccable"
         },
         {
-          "name": "supermemory",
-          "marketplace": "supermemory-plugins"
+          "name": "claude-mem",
+          "marketplace": "thedotmack"
         }
       ],
       "category": "agent-frameworks",

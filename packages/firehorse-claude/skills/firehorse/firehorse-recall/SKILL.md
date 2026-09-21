@@ -1,12 +1,12 @@
 ---
 name: "firehorse-recall"
-description: "Search the self-hosted supermemory store for what past sessions decided, tried, or ruled out, and write a durable note when this session settles something. Use it when a decision is about to be relitigated (\"why is it done this way?\"), when a convention or preference should exist but is not in the repo, when work resumes after a gap and the open threads are not in the diff, or when this session hit a trap the next one would rediscover. Invoke it on one of those triggers or on request, never as a session-start reflex."
-compatibility: "Requires the supermemory CLI on npx and a reachable supermemory server at SUPERMEMORY_API_URL. Read-only without SUPERMEMORY_API_KEY set; writes need it."
+description: "Search claude-mem for what past sessions decided, tried, or ruled out, and write a durable note when this session settles something. Use it when a decision is about to be relitigated (\"why is it done this way?\"), when a convention or preference should exist but is not in the repo, when work resumes after a gap and the open threads are not in the diff, or when this session hit a trap the next one would rediscover. Invoke it on one of those triggers or on request, never as a session-start reflex."
+compatibility: "Requires the claude-mem plugin installed from the thedotmack marketplace, with its worker answering on loopback and its MCP search tools registered. Reads and writes both go to the local worker; neither needs an API key."
 firehorseGenerated: true
 firehorseKind: "skill"
 firehorseId: "firehorse-recall"
 firehorseSource: "packages/firehorse-core/definitions/skills/firehorse-recall.md"
-firehorseSourceSha256: "69335000942813ab5a289f232b83330a60d6b9e2b038fbf827ac8e8da7148eda"
+firehorseSourceSha256: "ca618bdc7f2fad81cbad9b3ae4d8dfaa7c70734ede84e60856455038e859ad24"
 firehorseSchemaVersion: 1
 ---
 
@@ -16,111 +16,159 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/skills/firehorse-recall.md
 Definition ID: firehorse-recall
 Definition kind: skill
-Source SHA-256: 69335000942813ab5a289f232b83330a60d6b9e2b038fbf827ac8e8da7148eda
+Source SHA-256: ca618bdc7f2fad81cbad9b3ae4d8dfaa7c70734ede84e60856455038e859ad24
 -->
 
 # Firehorse recall
 
 ## Purpose
 
-Use this skill to reach memory on purpose. The supermemory plugin's hooks already capture every session and inject what they judge relevant; this skill is the other half — the deliberate query you run when you suspect a question has been answered before, and the deliberate note you write when this session answers one.
+Use this skill to reach memory on purpose. claude-mem's hooks already capture
+every session and inject a costed index at session start; this skill is the
+other half — the deliberate query you run when you suspect a question has been
+answered before, and the deliberate note you write when this session answers one.
 
-It is a CLI wrapper, not an MCP surface. The `npx supermemory` CLI talks to the same self-hosted server the hooks use, so nothing here depends on the hosted service.
+It is not a search ladder. claude-mem ships the tools and ships `mem-search`,
+which documents how to spend a token budget across them (D-185). This skill
+carries only what upstream has no reason to know: when this repo reaches for
+memory, how much weight to give what comes back, and how to write something down.
 
 ## Usage
 
-Invoke by name or intent: "recall what we decided about X", "search memory for Y", "remember that Z". Automatic recall is the hooks' job; running both spends context twice on the same store.
+Invoke by name or intent: "recall what we decided about X", "search memory for
+Y", "remember that Z". Automatic recall is the hooks' job; running both spends
+context twice on the same store.
 
-This is procedure, not command reference. For syntax read `npx supermemory <command> --help`, or `npx supermemory help --json` for the machine-readable inventory — both come from the installed version rather than from a copy that can drift.
+For the search tools' own syntax and cost model, read claude-mem's `mem-search`
+skill rather than a copy of it here. It comes from the installed version, so it
+cannot drift from the tools it describes.
 
 ## Inputs
 
-- The question, in the user's words — keep their nouns; they are what past sessions indexed.
-- `SUPERMEMORY_API_URL`, and `SUPERMEMORY_API_KEY` for writes.
-- The repo's container tag, from `npx supermemory tags list`.
+- The question, in the user's words — keep their nouns; they are what past
+  sessions indexed.
+- The project key. Reads may span `firehorse` and this worktree's own
+  `firehorse/<worktree dir>`; deliberate writes use `firehorse` (see Gotchas).
+- A reachable claude-mem worker. Its port is `CLAUDE_MEM_WORKER_PORT` in
+  `~/.claude-mem/settings.json`, defaulting to `37700 + (uid % 100)`.
 - For a write: the one thing worth persisting, stated as a fact.
 
 ## Outputs
 
-- A short brief: the memories that bear on the question, each with its age, and a plain line when memory has nothing.
-- On a write, the document ID the CLI returned and its extraction status.
+- A short brief: the observations that bear on the question, each with its age
+  and its id, and a plain line when memory has nothing.
+- On a write, the id the worker returned, and what a read-back of it says.
 
 ## Instructions
 
-### Resolve the container tag
+### Ask the index before you ask for detail
 
-`npx supermemory tags list` prints every tag on the server. The repo's is `repo_<repo name>__<hash>`, written by the plugin's capture hook and stable across every worktree of the repo because it hashes the git remote, not the path. Match on the repo-name prefix rather than recomputing the hash.
+Start with `search`, scoped to the project and — when the question has a shape —
+to an observation type. `decision`, `gotcha` and `trade-off` are the three that
+answer "why is it done this way?"; the others are `bugfix`, `feature`,
+`discovery`, `refactor` and `change`.
 
-No tag matches → the repo has nothing captured yet. Say so in one line and move on.
+```
+search(query="<the user's nouns>", project="firehorse", type="decision", limit=10)
+```
 
-### Search in three widening steps
+→ Done when: the question is answered from the titles, or the titles say it
+cannot be.
 
-Stop as soon as you can answer. Each step costs more than the one before, and a flat query that returns full bodies for everything spends context on results you would have discarded after one line.
-
-1. **Wide and shallow.** `npx supermemory search "<question>" --tag <tag> --limit 10 --json`. Read the gists only.
-   → Done when: the question is answered from the gists, or the gists say it cannot be.
-
-2. **Judge before you fetch.** Pick the few hits whose one-liners actually bear on the question.
-   → Done when: the chosen set is small. Two is normal; five means the query was too vague — rerun step 1 with the user's specific nouns.
-
-3. **Detail on demand.** `npx supermemory docs get <id>` for the hits you chose, and nothing else.
-   → Done when: every chosen hit is fetched, and no unchosen one is.
+Escalate only for the hits you actually chose. `get_observations` takes a batch
+and costs roughly ten times what an index row costs, so call it once with every
+id you want rather than once per id. Reach for `timeline` when the narrative
+around a hit is the thing you need, and for `get_tool_uses` only when a summary
+demonstrably is not evidence enough.
 
 ### Widen an empty search before concluding memory is empty
 
-- `--rewrite` rephrases the query for retrieval.
-- `--threshold 0.4` loosens the similarity floor.
-- `--mode hybrid` matches document text as well as extracted memories.
+The query is SQLite FTS5, so widening is a syntax move rather than a flag:
+drop to a single noun, use `OR` between the candidates, drop the `type` filter,
+or drop `project` to find out whether the memory lives under another one.
 
 Widening twice with nothing back is an answer. Report it.
 
 ### Write the durable fact
 
-State the fact rather than the session's narrative: `npx supermemory add "<fact>" --tag <tag> --title "<short title>"`. Then confirm with `npx supermemory docs get <id>` and report what the status actually says.
+Deliberate notes go to the worker's save endpoint, which takes the project
+explicitly. Pass the repository name rather than the worktree key: a fact worth
+persisting belongs to the repo, not to whichever worktree happened to be open,
+and worktree directory names here are generated word pairs that mean nothing to
+a later reader.
+
+```sh
+PORT=$(jq -r '.CLAUDE_MEM_WORKER_PORT // empty' ~/.claude-mem/settings.json)
+curl -sS -X POST "http://127.0.0.1:$PORT/api/memory/save" \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"<the fact>","title":"<short title>","project":"firehorse"}'
+```
+
+Report what the response says, not that you sent it.
 
 ### Report with age attached
 
-A decision from three days ago and one from eight months ago carry different weight. A brief that hides the difference makes the reader trust both equally.
+A decision from three days ago and one from eight months ago carry different
+weight. A brief that hides the difference makes the reader trust both equally.
+The session-start index already prints the current date for exactly this reason.
 
 ## Gotchas
 
-- `add` returns `queued` in milliseconds, and a misconfigured extraction model produces nothing while still returning success. The `docs get` confirmation is the only evidence a write landed.
-- The container tag hashes the git remote, so every worktree of a repo shares one tag. A worktree that recalls nothing is a server or tag problem, not a path problem.
-- A memory records what was true when it was written. The repo is the authority on what is true now.
+- **A worktree reads the repo's history but writes its own.** claude-mem keys a
+  worktree session `<repo>/<worktree dir>`, so writes from here land under
+  `firehorse/<worktree dir>`, while the hooks inject across both that and
+  `firehorse`. Searching without a `project` filter is therefore wider than it
+  looks, and searching with `project="firehorse"` misses this worktree's own
+  observations. Ask for both when the answer could be in either.
+- **An observation records what was true when it was written.** The repo is the
+  authority on what is true now.
+- **Extraction is a compression step and compresses wrongly sometimes.** A past
+  capture in this store claimed the repo used Turborepo, which it does not.
+  Treat a surprising memory as a lead, not a finding.
+- **The worker API has no request authentication.** Its loopback bind is the
+  only thing in front of it, which is a reason to keep reads and writes local
+  and never to forward the port.
 
 ## Boundaries
 
-- **Explicit invocation only** — on a trigger from the description, or on request. Session-start reflex recall is the hooks' job.
-- **The repo wins a disagreement with memory**, and the disagreement is worth saying out loud.
-- **Full documents go to the hits you chose**, which is the whole point of the three-step ladder.
-- **Memory holds what the repo does not.** A decision already in `docs/DECISIONS.md` or on a wayfinder map has a home.
-- **Memories are facts**, not artifacts: no secrets, no tokens, no file contents, no transcripts.
-- **A write is reported once `docs get` confirms it.**
-- **This skill is local-only by design.** An unreachable server is reported, never routed around through the hosted service or its MCP tools.
-- **The installed CLI's own help is the flag reference.**
+- **Explicit invocation only** — on a trigger from the description, or on
+  request. Session-start reflex recall is the hooks' job, and they have already
+  done it.
+- **The repo wins a disagreement with memory**, and the disagreement is worth
+  saying out loud.
+- **Index first, detail second.** Full observations go to the hits you chose.
+- **Memory holds what the repo does not.** A decision already in
+  `docs/DECISIONS.md` or on a wayfinder map has a home, and memory is not it.
+- **Memories are facts**, not artifacts: no secrets, no tokens, no file
+  contents, no transcripts. Wrap anything that must not be captured at all in
+  `<private>` tags.
+- **A write is reported from what the worker returned**, never from having sent
+  it.
+- **The ladder's syntax belongs to `mem-search`.** Do not restate it here; a
+  second copy drifts from the tools on the day it is written.
 
 ## Examples
 
-Recall before repeating a decision:
+Recall before relitigating a decision:
 
 ```
-npx supermemory tags list
-npx supermemory search "why postgres over sqlite" --tag <tag> --limit 10 --json
-npx supermemory docs get MZP7ZRbjTEW1JmMDry1mQc
+search(query="postgres sqlite", project="firehorse", type="decision", limit=10)
+get_observations(ids=[2543, 2102])
 ```
 
-Report: `[~2mo] Chose Postgres for the concurrent-writer story; SQLite was rejected on WAL contention, not on size.`
+Report: `[~2mo, #2543] Chose Postgres for the concurrent-writer story; SQLite was
+rejected on WAL contention, not on size.`
 
 Widen a query that came back empty:
 
 ```
-npx supermemory search "deploy rollback" --tag <tag> --rewrite --threshold 0.4 --mode hybrid --limit 10 --json
+search(query="rollback OR deploy OR revert", project="firehorse", limit=10)
 ```
 
 Persist what this session settled:
 
-```
-npx supermemory add "Firehorse's self-hosted supermemory binds port 6767, not the CLI launcher's 8787 default." \
-  --tag <tag> --title "supermemory local port"
-npx supermemory docs get <returned id>
+```sh
+curl -sS -X POST "http://127.0.0.1:$PORT/api/memory/save" \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"claude-mem keys a worktree session <repo>/<worktree dir> for writes, and injects across both that and <repo> for reads.","title":"claude-mem worktree scoping","project":"firehorse"}'
 ```

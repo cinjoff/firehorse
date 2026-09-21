@@ -38,7 +38,7 @@ it is untracked one-off research from a later session and predates no decision.
 | `ARCHITECTURE.md` | 196 | How a definition becomes a command, and why the boundaries sit where they do | Current | repo 19, issues 8 | Memory section vs `MEMORY.md`; upstream section vs `UPSTREAM-SKILLS.md` |
 | `DECISIONS.md` | 3254 | Every binding project-wide decision, D-01 to D-178 | Current by construction | repo 25, issues 51 | None. Largest tracked file in the repo |
 | `FIREHORSE-DEFINITION-FORMAT.md` | 228 | The authoring contract for a definition file | Current | repo 10, issues 4 | Frontmatter fields duplicate `types.ts`, which is the source of truth |
-| `MEMORY.md` | 314 | How to run the self-hosted supermemory server and query it | Current | repo 5, issues 0 | Short version in `ARCHITECTURE.md` |
+| `MEMORY.md` | 320 | How claude-mem is configured here, what leaves the machine, and how to query it | Current | repo 7, issues 1 | Short version in `ARCHITECTURE.md` |
 | `MIGRATION-PLAN.md` | 269 | How Firehorse moved from cross-provider distribution to a Claude-only spine | Current as history | repo 5, issues 5 | Decisions section duplicates promoted entries in `DECISIONS.md` |
 | `PROJECT.md` | 117 | Vision, audience, scope, constraints | **Stale throughout on positioning** | repo 12, issues 6 | Vision overlaps `README.md`; scope overlaps `ARCHITECTURE.md` |
 | `UPSTREAM-SKILLS.md` | 198 | How a workflow names an upstream skill, and how drift is caught | Current | repo 2, issues 6 | Upstream section of `ARCHITECTURE.md` |
@@ -56,9 +56,10 @@ it is untracked one-off research from a later session and predates no decision.
 Line 8 says Firehorse projects into "Pi.dev and Claude Code", line 38 lists
 "Claude, Pi.dev, Codex" as first-class, and line 53 tables
 `packages/firehorse-pi`. That package does not exist; `packages/` holds
-`firehorse-core`, `firehorse-claude`, and `firehorse-graph`. It carries 12
-inbound repo references including `CLAUDE.md`, `AGENTS.md`, and `CONTEXT.md`,
-so it cannot be deleted without rehoming what reads it.
+`firehorse-core` and `firehorse-claude`, the two that are left after D-186
+retired the graph app. It carries 12 inbound repo references including
+`CLAUDE.md`, `AGENTS.md`, and `CONTEXT.md`, so it cannot be deleted without
+rehoming what reads it.
 
 `WORKFLOW-MAP.md` names its own inputs at line 8 as "SKILL.md files bundled in
 `firehorse-pi` / mirrored into `firehorse-claude`". Both the package and the
@@ -70,9 +71,6 @@ vendor nothing. Its "recommended composite skills" section proposes
 `packages/firehorse-core/upstreams/mattpocock-skills/`, a directory that no
 longer exists under D-156. The operating guidance in the body may still hold;
 only its stated source is dead.
-
-`CLAUDE.md` line 11 reads "Status: scaffolding, plus the supermemory graph app".
-Six commands shipped in v0.7.0, so this understates the repo.
 
 `CONTEXT.md` line 3 calls Firehorse "a cross-provider agent workflow framework",
 which is the positioning the README rewrite retired.
@@ -135,9 +133,10 @@ no literal citation in any issue body. It is the deliverable of closed ticket
 `SKILLS-FRAMEWORK-DISCUSSION-SYNTHESIS.md` lost its last one in commit `90d6adb`:
 the session handoff deleted there was the only file that linked to it.
 
-`MEMORY.md` is the opposite case worth noting: no issue has ever cited it, but
-`AGENTS.md`, `CLAUDE.md`, `README.md`, and `ARCHITECTURE.md` all route to it, so
-it is load-bearing despite tracker silence.
+`MEMORY.md` was the opposite case worth noting: no issue had ever cited it, while
+`AGENTS.md`, `CLAUDE.md`, `README.md`, and `ARCHITECTURE.md` all routed to it, so
+it was load-bearing despite tracker silence. Ticket #290 rewrote it for
+claude-mem and added `GUIDE.md` to that list.
 
 ## What this file is
 

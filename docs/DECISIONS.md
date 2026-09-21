@@ -1,6 +1,6 @@
 # DECISIONS.md
 
-Project-wide binding decision log, and the only `D-NN` sequence (D-178). Each
+Project-wide binding decision log, and the only `D-NN` sequence (D-187). Each
 entry: ID, date, decision, rationale, alternatives considered. Append a new
 entry rather than rewriting an old one; where a later decision invalidates an
 earlier entry, the new entry is the record and the old one is marked in place
@@ -3042,6 +3042,9 @@ survives. This also closes the migration map's open question about
 
 ## D-162 — Memory is self-hosted supermemory, fully offline
 
+**Superseded by D-183 (2026-09-20).** The engine is claude-mem; the offline
+clause is narrowed rather than kept. Read D-183 before acting on anything below.
+
 **Date:** 2026-09-11
 **Decision:** Local graph engine, local embeddings, Ollama for extraction. Replaces claude-mem entirely. Recorded in the migration plan as D-143.
 **Rationale:** Memory that leaves the machine is a different product with different consent questions. Self-hosting keeps it local by construction.
@@ -3050,6 +3053,10 @@ survives. This also closes the migration map's open question about
 - The hosted supermemory service — rejected: recall is local-only by design.
 
 ## D-163 — Deliberate recall comes from the `npx supermemory` CLI, not an MCP shim
+
+**Superseded by D-185 (2026-09-20).** The surface is claude-mem's MCP tools. The
+reasoning below — do not own runtime for capability that already exists —
+survives the reversal and is what D-185 applies.
 
 **Date:** 2026-09-11
 **Decision:** `firehorse-recall` wraps the CLI against the self-hosted server. Recorded in the migration plan as D-144.
@@ -3418,3 +3425,170 @@ branch name plus `gh issue view` supply that without going stale.
 - Keep a file anyway for the workflow-crashed-mid-run case — rejected: a file
   written only at a successful `Handoff` step never represents a crashed run, so
   the case it was meant to cover does not arise.
+
+## D-183 — Memory is claude-mem, compressed under the session's own Claude plan
+
+**Date:** 2026-09-20
+**Decision:** claude-mem replaces self-hosted supermemory as the memory engine,
+installed through the plugin marketplace (`thedotmack`) and declared as a
+Firehorse dependency. It runs `CLAUDE_MEM_PROVIDER=claude` and leaves
+`~/.claude-mem/.env` without an `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN` or
+`ANTHROPIC_BASE_URL`, which is what makes compression fall through to the
+keychain OAuth token and run on the plan the session is already running on.
+
+`CLAUDE_MEM_CLAUDE_AUTH_METHOD` is recorded as `cli` for a reader's benefit and
+nothing more. In 13.25.2 the validator accepts `subscription`, `api-key`,
+`gateway` and `cli`, and **no code branches on any of them**: the selector is
+the `.env` file. Setting it is documentation, not configuration, and a future
+version could start reading it.
+D-162's clause changes from "nothing leaves the machine" to **nothing leaves the
+boundary Claude Code already sets**. Everything else stays local: SQLite with
+FTS5, Chroma embeddings from a local ONNX model, and a loopback-only worker.
+**Rationale:** The honest version of the offline claim is worth more than a
+literal one that does not hold. The content being compressed is tool-use content
+that already went to Anthropic as part of the session that produced it, under the
+same account — so the compression call adds no party. What it does add is shape:
+the worker re-sends observations out of band, on its own schedule, for sessions
+that may already be over. `<private>` tags are the documented way to hold
+something back. Saying that plainly beats implying a guarantee the software does
+not make.
+
+The `host` posture the map carried as a fourth option does not exist: no shim
+code ships in the plugin, so it was removed from the choice rather than rejected
+on its merits.
+**Alternatives considered:**
+
+- **LiteLLM gateway mode against a local model** (`ANTHROPIC_BASE_URL` in
+  `~/.claude-mem/.env`, not in `settings.json`) — rejected for now, not on
+  principle. It is the only configuration
+  that keeps D-162's clause literal, and it stays the preferred destination if
+  it can be made to work. Two things stop it today: the Agent SDK path needs
+  tool calling, and `docs/MEMORY.md` records that three of four local models
+  already failed on exactly that under supermemory; and the 14 GB resident cost
+  of `gpt-oss:20b` buys measurably worse extraction than the hosted model, which
+  the same page documents (a capture claimed this repo uses Turborepo, which it
+  does not). Revisit when a local tool-calling model is cheap and accurate.
+- **`--provider host`, the loopback observer** — unavailable. Documented against
+  Grok Bot; the plugin ships no shim implementing it.
+- **A hosted provider, or the CMEM Pro observer at cmem.ai** — rejected. Each
+  adds a party neither the session nor the plan already involves. CMEM Pro is
+  pre-selected in the interactive installer, which is a reason to install through
+  the plugin marketplace route, where no picker runs.
+- **Keep supermemory** — rejected. It cost a 14 GB model pull, a launchd job, a
+  server binary and four environment variables to run an engine that extracted
+  less accurately, and it ships no marketplace manifest, so it could never be
+  declared as a dependency or drift-checked.
+
+## D-184 — claude-mem telemetry and cloud sync are off, and that is a separate decision
+
+**Date:** 2026-09-20
+**Decision:** Telemetry is disabled and cloud sync stays off. These are recorded
+apart from D-183 because they are a different question: D-183 is about where
+compression runs, this is about what gets reported regardless of where it runs.
+**Rationale:** claude-mem's PostHog telemetry is on by default and its error
+tracking sends redacted error text. Cloud sync is off by default but uploads
+observation narratives and full prompt text when enabled, so it is worth an
+explicit "stays off" rather than relying on a default that an upgrade could
+change. Neither is load-bearing for anything Firehorse does.
+
+Chroma carries its own `ANONYMIZED_TELEMETRY` beacon. claude-mem sets it to
+`false` in the environment it hands the `uvx` preflight, so it is already off
+and needs nothing from this repo.
+**Alternatives considered:**
+
+- Leave telemetry at its default — rejected: a default that sends anything is a
+  decision, and leaving it unmade means it was made by the vendor.
+- Fold this into D-183 — rejected: a reader deciding the provider question
+  should not have to infer the telemetry answer from it.
+
+## D-185 — Deliberate recall is claude-mem's MCP tools, and Firehorse writes none of it
+
+**Date:** 2026-09-20
+**Decision:** `firehorse-recall` stops being a CLI wrapper and stops carrying a
+search ladder of its own. claude-mem ships both the tools (`search`, `timeline`,
+`get_observations`, `get_tool_uses`, plus `smart_search`, `smart_outline` and
+`smart_unfold` for code) and a `mem-search` skill that already documents the
+layered workflow. Firehorse depends on both and keeps only what upstream cannot
+know: when this repo reaches for memory, that the repo wins a disagreement with
+it, reporting recall with age attached, and writing a durable note.
+**Rationale:** D-163 rejected an MCP shim because the capability already existed
+and a shim would be runtime Firehorse does not want to own. That reasoning does
+not reverse when the surface becomes MCP. It is the argument for using
+claude-mem's server rather than writing one, and for deleting the ladder rather
+than maintaining a second copy of it against an upstream committing 175 times a
+fortnight. D-156 (depend on upstream plugins, vendor nothing) says the same
+thing. What is left is the repo-specific half, which is the half that was always
+worth having.
+
+The write path is `POST /api/memory/save` on the worker, taking `text`, an
+optional `title`, and an explicit `project`. The map treated its existence as an
+open question; it exists, so the skill's write half survives.
+**Alternatives considered:**
+
+- Restate the three-layer ladder inside `firehorse-recall` — rejected: a second
+  copy of upstream's own instructions, drifting from the day it is written, and
+  wrong already (the ladder has four layers, not three).
+- Drop `firehorse-recall` entirely and rely on `mem-search` — rejected: it would
+  lose the triggers, the repo-wins rule and the write path, none of which
+  upstream has a reason to carry.
+
+## D-186 — firehorse-graph is retired, not ported
+
+**Date:** 2026-09-20
+**Decision:** `packages/firehorse-graph` is deleted. `/firehorse:memory` becomes
+a thin workflow that resolves the worker port, confirms the worker answers, and
+hands back claude-mem's own viewer URL.
+**Rationale:** The package is 40 files and 2,345 lines across 9 test files, and
+every one of them is built on supermemory's REST API and its container-tag
+model. Neither survives the swap, so "port it" is a rewrite wearing the old
+package's name. What it would be rewritten against is a worker API with no
+request authentication, no version guarantee, and 175 commits in the last
+fortnight. `PRODUCT.md` claims three jobs: find a half-remembered memory, browse
+what a project knows, and audit whether extraction is worth keeping.
+claude-mem's bundled viewer and the `search` tool already do all three.
+
+Retiring it removes a build target and a test surface, which is the rare
+migration step that makes the repo smaller.
+**Alternatives considered:**
+
+- **Port the proxy at the claude-mem worker** — rejected: a second UI over the
+  same data, chasing a fast-moving unauthenticated API, to recover a graph view
+  of relationships that claude-mem's observation-and-session model does not have.
+- **Keep it pointed at supermemory** — rejected: an app for a store this repo no
+  longer writes to is how a package goes stale in place.
+
+## D-187 — The existing claude-mem store is reused, and supermemory's is kept but frozen
+
+**Date:** 2026-09-20
+**Decision:** The 2.6 GB store at `~/.claude-mem` is adopted as-is rather than
+started clean. `~/.supermemory/data` and `~/.supermemory-claude/credentials.json`
+are kept, not deleted, with a revisit date of **2026-12-20**.
+**Rationale:** The store already holds 3,087 observations for this repo spanning
+2026-05-14 to 2026-09-11, under the project key `firehorse`, and that key stays
+on every read path. claude-mem 13.25.2 keys a worktree session
+`<repo>/<worktree dir>` for writes, but the hooks inject across `allProjects`,
+which is `[parent, primary]`. So a session in this worktree writes to
+`firehorse/emphasized-drill` and reads across both that and `firehorse`. The
+four months of captured history needs no migration to stay reachable.
+
+The split is worth stating rather than smoothing over, because worktree names
+here are generated word pairs: each new workspace mints a project key that means
+nothing to a reader and that only its own sessions write to. `firehorse-recall`
+answers that by writing deliberate notes to `firehorse` explicitly rather than
+to the worktree key.
+
+Starting clean would throw away four months of captured work to avoid a problem
+that does not exist.
+
+Nothing gets deleted on the day of a cutover. The supermemory store stays until
+the revisit date proves nobody wanted it.
+**Alternatives considered:**
+
+- Start the claude-mem store clean — rejected: discards 3,087 usable
+  observations, and the stated reason for it (scope confusion across worktrees)
+  turned out to be false.
+- Migrate supermemory's contents into claude-mem — rejected: D-162 already
+  declined the mirror-image migration, and re-indexing selected history stays
+  optional and separate.
+- Delete the supermemory store now — rejected: irreversible, on the one day the
+  replacement is least proven.

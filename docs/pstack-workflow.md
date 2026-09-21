@@ -125,6 +125,6 @@ Under [D-172](./DECISIONS.md) that is fine: it is a design source, not a basis.
 | Mode + conditionally loaded playbooks | 8 flat workflows, each fully loaded | The definition format cannot express a router and its playbooks. |
 | 21 principles as leaf skills, cited per decision | none | No auditable-rigor mechanism in `build` or `fix-bug`. |
 | Model-per-role config | none | Claude Code supports subagent model overrides; the manifest could carry roles. |
-| `/recall` over transcripts plus shared record | `firehorse-recall`, supermemory only | Transcript mining and the output contract are missing. |
+| `/recall` over transcripts plus shared record | `firehorse-recall`, claude-mem only | Transcript mining and the output contract are missing. |
 | `/reflect` turning a session into skill edits | `docs/audits/session-audit` | Nothing closes the loop back into a definition edit. |
 | Prototype-first instead of asking the human | `/firehorse:build` prototypes when UI shape is uncertain | pstack's version is a classification rule: if running something answers it, it is not the human's question. |

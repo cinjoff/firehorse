@@ -5,6 +5,7 @@ import {
   FirehorseSetupManifestError,
   checkFirehorseSetup,
   computeFirehorseIndexStaleness,
+  migrateFirehorseSetupManifest,
   parseFirehorseSetupManifest,
   validateFirehorseSetupManifest,
 } from "./index.js";
@@ -13,7 +14,7 @@ const RECORDED_COMMIT = "c4790d9a1f2b3c4d5e6f708192a3b4c5d6e7f809";
 const HEAD_COMMIT = "0123456789abcdef0123456789abcdef01234567";
 
 const manifest = JSON.stringify({
-  schemaVersion: 2,
+  schemaVersion: 3,
   setup: {
     mattPocockSkills: { version: "1.2.3", at: "2026-09-11T09:24:00.000Z" },
   },
@@ -21,7 +22,7 @@ const manifest = JSON.stringify({
     commit: RECORDED_COMMIT,
     at: "2026-09-11T09:24:00.000Z",
     graph: true,
-    supermemory: true,
+    memory: { engine: "claude-mem", observations: 12, at: "2026-09-11T09:24:00.000Z" },
   },
   anchors: {
     design: true,
@@ -30,7 +31,7 @@ const manifest = JSON.stringify({
   upstreams: { checkedAt: "2026-09-11T09:24:00.000Z" },
 });
 
-describe("Firehorse setup manifest v2", () => {
+describe("Firehorse setup manifest v3", () => {
   it("parses the recorded setup, index, anchors and upstreams state", () => {
     const parsed = parseFirehorseSetupManifest(manifest);
 
@@ -41,7 +42,7 @@ describe("Firehorse setup manifest v2", () => {
         commit: RECORDED_COMMIT,
         at: "2026-09-11T09:24:00.000Z",
         graph: true,
-        supermemory: true,
+        memory: { engine: "claude-mem", observations: 12, at: "2026-09-11T09:24:00.000Z" },
       },
       anchors: { design: true, codebase: ["ARCHITECTURE.md", "STRUCTURE.md", "CONVENTIONS.md"] },
       upstreams: { checkedAt: "2026-09-11T09:24:00.000Z" },
@@ -49,13 +50,13 @@ describe("Firehorse setup manifest v2", () => {
   });
 
   it("accepts a manifest that carries schemaVersion alone", () => {
-    expect(parseFirehorseSetupManifest(JSON.stringify({ schemaVersion: 2 }))).toEqual({
-      schemaVersion: 2,
+    expect(parseFirehorseSetupManifest(JSON.stringify({ schemaVersion: 3 }))).toEqual({
+      schemaVersion: 3,
     });
   });
 
   it("rejects an unknown schemaVersion", () => {
-    const future = JSON.stringify({ schemaVersion: 3 });
+    const future = JSON.stringify({ schemaVersion: 4 });
 
     expect(() => parseFirehorseSetupManifest(future)).toThrow(FirehorseSetupManifestError);
 
@@ -102,7 +103,7 @@ describe("Firehorse setup manifest v2", () => {
 
   it("reports that setup has not run when setup.mattPocockSkills is absent", () => {
     const parsed = parseFirehorseSetupManifest(
-      JSON.stringify({ schemaVersion: 2, index: { commit: RECORDED_COMMIT, at: "now" } }),
+      JSON.stringify({ schemaVersion: 3, index: { commit: RECORDED_COMMIT, at: "now" } }),
     );
 
     expect(validateFirehorseSetupManifest(parsed, { headCommit: RECORDED_COMMIT })).toMatchObject([
@@ -113,7 +114,7 @@ describe("Firehorse setup manifest v2", () => {
   it("reports an unindexed repo when index is absent", () => {
     const parsed = parseFirehorseSetupManifest(
       JSON.stringify({
-        schemaVersion: 2,
+        schemaVersion: 3,
         setup: { mattPocockSkills: { version: "1.2.3", at: "now" } },
       }),
     );
@@ -189,5 +190,50 @@ describe("index staleness", () => {
     expect(
       computeFirehorseIndexStaleness(RECORDED_COMMIT.slice(0, 10), { headCommit: RECORDED_COMMIT }),
     ).toEqual({ status: "current" });
+  });
+});
+
+describe("v2 to v3 migration", () => {
+  it("parses a v2 manifest by dropping index.supermemory", () => {
+    const v2 = JSON.stringify({
+      schemaVersion: 2,
+      index: { commit: RECORDED_COMMIT, at: "2026-09-11T09:24:00.000Z", graph: true, supermemory: true },
+    });
+
+    expect(parseFirehorseSetupManifest(v2)).toEqual({
+      schemaVersion: 3,
+      index: { commit: RECORDED_COMMIT, at: "2026-09-11T09:24:00.000Z", graph: true },
+    });
+  });
+
+  it("does not translate supermemory: true into a memory record", () => {
+    const parsed = parseFirehorseSetupManifest(
+      JSON.stringify({
+        schemaVersion: 2,
+        index: { commit: RECORDED_COMMIT, at: "2026-09-11T09:24:00.000Z", supermemory: true },
+      }),
+    );
+
+    // #232: the field recorded `true` for a pass that had failed, so the value
+    // is not evidence of anything a v3 reader should trust.
+    expect(parsed.index?.memory).toBeUndefined();
+  });
+
+  it("leaves a current manifest untouched", () => {
+    const current = { schemaVersion: 3, index: { commit: RECORDED_COMMIT, at: "now" } };
+
+    expect(migrateFirehorseSetupManifest(current)).toBe(current);
+  });
+
+  it("leaves input it cannot read for the validator to reject", () => {
+    expect(migrateFirehorseSetupManifest(null)).toBeNull();
+    expect(migrateFirehorseSetupManifest([1, 2])).toEqual([1, 2]);
+    expect(migrateFirehorseSetupManifest({ schemaVersion: "2" })).toEqual({ schemaVersion: "2" });
+  });
+
+  it("still rejects a v2 manifest whose other fields are invalid", () => {
+    const bad = JSON.stringify({ schemaVersion: 2, index: { commit: "nothex", at: "now" } });
+
+    expect(() => parseFirehorseSetupManifest(bad)).toThrow(FirehorseSetupManifestError);
   });
 });

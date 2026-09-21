@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "setup": {
     "mattPocockSkills": {
       "version": "1.2.3",
@@ -15,7 +15,6 @@
   "index": {
     "commit": "a22c83c0d4a9256d1e40491cecea4bddcaa6b89a",
     "at": "2026-09-20T21:23:55.000Z",
-    "graph": true,
-    "supermemory": false
+    "graph": true
   }
 }

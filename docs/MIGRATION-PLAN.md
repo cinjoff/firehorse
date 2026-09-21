@@ -229,7 +229,15 @@ publish straight to the tracker instead.
 
 ## Phase 7 — Memory
 
-Last, deliberately (D-167): the surface supermemory serves is settled by now.
+**Superseded (2026-09-21).** The engine is claude-mem, not supermemory. D-183
+through D-187 carry the decision and map [#282][map-282] carries the work. The
+phase below is kept as written, because it is the record of what was planned
+and the reasoning for its position in the sequence still holds. For how memory
+is actually set up now, read [`MEMORY.md`](./MEMORY.md).
+
+[map-282]: https://github.com/cinjoff/firehorse/issues/282
+
+Last, deliberately (D-167): the surface memory serves is settled by now.
 
 1. `npx supermemory local`. Note the API key printed on first boot.
    **Verify the port** — the self-hosting docs say `6767`, the CLI's own

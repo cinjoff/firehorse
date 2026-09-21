@@ -5,18 +5,17 @@
 #   curl -fsSL https://raw.githubusercontent.com/cinjoff/firehorse/main/install.sh | bash
 #
 # Wires up everything Firehorse needs: the three upstream marketplaces, the
-# plugin itself, the MCP servers the workflows query, and the self-hosted
-# supermemory stack that backs recall.
+# plugin itself, the MCP servers the workflows query, and the provider settings
+# for claude-mem, the plugin that backs recall.
 #
 # Every step is idempotent. Re-running repairs rather than duplicates.
-# Nothing here sends data off the machine except the plugin/model downloads.
+# The installer itself sends nothing off the machine except the plugin
+# downloads. Where claude-mem sends session content afterwards is what the
+# memory step settles, and it prints that on screen before it writes.
 
 set -euo pipefail
 
 FIREHORSE_REPO="cinjoff/firehorse"
-SUPERMEMORY_PORT=6767
-SUPERMEMORY_MODEL="gpt-oss:20b"
-OLLAMA_URL="http://localhost:11434"
 
 CHECK_ONLY=0
 ASSUME_YES=0
@@ -53,7 +52,7 @@ TOTAL_STEPS=6
 CURRENT_STEP=0
 
 # A 28-cell bar. Redrawn after each step so the user always knows how much is
-# left — the memory phase alone can run for minutes on a cold model pull.
+# left: the plugin install alone can run for minutes on a slow connection.
 draw_bar() {
   local width=28 done_cells filled empty pct
   pct=$(( CURRENT_STEP * 100 / TOTAL_STEPS ))
@@ -189,15 +188,17 @@ Options:
   --no-statusline   Skip installing the Firehorse status line.
   --force-statusline  Replace an existing statusLine.command that is not ours.
   --yes, -y         Accept every prompt. For non-interactive runs.
-  --skip-memory     Do not set up the self-hosted supermemory stack.
+  --skip-memory     Do not write the claude-mem provider settings.
   --skip-superset   Do not configure the Superset MCP server.
   --help, -h        Show this message.
 
 What it does:
-  1. Adds the impeccable, supermemory, and firehorse marketplaces.
-  2. Installs the firehorse plugin and its three declared dependencies.
-  3. Registers codebase-memory-mcp and supermemory-docs at user scope.
-  4. Brings up the local supermemory server, model, credentials, and launchd job.
+  1. Adds the impeccable, thedotmack, and firehorse marketplaces.
+  2. Installs the firehorse plugin and its three declared dependencies,
+     claude-mem among them.
+  3. Registers codebase-memory-mcp at user scope.
+  4. Writes claude-mem's provider settings: compression through your local
+     claude CLI, telemetry and cloud sync off. It keeps any value you set.
   5. Configures Superset MCP if Superset is detected.
 EOF
 }
@@ -271,7 +272,7 @@ step "Marketplaces"
 # Claude Code already knows about, so these must precede the install.
 MARKETPLACES=(
   "impeccable	pbakaus/impeccable"
-  "supermemory-plugins	supermemoryai/claude-supermemory"
+  "thedotmack	thedotmack/claude-mem"
   "firehorse	$FIREHORSE_REPO"
 )
 
@@ -319,7 +320,7 @@ if listed "$PLUGIN_LISTING" "firehorse@firehorse"; then
 elif would "claude plugin install firehorse@firehorse"; then
   record skip "Plugin" "not installed (check mode)"
 else
-  # Installing pulls mattpocock-skills, impeccable, and supermemory with it.
+  # Installing pulls mattpocock-skills, impeccable, and claude-mem with it.
   if live "installing firehorse@firehorse and its dependencies" \
        claude plugin install firehorse@firehorse --scope user --yes; then
     record ok "Plugin" "installed with dependencies"
@@ -463,206 +464,130 @@ else
   fi
 fi
 
-if mcp_present supermemory-docs; then
-  ok "supermemory-docs already registered"
-elif would "claude mcp add --scope user --transport http supermemory-docs https://supermemory.ai/docs/mcp"; then
-  :
-else
-  spin_soft "registering supermemory-docs (public docs, no user data)" \
-    claude mcp add --scope user --transport http \
-    supermemory-docs https://supermemory.ai/docs/mcp
-fi
 end_step
 
 # ── 5. Memory ────────────────────────────────────────────────────────────────
 
-SM_ENV="$HOME/.supermemory/env"
-SM_LOG="$HOME/.supermemory/server.log"
-SM_CREDS="$HOME/.supermemory-claude/credentials.json"
-SM_PLIST="$HOME/Library/LaunchAgents/ai.supermemory.server.plist"
-SM_BIN="$HOME/.local/bin/supermemory-server"
+# claude-mem is a declared plugin dependency, so the install above already
+# brought it in, and it bootstraps its own Bun and uv runtime on first run.
+# What is left is the provider posture. The marketplace route runs no
+# interactive picker, so this is where the provider actually gets chosen.
+CM_SETTINGS="$HOME/.claude-mem/settings.json"
 
 if [ "$SKIP_MEMORY" -eq 1 ]; then
   step "Memory"
   skip "skipped (--skip-memory)"
-  record skip "Memory" "skipped by flag"
+  note "claude-mem is still installed as a plugin dependency. Only its provider"
+  note "settings were left untouched, so it will use its own defaults."
+  record skip "Memory" "settings skipped by flag"
 else
-  step "Memory — local supermemory server"
+  step "Memory — claude-mem provider settings"
 
-  if ! have ollama; then
-    warn "Ollama was not found; the memory stack needs it for extraction"
-    note "Install it from https://ollama.com, then re-run this script."
-    record warn "Memory" "Ollama missing"
+  # These settings decide where session content goes, so say so before writing.
+  note "claude-mem compresses each session into observations, and that compression"
+  note "is a model call. Firehorse points it at Anthropic on the plan this session"
+  note "already bills to, so transcript content leaves this machine under your own"
+  note "account. Nothing goes to cmem.ai. Reporting is left off:"
+  note "  CLAUDE_MEM_PROVIDER=claude, CLAUDE_MEM_CLAUDE_AUTH_METHOD=cli"
+  note "  CLAUDE_MEM_TELEMETRY=0, CLAUDE_MEM_TELEMETRY_ERRORS=0"
+  note "  cloud-sync credentials left empty, so nothing uploads to cmem.ai"
+  note "They go in $CM_SETTINGS."
+  note "The auth-method key is documentation: claude-mem picks the auth path from"
+  note "$HOME/.claude-mem/.env, which this script only reads."
+  note "Any value you already set is kept. Re-run with --skip-memory to write none."
+
+  # ~/.claude-mem/.env is what actually selects the auth path; the settings key
+  # above is documentation. Read it so the script never claims a posture the
+  # machine is not in. Read only: a key here was put there deliberately.
+  CM_ENV="$HOME/.claude-mem/.env"
+  if [ -f "$CM_ENV" ] && grep -qE '^[[:space:]]*(ANTHROPIC_API_KEY|ANTHROPIC_AUTH_TOKEN|ANTHROPIC_BASE_URL)=' "$CM_ENV" 2>/dev/null; then
+    warn "$CM_ENV already selects a different auth path"
+    note "It sets one of ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN or"
+    note "ANTHROPIC_BASE_URL, so compression runs in api-key or gateway mode"
+    note "rather than on this session's plan. Firehorse has not changed it."
+    note "Remove that key yourself if you want the posture above."
+  fi
+
+  if would "write the provider settings to $CM_SETTINGS"; then
+    record skip "Memory" "settings not written (check mode)"
   else
-    ok "ollama present"
-
-    # 5a. Server binary.
-    if [ -x "$SM_BIN" ]; then
-      ok "supermemory-server installed"
-    elif would "npx -y supermemory@latest local install"; then
-      :
-    else
-      live_soft "fetching the supermemory server binary" \
-        npx -y supermemory@latest local install
-    fi
-
-    # 5b. Extraction model. It must support tool calling: a model that does not
-    # still returns HTTP 200 and extracts zero memories, silently.
-    OLLAMA_MODELS="$(ollama list 2>/dev/null || true)"
-    if contains "$OLLAMA_MODELS" "$SUPERMEMORY_MODEL"; then
-      ok "$SUPERMEMORY_MODEL present"
-    elif would "ollama pull $SUPERMEMORY_MODEL"; then
-      :
-    else
-      note "about 13 GB — ollama prints its own progress below"
-      live_soft "pulling $SUPERMEMORY_MODEL" ollama pull "$SUPERMEMORY_MODEL"
-    fi
-
-    # 5c. Server config.
-    if [ -f "$SM_ENV" ]; then
-      ok "server config present ($SM_ENV)"
-    elif would "write $SM_ENV"; then
-      :
-    else
-      mkdir -p "$(dirname "$SM_ENV")"
-      cat > "$SM_ENV" <<EOF
-# Local self-hosted Supermemory server configuration.
-# Extraction/summaries use an OpenAI-compatible endpoint; embeddings run locally.
-OPENAI_BASE_URL=$OLLAMA_URL/v1
-OPENAI_API_KEY=ollama
-OPENAI_MODEL=$SUPERMEMORY_MODEL
-SUPERMEMORY_DATA_DIR=$HOME/.supermemory/data
-EOF
-      chmod 600 "$SM_ENV"
-      ok "wrote $SM_ENV (mode 600)"
-    fi
-
-    # 5d. launchd job, so the server survives a reboot. The plugin hooks fail
-    # soft — with the server down a session looks normal and stores nothing.
-    if [ "$(uname -s)" = "Darwin" ]; then
-      if [ -f "$SM_PLIST" ]; then
-        ok "launchd job present"
-      elif would "write $SM_PLIST and launchctl load it"; then
-        :
-      else
-        mkdir -p "$(dirname "$SM_PLIST")" "$HOME/.supermemory"
-        cat > "$SM_PLIST" <<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Label</key><string>ai.supermemory.server</string>
-  <key>ProgramArguments</key>
-  <array><string>$SM_BIN</string></array>
-  <key>WorkingDirectory</key><string>$HOME/.supermemory</string>
-  <key>RunAtLoad</key><true/>
-  <key>KeepAlive</key><true/>
-  <key>StandardOutPath</key><string>$SM_LOG</string>
-  <key>StandardErrorPath</key><string>$SM_LOG</string>
-</dict>
-</plist>
-EOF
-        launchctl load "$SM_PLIST" 2>/dev/null || true
-        ok "wrote and loaded the launchd job"
-      fi
-    else
-      note "Not macOS — start the server yourself: $SM_BIN"
-    fi
-
-    # 5e. Wait for the server, then lift its API key out of the log. The key is
-    # printed on first boot and persists across restarts.
-    SM_KEY=""
-    if [ "$CHECK_ONLY" -eq 0 ]; then
-      waited=0
-      while [ "$waited" -lt 30 ]; do
-        curl -fsS -o /dev/null "http://localhost:$SUPERMEMORY_PORT/" 2>/dev/null && break
-        if [ "$TTY" -eq 1 ]; then
-          printf '\r  %s%s%s waiting for the server on :%s (%ss)' \
-            "$YELLOW" "${SPIN_FRAMES[$(( waited % 10 ))]}" "$RESET" \
-            "$SUPERMEMORY_PORT" "$((30 - waited))"
-        fi
-        sleep 1
-        waited=$((waited + 1))
-      done
-      [ "$TTY" -eq 1 ] && printf '\r\033[K'
-    fi
-
-    if curl -fsS -o /dev/null "http://localhost:$SUPERMEMORY_PORT/" 2>/dev/null; then
-      ok "server responding on localhost:$SUPERMEMORY_PORT"
-    else
-      warn "server is not responding on localhost:$SUPERMEMORY_PORT"
-      note "Check the log: $SM_LOG"
-    fi
-
-    if [ -f "$SM_CREDS" ]; then
-      ok "plugin credentials present"
-    else
-      [ -f "$SM_LOG" ] && SM_KEY="$(grep -oE 'sm_[A-Za-z0-9_-]+' "$SM_LOG" 2>/dev/null | tail -1 || true)"
-      if [ -z "$SM_KEY" ]; then
-        warn "could not read the server API key from $SM_LOG"
-        note "Start the server once by hand, copy the printed key, and write it to"
-        note "$SM_CREDS as {\"apiKey\": \"sm_...\"}"
-      elif would "write $SM_CREDS"; then
-        :
-      else
-        mkdir -p "$(dirname "$SM_CREDS")"
-        printf '{ "apiKey": "%s" }\n' "$SM_KEY" > "$SM_CREDS"
-        chmod 600 "$SM_CREDS"
-        ok "wrote plugin credentials (mode 600)"
-      fi
-    fi
-
-    # 5f. Claude Code launched from an application sources no shell profile, so
-    # these must live in settings.json or the hooks reach the hosted service.
-    SETTINGS="$HOME/.claude/settings.json"
-    SETTINGS_OK=0
-    if [ -f "$SETTINGS" ]; then
-      node -e '
-        const fs = require("node:fs");
-        const [file, port] = process.argv.slice(1);
-        const env = (JSON.parse(fs.readFileSync(file, "utf8") || "{}").env) || {};
-        const want = `http://localhost:${port}`;
-        process.exit(env.SUPERMEMORY_API_URL === want ? 0 : 1);
-      ' "$SETTINGS" "$SUPERMEMORY_PORT" 2>/dev/null && SETTINGS_OK=1
-    fi
-
-    if [ "$SETTINGS_OK" -eq 1 ]; then
-      ok "settings.json already points supermemory at localhost"
-    elif would "set SUPERMEMORY_API_URL and SUPERMEMORY_MCP_URL in $SETTINGS"; then
-      :
-    else
-      mkdir -p "$(dirname "$SETTINGS")"
-      [ -f "$SETTINGS" ] || echo '{}' > "$SETTINGS"
-      node -e '
-        const fs = require("node:fs");
-        const [file, port] = process.argv.slice(1);
-        const settings = JSON.parse(fs.readFileSync(file, "utf8") || "{}");
-        settings.env ??= {};
-        settings.env.SUPERMEMORY_API_URL = `http://localhost:${port}`;
-        settings.env.SUPERMEMORY_MCP_URL = `http://localhost:${port}/mcp`;
+    # Merge, never overwrite: a key already in the file is reported and left
+    # alone, and a file that does not parse is left alone entirely.
+    CM_RESULT=0
+    CM_OUT="$(node -e '
+      const fs = require("node:fs");
+      const path = require("node:path");
+      const file = process.argv[1];
+      let settings = {};
+      if (fs.existsSync(file)) {
+        const raw = fs.readFileSync(file, "utf8").trim();
+        if (raw) settings = JSON.parse(raw);
+      }
+      const want = {
+        CLAUDE_MEM_PROVIDER: "claude",
+        CLAUDE_MEM_CLAUDE_AUTH_METHOD: "cli",
+        CLAUDE_MEM_TELEMETRY: "0",
+        CLAUDE_MEM_TELEMETRY_ERRORS: "0",
+        CLAUDE_MEM_CLOUD_SYNC_TOKEN: "",
+        CLAUDE_MEM_CLOUD_SYNC_USER_ID: "",
+        CLAUDE_MEM_CLOUD_SYNC_HUB_URL: "",
+      };
+      // The auth method only means anything under provider=claude, so do not
+      // add it to a file that has already chosen a different provider.
+      const theirProvider = String(settings.CLAUDE_MEM_PROVIDER ?? "");
+      if (theirProvider && theirProvider !== "claude") delete want.CLAUDE_MEM_CLAUDE_AUTH_METHOD;
+      const lines = [];
+      let added = 0;
+      for (const [key, value] of Object.entries(want)) {
+        if (Object.prototype.hasOwnProperty.call(settings, key)) {
+          const mine = String(settings[key] ?? "");
+          // A sync token is a credential. Report that it is set, never what it is.
+          const shown = /TOKEN|KEY|USER_ID/.test(key) ? "(set)" : mine;
+          if (mine !== value) lines.push(`kept ${key}=${shown}`);
+          continue;
+        }
+        settings[key] = value;
+        added += 1;
+      }
+      if (added > 0) {
+        fs.mkdirSync(path.dirname(file), { recursive: true });
         fs.writeFileSync(file, JSON.stringify(settings, null, 2) + "\n");
-      ' "$SETTINGS" "$SUPERMEMORY_PORT"
-      ok "pointed SUPERMEMORY_API_URL and SUPERMEMORY_MCP_URL at localhost"
-    fi
+      }
+      lines.unshift(`added ${added}`);
+      console.log(lines.join("\n"));
+    ' "$CM_SETTINGS" 2>/tmp/firehorse-claude-mem.err)" || CM_RESULT=$?
 
-    # 5g. Pin the model resident. Cold, a 13 GB load outlasts the server's
-    # 30-second container-description budget and ingest retries forever.
-    OLLAMA_RESIDENT="$(ollama ps 2>/dev/null || true)"
-    if contains "$OLLAMA_RESIDENT" "$SUPERMEMORY_MODEL" && contains "$OLLAMA_RESIDENT" "Forever"; then
-      ok "$SUPERMEMORY_MODEL already pinned resident"
-    elif would "pin $SUPERMEMORY_MODEL resident"; then
-      :
+    if [ "$CM_RESULT" -ne 0 ]; then
+      warn "could not update $CM_SETTINGS; left it as it was"
+      note "$(grep -m1 -E 'Error' /tmp/firehorse-claude-mem.err 2>/dev/null || true)"
+      note "Set the values above by hand, or move the file aside and re-run."
+      record warn "Memory" "settings not written"
     else
-      if curl -fsS -o /dev/null "$OLLAMA_URL/api/generate" \
-           -d "{\"model\":\"$SUPERMEMORY_MODEL\",\"keep_alive\":-1}" 2>/dev/null; then
-        ok "pinned $SUPERMEMORY_MODEL resident"
-        note "Re-run this after every Ollama restart; the pin does not survive one."
+      CM_ADDED=0
+      CM_KEPT=0
+      while IFS=' ' read -r verb detail; do
+        case "$verb" in
+          added) CM_ADDED="$detail" ;;
+          kept)  CM_KEPT=$((CM_KEPT + 1)); warn "kept your own $detail" ;;
+        esac
+      done <<< "$CM_OUT"
+
+      if [ "$CM_ADDED" -gt 0 ]; then
+        ok "wrote $CM_ADDED of the settings above to $CM_SETTINGS"
       else
-        warn "could not pin the model; ingest may stall on a cold load"
+        ok "$CM_SETTINGS already carries every setting above"
+      fi
+
+      if [ "$CM_KEPT" -gt 0 ]; then
+        note "Firehorse changed no value you had already chosen. Edit"
+        note "$CM_SETTINGS yourself if you want the posture above."
+        note "A restart of the claude-mem worker picks up whatever you change."
+        record ok "Memory" "provider set, $CM_KEPT of your values kept"
+      else
+        record ok "Memory" "provider claude, telemetry and cloud sync off"
       fi
     fi
-
-    record ok "Memory" "server, model, credentials, launchd"
+    rm -f /tmp/firehorse-claude-mem.err
   fi
 fi
 end_step

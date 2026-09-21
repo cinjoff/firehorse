@@ -1,11 +1,11 @@
 ---
-description: "Index the repo into codebase-memory-mcp and supermemory, write the derivable anchors under docs/codebase/, and record index freshness in the Firehorse manifest by commit ancestry."
+description: "Index the repo into codebase-memory-mcp and claude-mem, write the derivable anchors under docs/codebase/, and record index freshness in the Firehorse manifest by commit ancestry."
 argument-hint: "[--graph-only | --memory-only | --anchors-only]"
 firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "index"
 firehorseSource: "packages/firehorse-core/definitions/workflows/index.md"
-firehorseSourceSha256: "a52d5376923c9be3af8fda015e4ed3b1d91ed7d4b12b876e74b4e9d52b947098"
+firehorseSourceSha256: "708204dfdc84ffdb3b0b2b937520f56926ce43c3dd6ab86b56071dc30733b706"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,14 +15,14 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/index.md
 Definition ID: index
 Definition kind: workflow
-Source SHA-256: a52d5376923c9be3af8fda015e4ed3b1d91ed7d4b12b876e74b4e9d52b947098
+Source SHA-256: 708204dfdc84ffdb3b0b2b937520f56926ce43c3dd6ab86b56071dc30733b706
 -->
 
 # Index
 
 ## Purpose
 
-Use this workflow to make the repo's structure queryable and its history searchable, and to record how fresh that claim is. It adds what neither `codebase-memory-mcp` nor supermemory does on its own:
+Use this workflow to make the repo's structure queryable and its history searchable, and to record how fresh that claim is. It adds what neither `codebase-memory-mcp` nor claude-mem does on its own:
 
 - Three **anchor** files derived from the graph rather than from recollection.
 - A narrative source for them, taken from the repo's wayfinder maps.
@@ -40,20 +40,20 @@ Invoke the generated command with no arguments to run all three passes. `$ARGUME
 - `git rev-parse HEAD`.
 - The repo's source roots, and the existing `.firehorse/manifest.json`.
 - The repo's `wayfinder:map` issues and their Decisions-so-far.
-- `SUPERMEMORY_API_URL`, and whether `codebase-memory-mcp` is configured for this repo.
+- Whether the claude-mem worker answers, and whether `codebase-memory-mcp` is configured for this repo.
 
 ## Outputs
 
 - A graph index for this repo, with coverage confirmed on the paths the anchors cite.
-- Documents in supermemory for the anchors and the map decisions.
+- One claude-mem observation per anchor written and per map decision read.
 - `docs/codebase/ARCHITECTURE.md`, `docs/codebase/STRUCTURE.md`, and `docs/codebase/CONVENTIONS.md`.
-- `.firehorse/manifest.json` updated with `index.commit`, `index.at`, `index.graph`, `index.supermemory`, `anchors.codebase`, and `anchors.design`.
+- `.firehorse/manifest.json` updated with `index.commit`, `index.at`, `index.graph`, `index.memory`, `anchors.codebase`, and `anchors.design`.
 - The other `anchors` booleans `/firehorse:new-project` wrote — `context`, `agents`, `adr` — left as they are unless the path they describe has appeared or gone.
 
 ## Supporting Capabilities
 
 - `wayfinder` supplies the narrative pass — its maps hold the decisions that explain why the structure is as it is. It is user-invoked only; this workflow reads the maps it produced rather than invoking it at all.
-- `codebase-memory-mcp` is required: the anchors are derived from graph output, and an anchor written without it is recollection rather than a reading of the code. The `supermemory` CLI stays optional. Either one absent is recorded as `false`, never silently skipped.
+- `codebase-memory-mcp` is required: the anchors are derived from graph output, and an anchor written without it is recollection rather than a reading of the code. claude-mem stays optional. The graph pass absent is recorded as `graph: false`; the memory pass absent is recorded by leaving `index.memory` out. Neither is silently skipped.
 - **Graph reference:** the `codebase-memory` skill carries the `search_graph` and `query_graph` syntax, the edge-type vocabulary, and the multi-hop examples. `codebase-memory-mcp` installs it, so it is present wherever the server is — invoke it when you need the query form rather than guessing one. This workflow says when to query, not how.
 
 **Resolved upstream skills.** How to reach each one, and where its text lives, so
@@ -70,13 +70,13 @@ path below and carry out its steps yourself.
 
 ## Orchestration Intent
 
-Three passes, each recorded independently: graph, memory, anchors. A half-finished index stays legible because `index.graph` and `index.supermemory` say which pass actually succeeded. The narrative pass reads wayfinder maps and writes nothing back — this workflow creates no ticket, closes none, and edits no map.
+Three passes, each recorded independently: graph, memory, anchors. A half-finished index stays legible because `index.graph` and `index.memory` say which pass actually succeeded. The narrative pass reads wayfinder maps and writes nothing back — this workflow creates no ticket, closes none, and edits no map.
 
 ## Safety Gates
 
 - **`DESIGN.md` is a human statement of direction.** This workflow records whether it exists; inferring it from the components that happen to exist describes what the UI is, not what it should be.
 - **Staleness comes from commit ancestry.** See [Freshness rule](#freshness-rule).
-- **`true` means the pass succeeded.** `index.graph` and `index.supermemory` record what actually happened.
+- **A recorded pass is one you read back.** `index.graph` and `index.memory` record what actually happened, and `index.memory` carries the count it wrote rather than a boolean, so it cannot be set from optimism alone.
 - **Every anchor claim traces to a graph query or a file you opened**, and `check_index_coverage` confirms each path it cites.
 - **Wayfinder maps and their tickets are read-only here.**
 - **The manifest is committed**, so it carries no secret and no id.
@@ -93,7 +93,7 @@ A reader of the manifest applies this, so the report states it:
 
 - File modification times say which tool touched a file last and nothing about whether content changed. They are not a staleness signal.
 - `index_repository` returning without error is not the same as a completed index. `index_status` is the confirmation.
-- `npx supermemory add` returns `queued` in milliseconds, and a misconfigured extraction model produces nothing while still reporting success.
+- A save returns before the store has indexed it, so the write is reported from a read-back rather than from the response to the write.
 - `index.commit` and the anchors it describes belong in one commit, or the manifest dates content that was not yet written.
 
 ## Procedure
@@ -116,10 +116,10 @@ A reader of the manifest applies this, so the report states it:
 
    → Done when: all three files exist, every path they cite passed `check_index_coverage`, and nothing in them repeats what a graph query answers better.
 
-5. **Memory pass.** `npx supermemory add` for each anchor you wrote and each map decision you read, so a later `npx supermemory search` can reach it. `SUPERMEMORY_API_URL` unset and the supermemory plugin absent → set `index.supermemory: false`, say so in one line, and carry on.
-   → Done when: `index.supermemory` is decided, and each `add` was confirmed with `npx supermemory docs get <id>`.
+5. **Memory pass.** `POST /api/memory/save` on the claude-mem worker for each anchor you wrote and each map decision you read, so a later `search` can reach it. The worker's port is `CLAUDE_MEM_WORKER_PORT` in `~/.claude-mem/settings.json`, defaulting to `37700 + (uid % 100)`; pass `"project"` explicitly so a run from a worktree lands on the repo's own history. The worker unreachable → leave `index.memory` out, say so in one line, and carry on.
+   → Done when: every save has been read back with `search`, and the count you read back is the number you are about to record.
 
-6. **Update `.firehorse/manifest.json`:** `index.commit` from step 1, `index.at` as an ISO timestamp, `index.graph` and `index.supermemory` from the passes, `anchors.codebase` as the basenames written under `docs/codebase/`, and `anchors.design` as whether `DESIGN.md` exists. `/firehorse:map` reads these fields rather than probing, so a field left stale is a dead pointer in every later session's Notes block.
+6. **Update `.firehorse/manifest.json`:** `index.commit` from step 1, `index.at` as an ISO timestamp, `index.graph` from the graph pass and `index.memory` from the memory pass (`engine`, the `observations` count you read back, and `at`), `anchors.codebase` as the basenames written under `docs/codebase/`, and `anchors.design` as whether `DESIGN.md` exists. `/firehorse:map` reads these fields rather than probing, so a field left stale is a dead pointer in every later session's Notes block.
    → Done when: every one of those six fields is set, and `anchors.context`, `anchors.agents`, and `anchors.adr` still match what is on disk.
 
 7. **Commit anchors and manifest together.**

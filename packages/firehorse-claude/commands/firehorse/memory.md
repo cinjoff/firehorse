@@ -1,10 +1,10 @@
 ---
-description: "Open the supermemory store as an interactive graph — start the local proxy if it is not already up, then hand back the URL."
+description: "Open claude-mem's viewer on what this repo has stored — resolve the worker port, confirm the worker answers, then hand back the URL."
 firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "memory"
 firehorseSource: "packages/firehorse-core/definitions/workflows/memory.md"
-firehorseSourceSha256: "51052c6a3a95c0e5f33fdbcd7550676e0f25836a25da9e7225493ba924a8c78a"
+firehorseSourceSha256: "7e0a6541099c1b3442c3492e2f99a425e8e5a657d15437e7ea9c6761f0ee6e87"
 firehorseSchemaVersion: 1
 ---
 
@@ -14,80 +14,100 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/memory.md
 Definition ID: memory
 Definition kind: workflow
-Source SHA-256: 51052c6a3a95c0e5f33fdbcd7550676e0f25836a25da9e7225493ba924a8c78a
+Source SHA-256: 7e0a6541099c1b3442c3492e2f99a425e8e5a657d15437e7ea9c6761f0ee6e87
 -->
 
 # Memory
 
 ## Purpose
 
-Use this workflow to look at what supermemory has stored, rather than to query it. `firehorse-recall` is the deliberate-recall path and answers a question you can already phrase; this one is for the case where you cannot phrase it yet — you want to see the shape of a project's memory, scan what extraction produced, or find the memory you half-remember.
+Use this workflow to look at what memory has stored, rather than to query it.
+`firehorse-recall` is the deliberate-recall path and answers a question you can
+already phrase; this one is for the case where you cannot phrase it yet. You
+want to see the shape of a project's memory, scan what compression produced, or
+find the observation you half-remember.
 
-It is the only Firehorse workflow that leaves something running. Every other command finishes; this one starts a local server and hands back a URL.
+claude-mem ships its own viewer on the worker port, so this workflow starts
+nothing and builds nothing. It resolves a port, checks that something healthy is
+listening, and hands back a URL (D-186).
 
 ## Usage
 
-Invoke the generated command with no arguments. It takes none: the port is `FIREHORSE_GRAPH_PORT` and the store is `SUPERMEMORY_API_URL`, so there is nothing left for a flag to carry.
+Invoke the generated command with no arguments. It takes none: the port comes
+from claude-mem's own settings, so there is nothing left for a flag to carry.
 
 ## Inputs
 
-- `SUPERMEMORY_API_URL`, defaulting to `http://localhost:6767`.
-- The API key, from `SUPERMEMORY_API_KEY`, `SUPERMEMORY_CC_API_KEY`, or `~/.supermemory-claude/credentials.json`. All three are optional — the self-hosted server accepts unauthenticated reads.
-- `FIREHORSE_GRAPH_PORT`, defaulting to 5187.
+- `CLAUDE_MEM_WORKER_PORT` from `~/.claude-mem/settings.json`, defaulting to
+  `37700 + (uid % 100)`.
+- `CLAUDE_MEM_WORKER_HOST`, defaulting to `127.0.0.1`.
 
 ## Outputs
 
-- A running server on `http://localhost:5187`, and the URL reported to the user.
-- Nothing written. The app reads; it never modifies the store.
+- The viewer URL, reported to the user, and the project count from the health
+  check.
+- Nothing written, nothing started. The worker's lifecycle belongs to
+  claude-mem's own hooks.
 
 ## Supporting Capabilities
 
-- Required: `bash`, Node 20+, and the `packages/firehorse-graph` workspace.
-- Optional: the `supermemory` CLI, only to start the store when it is not running.
-- No upstream skills. This workflow orchestrates a local process, not a conversation.
+- Required: `bash`, and a claude-mem install whose worker is running.
+- No upstream skills. This workflow reads one file and makes one request.
 
 ## Orchestration Intent
 
-Check, build if needed, start, report. There is no judgement in this workflow and nothing to decide — its whole job is to get a URL into the user's hands without making them remember three commands. Do not narrate the steps; report the URL.
+Resolve, confirm, report. There is no judgement here and nothing to decide. Its
+whole job is to get a URL into the user's hands without making them read a
+settings file first. Do not narrate the steps; report the URL.
 
 ## Safety Gates
 
-- **One instance per port.** A healthy `/api/health` means an instance is already up: report its URL and stop.
-- **A port that answers anything else belongs to something else.** Say so and stop, rather than binding elsewhere silently.
-- **The server runs in the background.** It does not exit, and a workflow that never returns is a hung session.
-- **Report a URL you have confirmed answers.**
-- **This workflow reads.** The app never modifies the store, and nothing here should suggest it can.
+- **This workflow starts nothing.** If the worker is down, say so and stop. The
+  worker is claude-mem's to manage, and a Firehorse command that starts a
+  background service the user did not ask for is a surprise.
+- **Report a URL you have confirmed answers**, never one you assembled from a
+  port number.
+- **A port that answers something other than claude-mem belongs to something
+  else.** Say so and stop, rather than opening a browser onto it.
+- **Loopback only.** The worker API has no request authentication, so the host
+  stays `127.0.0.1` and this workflow never suggests otherwise.
+- **This workflow reads.** The viewer can change claude-mem settings; nothing
+  here should imply that is this command's job.
 
 ## Gotchas
 
-- An unbuilt app answers `404` with `No built app found. Run pnpm build first.` — a live server and a useless one look the same until you ask.
-- A `503` from `/api/health` means supermemory itself is down, not this app. Opening a browser onto it shows an empty graph rather than an error.
-- The store is expected at `SUPERMEMORY_API_URL`, and the self-hosted server accepts unauthenticated reads — so a missing API key looks like success.
+- The health check reports the version of the worker that is *running*, which is
+  not always the version that is *installed*. A surprising version here is worth
+  reporting rather than ignoring.
+- A worker answering on a port you did not expect usually means
+  `CLAUDE_MEM_WORKER_PORT` is set and the default was never in play.
+- An empty viewer is a capture problem, not a viewer problem. `docs/MEMORY.md`
+  has the troubleshooting.
 
 ## Procedure
 
-1. **Start the server.** `pnpm --filter firehorse-graph serve` from the repo root, in the background — it resolves configuration, checks the port, and either reports an instance already running or starts one. It does not exit.
-   → Done when: the process is running in the background and has printed its first line.
+1. **Resolve the port.** Read `CLAUDE_MEM_WORKER_PORT` from
+   `~/.claude-mem/settings.json`; absent, compute `37700 + (uid % 100)`.
+   → Done when: you have one port number and know which way you got it.
 
-2. **Read that first line.** `already running on <url>` means an instance was reused and there is nothing to start. `Port … is taken by something that is not firehorse-graph` means stop and tell the user.
-   → Done when: you know whether you started an instance, reused one, or must stop.
+2. **Confirm the worker answers.** `GET /api/health` on that port. A healthy
+   response carries `status`, `version` and the provider in use.
+   → Done when: the check returned `ok`, or you are about to report that the
+   worker is down and stop.
 
-3. **Build if the app answers `404`.** `pnpm --filter firehorse-graph build`, then start it again.
-   → Done when: the server serves the app rather than the no-built-app message. Already built, skip.
-
-4. **Confirm `GET /api/health` returns `ok`.**
-   → Done when: the health check passes, or a `503` is reported as supermemory being down rather than opened in a browser.
-
-5. **Open the URL** in the user's browser.
-   → Done when: the browser has been pointed at the confirmed URL.
-
-6. **Report the URL and the project count** the health check returned. One line — the user is going to look at the app, not read about it.
-   → Done when: both are in one line.
+3. **Report the URL and the project count**, the count from `GET /api/projects`.
+   One line: the user is going to look at the viewer, not read about it. Say the
+   running version too when it differs from the installed one.
+   → Done when: the URL and the count are in one line.
 
 ## Handoff
 
 This workflow renders no handoff block, and that is deliberate.
 
-`/firehorse:memory` is a place the user goes to look at something, not a step in a sequence. It has no successor to name, and a "what next" line on top of a one-line report is noise. It is also the one workflow that leaves something running.
+`/firehorse:memory` is a place the user goes to look at something, not a step in
+a sequence. It has no successor to name, and a "what next" line on top of a
+one-line report is noise.
 
-Instead, the step-6 line carries what a handoff would otherwise have to say: the URL, the project count, and the fact that the server keeps running after this session ends, with the command that stops it.
+Unlike the version this replaces, it leaves nothing running. The worker was
+already up before the command ran and stays up after, on claude-mem's schedule
+rather than on this command's.

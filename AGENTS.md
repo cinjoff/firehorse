@@ -8,7 +8,7 @@ notes live in `CLAUDE.md` and defer here for the substance.
 
 A thin layer over installed agent skills, for anyone building software (D-170),
 packaged as a Claude Code plugin (D-155) and shipped as a pnpm monorepo with
-three packages:
+two packages:
 
 - **`packages/firehorse-core`** — TypeScript core library, private and unpublished.
   Canonical definitions, the projection generator, the manifest schema, and the
@@ -16,9 +16,6 @@ three packages:
 - **`packages/firehorse-claude`** — Claude Code plugin. `.claude-plugin/plugin.json`
   manifest plus `commands/`, `skills/`, `hooks/` directories. Discovered via the
   repo-level `.claude-plugin/marketplace.json`.
-- **`packages/firehorse-graph`** — private local app that opens a self-hosted
-  supermemory store as a graph, launched by `/firehorse:memory`. A browser app
-  rather than a library, so Vite owns its build and nothing imports from it.
 
 Firehorse depends on upstream plugins and vendors nothing (D-156).
 
@@ -50,8 +47,7 @@ Firehorse depends on upstream plugins and vendors nothing (D-156).
 firehorse/
 ├── packages/
 │   ├── firehorse-core/      Core TS lib + canonical definition sources
-│   ├── firehorse-claude/    Claude plugin (consumed via marketplace)
-│   └── firehorse-graph/     Local supermemory graph app (private, Vite)
+│   └── firehorse-claude/    Claude plugin (consumed via marketplace)
 ├── .claude-plugin/
 │   └── marketplace.json     Repo-level Claude marketplace for Firehorse
 └── docs/ARCHITECTURE.md
@@ -67,8 +63,9 @@ Before starting work, read:
 - `docs/DECISIONS.md` — binding decisions, append-only. Don't relitigate.
 - `docs/PROJECT.md` — vision, scope, success criteria.
 - `docs/agents/` — tracker, domain, and label conventions the skills read.
-- `docs/MEMORY.md` — the self-hosted supermemory runbook. Read it before
-  changing anything that touches recall, and when a session recalls nothing.
+- `docs/MEMORY.md`, the claude-mem runbook. Read it before changing anything
+  that touches recall, when a session recalls nothing, and before you assume a
+  denied `Read` is a bug.
 - `docs/EVALUATION-FRAMEWORK.md` — how a new tool, skill, or workflow earns its
   way in, and the session-retro loop that finds most of them. Read it before
   proposing or trialling anything from outside this repo.

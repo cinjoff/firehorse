@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "new-project"
 firehorseSource: "packages/firehorse-core/definitions/workflows/new-project.md"
-firehorseSourceSha256: "f497ea956554f8cb2fca4b51f9b7e8e63184ec4c7e6300a6748f39cddf53237e"
+firehorseSourceSha256: "1f0b66395c343c7dcfff2969a31a6cd36cb7f3c57ae4506c862f98cdd60537bd"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,14 +15,14 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/new-project.md
 Definition ID: new-project
 Definition kind: workflow
-Source SHA-256: f497ea956554f8cb2fca4b51f9b7e8e63184ec4c7e6300a6748f39cddf53237e
+Source SHA-256: 1f0b66395c343c7dcfff2969a31a6cd36cb7f3c57ae4506c862f98cdd60537bd
 -->
 
 # New Project
 
 ## Purpose
 
-Use this workflow once per repo, before any other Firehorse workflow runs. `setup-matt-pocock-skills` writes the tracker, label, and domain-doc configuration the engineering skills assume. This workflow adds what Firehorse needs on top: the label vocabulary actually created in the tracker, `.firehorse/manifest.json` at schema version 2, an **interviewed** `DESIGN.md`, and a first index.
+Use this workflow once per repo, before any other Firehorse workflow runs. `setup-matt-pocock-skills` writes the tracker, label, and domain-doc configuration the engineering skills assume. This workflow adds what Firehorse needs on top: the label vocabulary actually created in the tracker, `.firehorse/manifest.json` at schema version 3, an **interviewed** `DESIGN.md`, and a first index.
 
 `DESIGN.md` is the reason the interview exists. It is the one anchor `/firehorse:index` must not write: inferring direction from the components that already exist describes what the UI is, not what it should be. A human states it, or it stays absent.
 
@@ -83,7 +83,7 @@ You follow `setup-matt-pocock-skills` first and take its output as given — tra
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "setup": {
     "mattPocockSkills": { "version": "<installed version>", "at": "<ISO timestamp>" }
   },
@@ -100,7 +100,7 @@ You follow `setup-matt-pocock-skills` first and take its output as given — tra
 
 `anchors` is why this workflow runs once per repo: it records whether `CONTEXT.md`, `docs/agents/`, `DESIGN.md`, and `docs/adr/` exist, so `/firehorse:map` and the rest read one manifest field instead of probing the tree on every invocation. `/firehorse:index` refreshes `anchors.design` and fills in `anchors.codebase` and `index`.
 
-Machine-specific facts stay out. Whether supermemory or the graph is reachable on this machine is what `index.supermemory` and `index.graph` report, not something a committed manifest can claim.
+Machine-specific facts stay out. Whether the memory store or the graph is reachable on this machine is what `index.memory` and `index.graph` report, not something a committed manifest can claim. The memory runbook is `docs/MEMORY.md`.
 
 ## Gotchas
 
@@ -125,7 +125,7 @@ Machine-specific facts stay out. Whether supermemory or the graph is reachable o
 5. **Interview for `DESIGN.md`.** Run `mattpocock-skills:grilling` and `mattpocock-skills:domain-modeling` on one question: what should this product look and behave like, stated as direction rather than as a description of what exists. Then set `anchors.design` to match the outcome.
    → Done when: `DESIGN.md` exists and `anchors.design` is `true`, or its absence is recorded in one line with the reason and `anchors.design` is `false`.
 
-6. **Call `/firehorse:index`.** It runs the graph and supermemory passes, writes the derivable anchors under `docs/codebase/`, and records `index.commit`, `index.at`, `anchors.codebase`, and `anchors.design` into the manifest you just wrote.
+6. **Call `/firehorse:index`.** It runs the graph and memory passes, writes the derivable anchors under `docs/codebase/`, and records `index.commit`, `index.at`, `anchors.codebase`, and `anchors.design` into the manifest you just wrote.
    → Done when: `/firehorse:index` has reported each of its passes.
 
 7. **Commit** the setup output, the manifest, `DESIGN.md`, and the anchors in small, reviewable commits.

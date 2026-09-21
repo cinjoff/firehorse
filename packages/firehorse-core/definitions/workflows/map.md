@@ -18,7 +18,7 @@ optional:
     - ls
     - edit
     - mcp:codebase-memory-mcp
-    - cli:supermemory
+    - mcp:claude-mem
   orchestration:
     - subagents
   environment:
@@ -51,7 +51,7 @@ Invoke the generated command with a loose idea to chart a new map, or with a map
 ## Inputs
 
 - `$ARGUMENTS`: a loose idea, or a map issue reference, optionally followed by a ticket reference.
-- `.firehorse/manifest.json` — the one read that answers which anchors this repo has and whether the graph and supermemory passes last succeeded. `/firehorse:new-project` and `/firehorse:index` wrote it; this workflow does not re-derive it.
+- `.firehorse/manifest.json` — the one read that answers which anchors this repo has and whether the graph and memory passes last succeeded. `/firehorse:new-project` and `/firehorse:index` wrote it; this workflow does not re-derive it.
 - `package.json` scripts, for the verification command.
 - `docs/agents/issue-tracker.md` — which tracker this repo uses, and its **Wayfinding operations** section: how a child ticket is wired, how blocking is expressed, how the frontier is queried, and how a ticket is claimed. Every map and ticket action goes through what it records.
 - The Resolved upstream skills table under [Supporting Capabilities](#supporting-capabilities), for the skills the Notes block may name.
@@ -65,7 +65,7 @@ Invoke the generated command with a loose idea to chart a new map, or with a map
 ## Supporting Capabilities
 
 - `mattpocock-skills` / `wayfinder` owns the map and ticket mechanics; `grilling` and `domain-modeling` run on every `wayfinder:grilling` ticket.
-- `codebase-memory-mcp` and the `supermemory` CLI are optional, and decide whether two paragraphs of the Notes block get emitted at all.
+- `codebase-memory-mcp` and claude-mem's search tools are optional, and decide whether two paragraphs of the Notes block get emitted at all.
 
 ## Orchestration Intent
 
@@ -75,7 +75,7 @@ You run the probe and write the Notes block yourself, then read `wayfinder`'s `S
 
 - **Every line in the Notes block earns its place.** A line is a trigger and a verb — when this happens, do this. The block is loaded by every session that touches the map, so a line that only describes something is permanent context load for no instruction. Reference material belongs in `CONTEXT.md` or `docs/agents/`, which the Domain line already points at.
 - **Every line points at something the manifest or the resolved table confirms.** One dead pointer teaches the next session that the whole block is decorative.
-- **A pass that last failed is not a preference.** `index.graph` or `index.supermemory` false or absent → omit that paragraph rather than naming the tool.
+- **A pass that last failed is not a preference.** `index.graph` false or absent, or `index.memory` absent → omit that paragraph rather than naming the tool.
 - **The map and its tickets live in the tracker** the tracker doc records, never a markdown draft committed beside the code.
 - **One ticket per session**, research tickets excepted.
 - **No fog means no map.** Charting that fans out and surfaces nothing to decide is `wayfinder` telling you the journey fits one session. Do not create the map: say so, and offer `/firehorse:spec`.
@@ -93,9 +93,10 @@ The template. Braced tokens are resolved from the probe; every other character i
 symbol you are about to change, `trace_path` for its callers. Structure first, files second.
 Cite only paths you actually opened.
 
-**Search prior work before you re-derive it.** Run `npx supermemory search "<the question
-you are about to answer>"` before any decision that sounds like one this repo has already
-made. If it comes back empty, say so in one line and move on.
+**Search prior work before you re-derive it.** Run `search(query="<the question you are
+about to answer>", project="<this repo>")` before any decision that sounds like one this
+repo has already made. If it comes back empty, say so in one line and move on. The runbook
+is `docs/MEMORY.md`.
 
 **Skills every session should consult:**
 {SKILLS}
@@ -118,12 +119,12 @@ No anchor is `true` → the Domain line is the `CONTEXT.md` sentence alone. `anc
 
 **`{GATE}`** — derived from this repo, never assumed: the typecheck and test scripts its manifest declares, joined with `&&`, each run through the package manager its lockfile names — `pnpm typecheck && pnpm test` in a pnpm workspace, `npm run typecheck && npm test` where the lockfile is npm's. A repo whose gate has a third script, a `definitions:check` say, names it too. No gate script, no clause.
 
-**Conditional paragraphs** — emit the graph paragraph only when `index.graph` is `true`, and the supermemory paragraph only when `index.supermemory` is `true`. Either one false or absent means that pass did not succeed here, and a preference pointing at it would be a dead pointer.
+**Conditional paragraphs** — emit the graph paragraph only when `index.graph` is `true`, and the memory paragraph only when `index.memory` is present. A missing `index.memory`, or `index.graph` false or absent, means that pass did not succeed here, and a preference pointing at it would be a dead pointer.
 
 ## Procedure
 
 1. **Read `.firehorse/manifest.json`** for `anchors` and `index`, and `package.json` for the gate script. That is the whole input gathering — `/firehorse:new-project` established this repo once, and re-checking what it established is work this workflow does not repeat. No manifest → the repo has not run `/firehorse:new-project`; say so and stop.
-   → Done when: `anchors`, `index.graph`, `index.supermemory`, and the gate script are in hand.
+   → Done when: `anchors`, `index.graph`, `index.memory`, and the gate script are in hand.
 
 2. **Resolve the Notes block** from what step 1 read, following [Notes block](#notes-block).
    → Done when: no braced token remains, and every clause and skill named traces to a manifest field or a resolved table row.

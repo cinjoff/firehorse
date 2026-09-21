@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const FIREHORSE_SETUP_MANIFEST_SCHEMA_VERSION = 2;
+export const FIREHORSE_SETUP_MANIFEST_SCHEMA_VERSION = 3;
 export const FIREHORSE_SETUP_MANIFEST_PATH = ".firehorse/manifest.json";
 
 const nonEmptyStringSchema = z.string().min(1);
@@ -26,14 +26,27 @@ export const firehorseSetupManifestSchema = z.strictObject({
       commit: commitSchema,
       at: timestampSchema,
       graph: z.boolean().optional(),
-      supermemory: z.boolean().optional(),
+      /**
+       * What the memory pass wrote, rather than that it ran. #232 recorded
+       * `true` for a pass that had failed, which a boolean makes easy: nothing
+       * has to be true for you to write one. A count has to come from reading
+       * the store back, so the optimistic version of this field does not
+       * typecheck.
+       */
+      memory: z
+        .strictObject({
+          engine: z.literal("claude-mem"),
+          observations: z.number().int().nonnegative(),
+          at: timestampSchema,
+        })
+        .optional(),
     })
     .optional(),
   /**
    * Which repo anchors exist, recorded once so a later workflow reads the
    * manifest instead of re-probing the tree on every invocation. Machine-specific
-   * facts stay out: whether supermemory or the graph is reachable here is what
-   * `index.supermemory` and `index.graph` report.
+   * facts stay out: whether the memory store or the graph is reachable here is
+   * what `index.memory` and `index.graph` report.
    */
   anchors: z
     .strictObject({
@@ -124,6 +137,49 @@ export interface FirehorseSetupCheckResult {
   readonly diagnostics: readonly FirehorseSetupDiagnostic[];
 }
 
+/**
+ * Lift a manifest written against an older schema to the current one.
+ *
+ * Firehorse ships as a plugin, so manifests written by an earlier version are
+ * in repositories this code has never seen. `firehorseSetupManifestSchema` is a
+ * `strictObject` pinned to one `schemaVersion`, which means an unmigrated v2
+ * manifest fails to parse rather than degrading — so the lift happens before
+ * validation, never inside it.
+ *
+ * v2 to v3: `index.supermemory` is dropped. It was a boolean recording whether
+ * the supermemory pass ran, and the engine it named no longer exists here
+ * (D-183). Its value is not carried into `index.memory`: `false` means the pass
+ * did not run, and `true` cannot be trusted, because #232 is the case where it
+ * recorded a pass that had failed. Either way the honest v3 state is "no memory
+ * pass has been recorded", which is `index.memory` absent.
+ *
+ * Returns the input untouched when it is not a JSON object, when it carries no
+ * numeric `schemaVersion`, or when that version is already current. Malformed
+ * input is the validator's problem to report, not this function's to guess at.
+ */
+export function migrateFirehorseSetupManifest(parsed: unknown): unknown {
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return parsed;
+
+  const manifest = parsed as Record<string, unknown>;
+  const version = manifest.schemaVersion;
+  if (typeof version !== "number" || version >= FIREHORSE_SETUP_MANIFEST_SCHEMA_VERSION) {
+    return parsed;
+  }
+
+  const migrated: Record<string, unknown> = { ...manifest };
+
+  if (version <= 2) {
+    const index = migrated.index;
+    if (typeof index === "object" && index !== null && !Array.isArray(index)) {
+      const { supermemory: _dropped, ...rest } = index as Record<string, unknown>;
+      migrated.index = rest;
+    }
+  }
+
+  migrated.schemaVersion = FIREHORSE_SETUP_MANIFEST_SCHEMA_VERSION;
+  return migrated;
+}
+
 export function parseFirehorseSetupManifest(
   content: string,
   path = FIREHORSE_SETUP_MANIFEST_PATH,
@@ -142,7 +198,7 @@ export function parseFirehorseSetupManifest(
     ]);
   }
 
-  const result = firehorseSetupManifestSchema.safeParse(parsed);
+  const result = firehorseSetupManifestSchema.safeParse(migrateFirehorseSetupManifest(parsed));
   if (!result.success) {
     throw new FirehorseSetupManifestError(zodIssuesToSetupDiagnostics(result.error, path));
   }

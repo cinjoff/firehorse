@@ -26,8 +26,8 @@
       "marketplace": "impeccable"
     },
     {
-      "name": "supermemory",
-      "marketplace": "supermemory-plugins"
+      "name": "claude-mem",
+      "marketplace": "thedotmack"
     }
   ],
   "skills": [
