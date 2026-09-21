@@ -3582,6 +3582,16 @@ that does not exist.
 
 Nothing gets deleted on the day of a cutover. The supermemory store stays until
 the revisit date proves nobody wanted it.
+
+**Carried out 2026-09-21 (#291).** supermemory was stopped, unregistered and its
+launchd job booted out. `~/.supermemory` is untouched at 835 MB. Everything
+removed was moved to a backup directory rather than deleted, including the
+plist, the `~/.local/bin` wrapper and the plugin cache.
+
+The worktree split this entry predicted is now observed rather than inferred:
+`firehorse` holds 3,050 observations and `firehorse/emphasized-drill` holds 83,
+written by the sessions that did this migration. The parent key stayed reachable
+throughout, so the four months of history needed no migration, as stated.
 **Alternatives considered:**
 
 - Start the claude-mem store clean — rejected: discards 3,087 usable

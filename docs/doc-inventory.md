@@ -36,7 +36,7 @@ it is untracked one-off research from a later session and predates no decision.
 | File | Lines | Answers | Status | Inbound | Overlap |
 |---|---:|---|---|---|---|
 | `ARCHITECTURE.md` | 214 | How a definition becomes a command, and why the boundaries sit where they do | Current | repo 19, issues 8 | Memory section vs `MEMORY.md`; upstream section vs `UPSTREAM-SKILLS.md` |
-| `DECISIONS.md` | 3594 | Every binding project-wide decision, D-01 to D-187 | Current by construction | repo 25, issues 51 | None. Largest tracked file in the repo |
+| `DECISIONS.md` | 3604 | Every binding project-wide decision, D-01 to D-187 | Current by construction | repo 25, issues 51 | None. Largest tracked file in the repo |
 | `FIREHORSE-DEFINITION-FORMAT.md` | 228 | The authoring contract for a definition file | Current | repo 10, issues 4 | Frontmatter fields duplicate `types.ts`, which is the source of truth |
 | `MEMORY.md` | 361 | How claude-mem is configured here, what leaves the machine, and how to query it | Current | repo 7, issues 1 | Short version in `ARCHITECTURE.md` |
 | `MIGRATION-PLAN.md` | 269 | How Firehorse moved from cross-provider distribution to a Claude-only spine | Current as history | repo 5, issues 5 | Decisions section duplicates promoted entries in `DECISIONS.md` |
