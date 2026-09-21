@@ -48,7 +48,9 @@ note()  { printf '    %s%s%s\n' "$DIM" "$1" "$RESET"; }
 TTY=0
 [ -t 1 ] && TTY=1
 
-TOTAL_STEPS=6
+# Seven steps run: the two Memory branches are mutually exclusive, so only one
+# of the eight `step` calls below fires.
+TOTAL_STEPS=7
 CURRENT_STEP=0
 
 # A 28-cell bar. Redrawn after each step so the user always knows how much is
@@ -399,6 +401,7 @@ else
   mkdir -p "$(dirname "$SL_SETTINGS")"
   [ -f "$SL_SETTINGS" ] || echo '{}' > "$SL_SETTINGS"
   SL_RESULT=0
+  SL_ERR="$(mktemp -t firehorse-statusline)"
   FIREHORSE_FORCE_STATUSLINE="$FORCE_STATUSLINE" node -e '
     const fs = require("node:fs");
     const file = process.argv[1];
@@ -412,7 +415,7 @@ else
     }
     settings.statusLine = { type: "command", command: want, padding: 0, refreshInterval: 10 };
     fs.writeFileSync(file, JSON.stringify(settings, null, 2) + "\n");
-  ' "$SL_SETTINGS" 2>/tmp/firehorse-statusline.err || SL_RESULT=$?
+  ' "$SL_SETTINGS" 2>"$SL_ERR" || SL_RESULT=$?
 
   if [ "$SL_RESULT" -eq 0 ]; then
     ok "pointed statusLine.command at the Firehorse status line"
@@ -420,14 +423,14 @@ else
     record ok "Status line" "installed"
   elif [ "$SL_RESULT" -eq 2 ]; then
     warn "you already have a status line; leaving it alone"
-    note "Yours: $(cat /tmp/firehorse-statusline.err)"
+    note "Yours: $(cat "$SL_ERR")"
     note "Replace it with: ./install.sh --force-statusline"
     record skip "Status line" "left your own in place"
   else
     fail "could not update $SL_SETTINGS"
     record fail "Status line" "settings.json update failed"
   fi
-  rm -f /tmp/firehorse-statusline.err
+  rm -f "$SL_ERR"
 fi
 end_step
 
@@ -514,6 +517,7 @@ else
     # Merge, never overwrite: a key already in the file is reported and left
     # alone, and a file that does not parse is left alone entirely.
     CM_RESULT=0
+    CM_ERR="$(mktemp -t firehorse-claude-mem)"
     CM_OUT="$(node -e '
       const fs = require("node:fs");
       const path = require("node:path");
@@ -555,11 +559,11 @@ else
       }
       lines.unshift(`added ${added}`);
       console.log(lines.join("\n"));
-    ' "$CM_SETTINGS" 2>/tmp/firehorse-claude-mem.err)" || CM_RESULT=$?
+    ' "$CM_SETTINGS" 2>"$CM_ERR")" || CM_RESULT=$?
 
     if [ "$CM_RESULT" -ne 0 ]; then
       warn "could not update $CM_SETTINGS; left it as it was"
-      note "$(grep -m1 -E 'Error' /tmp/firehorse-claude-mem.err 2>/dev/null || true)"
+      note "$(grep -m1 -E 'Error' "$CM_ERR" 2>/dev/null || true)"
       note "Set the values above by hand, or move the file aside and re-run."
       record warn "Memory" "settings not written"
     else
@@ -587,7 +591,7 @@ else
         record ok "Memory" "provider claude, telemetry and cloud sync off"
       fi
     fi
-    rm -f /tmp/firehorse-claude-mem.err
+    rm -f "$CM_ERR"
   fi
 fi
 end_step
