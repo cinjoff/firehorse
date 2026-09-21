@@ -87,6 +87,7 @@ You drive the sequence; `implement` and `tdd` run inline. `prototype` produces a
 ## Safety Gates
 
 - **Structure first, files second.** The seam list from step 3 exists before you open a source file.
+- **Outline first, then the whole file you are changing.** Where claude-mem's file read gate answers a `Read` with its ladder, prefer `smart_outline` for orientation and then take the full read of the file under change, because you are editing it and need it exact. Where the gate does not fire, read normally.
 - **Confirmed seams only.** `tdd` runs at the seams the user confirmed in step 3, and nowhere else.
 - **Shape before pixels.** While "what should this look like" is still open, the artifact is a prototype.
 - **A spec is not a slice.** Build one only where it names a single behaviour at a single confirmed seam. A spec with published children is read for its frontier and handed back, because building a whole feature in one session is what the slices exist to prevent.

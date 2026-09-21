@@ -77,6 +77,7 @@ Three passes, each recorded independently: graph, memory, anchors. A half-finish
 - **Staleness comes from commit ancestry.** See [Freshness rule](#freshness-rule).
 - **A recorded pass is one you read back.** `index.graph` and `index.memory` record what actually happened, and `index.memory` carries the count it wrote rather than a boolean, so it cannot be set from optimism alone.
 - **Every anchor claim traces to a graph query or a file you opened**, and `check_index_coverage` confirms each path it cites.
+- **An anchor comes from structure, not from a body.** Where claude-mem's file read gate answers a `Read` with its ladder, prefer `smart_outline` and stop there: what the outline cannot carry is not a derivable anchor. Where the gate does not fire, hold to the same limit.
 - **Wayfinder maps and their tickets are read-only here.**
 - **The manifest is committed**, so it carries no secret and no id.
 

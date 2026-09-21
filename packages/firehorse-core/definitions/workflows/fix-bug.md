@@ -88,6 +88,7 @@ You run `diagnosing-bugs` phase by phase and insert the graph trace between Phas
 
 - A loop that passes on the broken code is not a loop for this bug. Confirm it goes red before trusting anything it says afterwards.
 - Instrumentation added in Phase 4 survives the patch unless Phase 6 removes it. A diff carrying leftover logging is a review finding, not a fix.
+- Where claude-mem's file read gate answers a `Read` with its ladder, prefer `get_observations` first, because past work on a file usually carries the bug's own history, and `smart_unfold` on the failing symbol second for its current shape. Where the gate does not fire, read the file.
 - A stale graph answers confidently. `index_status` behind HEAD means the call-site list describes an older tree — run `/firehorse:index`, or state the gap.
 
 ## Procedure

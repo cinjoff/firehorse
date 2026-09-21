@@ -93,6 +93,7 @@ You drive the sequence; `to-tickets` supplies the shape and `triage` the labels.
 ## Gotchas
 
 - A stale graph answers confidently. `index_status` behind HEAD means the call-site counts describe an older tree, and a migration batch sized from them is sized wrong.
+- Where claude-mem's file read gate answers a `Read` with its ladder, the timeline titles are usually enough. This workflow cuts a spec it can already see and rarely needs the code at all, so a full read here is a sign you are re-deciding something the spec settled.
 - A spec's User Stories are not slices. They are the acceptance surface; several usually collapse into one tracer bullet, and one occasionally needs three.
 - A slice you cannot write a `Before` line for is usually not vertical. A horizontal slice delivers a layer, and a layer has no observable end state to fail against, so the missing `Before` is the tell rather than a reason to weaken the proof.
 - A slice sized by how much code it touches is sized wrong. Size it by whether one session can carry it from change to evidence, with the repo's own gate run over it.

@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "index"
 firehorseSource: "packages/firehorse-core/definitions/workflows/index.md"
-firehorseSourceSha256: "708204dfdc84ffdb3b0b2b937520f56926ce43c3dd6ab86b56071dc30733b706"
+firehorseSourceSha256: "010000e44e67ccd413457614035b656ccc03d024693e0f00586b53de76d2e09c"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/index.md
 Definition ID: index
 Definition kind: workflow
-Source SHA-256: 708204dfdc84ffdb3b0b2b937520f56926ce43c3dd6ab86b56071dc30733b706
+Source SHA-256: 010000e44e67ccd413457614035b656ccc03d024693e0f00586b53de76d2e09c
 -->
 
 # Index
@@ -78,6 +78,7 @@ Three passes, each recorded independently: graph, memory, anchors. A half-finish
 - **Staleness comes from commit ancestry.** See [Freshness rule](#freshness-rule).
 - **A recorded pass is one you read back.** `index.graph` and `index.memory` record what actually happened, and `index.memory` carries the count it wrote rather than a boolean, so it cannot be set from optimism alone.
 - **Every anchor claim traces to a graph query or a file you opened**, and `check_index_coverage` confirms each path it cites.
+- **An anchor comes from structure, not from a body.** Where claude-mem's file read gate answers a `Read` with its ladder, prefer `smart_outline` and stop there: what the outline cannot carry is not a derivable anchor. Where the gate does not fire, hold to the same limit.
 - **Wayfinder maps and their tickets are read-only here.**
 - **The manifest is committed**, so it carries no secret and no id.
 

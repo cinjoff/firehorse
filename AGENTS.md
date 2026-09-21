@@ -77,6 +77,26 @@ wayfinder map and its child tickets hold current position and granular work
 items, so neither lives in the repo. `docs/` is hand-written and intentionally lightweight — no `gsd-tools`,
 no plugin-cache symlinks. Keep it that way.
 
+## When a Read is denied
+
+claude-mem may install a `PreToolUse` gate that denies `Read` on a file over
+1,500 bytes that has prior observations, and hands back a timeline of past work
+on it plus four options. The gate is optional. It does not fire on a fresh
+machine, on a project with no observations, or once the `Read` matcher is
+removed, so nothing below is a requirement, only the order to prefer when the
+ladder is on offer. Cheapest rung first:
+
+1. Semantic priming, where the timeline titles already answer the question.
+2. `get_observations([ids])` for detail from past work on the file.
+3. `smart_outline(path)` for the current structure of the code, or
+   `smart_unfold(path, symbol)` for one symbol of it.
+4. The full read, where the file has moved on since the observations or you are
+   about to edit it.
+
+A denied `Read` is not an error and not a bug. Don't retry it verbatim, and
+don't shell out to `cat` or `sed` to defeat the gate. `docs/MEMORY.md` documents
+the gate's configuration and how to turn it off.
+
 ## Commands
 
 ```sh
