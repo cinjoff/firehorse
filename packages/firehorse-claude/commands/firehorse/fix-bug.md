@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "fix-bug"
 firehorseSource: "packages/firehorse-core/definitions/workflows/fix-bug.md"
-firehorseSourceSha256: "9d354324dc880b9bfca1a74c50a1d7f5a4276699df9352aae7588aa920ca240c"
+firehorseSourceSha256: "e005fdd481c41f3432c7b7ec02762dc2d2c206303c03ce32a629e94f07299eee"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/fix-bug.md
 Definition ID: fix-bug
 Definition kind: workflow
-Source SHA-256: 9d354324dc880b9bfca1a74c50a1d7f5a4276699df9352aae7588aa920ca240c
+Source SHA-256: e005fdd481c41f3432c7b7ec02762dc2d2c206303c03ce32a629e94f07299eee
 -->
 
 # Fix Bug
@@ -86,6 +86,7 @@ You run `diagnosing-bugs` phase by phase and insert the graph trace between Phas
 
 - A loop that passes on the broken code is not a loop for this bug. Confirm it goes red before trusting anything it says afterwards.
 - Instrumentation added in Phase 4 survives the patch unless Phase 6 removes it. A diff carrying leftover logging is a review finding, not a fix.
+- Where claude-mem's file read gate answers a `Read` with its ladder, prefer `get_observations` first, because past work on a file usually carries the bug's own history, and `smart_unfold` on the failing symbol second for its current shape. Where the gate does not fire, read the file.
 - A stale graph answers confidently. `index_status` behind HEAD means the call-site list describes an older tree — run `/firehorse:index`, or state the gap.
 
 ## Procedure

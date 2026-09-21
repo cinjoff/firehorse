@@ -5,7 +5,7 @@ software (D-170), packaged as one Claude Code plugin (D-155). It
 holds a small set of workflow definitions and a projector that turns them into
 Claude-native commands. Everything a user invokes is a generated slash command.
 
-The repo carries three packages:
+The repo carries two packages:
 
 - `packages/firehorse-core` — the `firehorse` npm library. It owns the
   definition format (schema, parser, validator, projector, manifest merge), the
@@ -15,9 +15,6 @@ The repo carries three packages:
   `.claude-plugin/plugin.json`, the generated `commands/firehorse/` and
   `skills/firehorse/` trees, the hand-authored `skills/firehorse-setup/` skill,
   and the `hooks/` scripts.
-- `packages/firehorse-graph` — the local app `/firehorse:memory` opens on a
-  self-hosted supermemory store. It is `private: true` and built by Vite rather
-  than tsup; nothing imports from it.
 
 `.claude-plugin/marketplace.json` at the repo root exposes the plugin, so you
 add the marketplace once and install `firehorse` from it.
@@ -88,9 +85,9 @@ and a workflow is the only carrier Firehorse uses for standing preferences
 
 - `new-project` — stands a repo up for Firehorse: remote, tracker, the label
   vocabulary created in the tracker, `setup-matt-pocock-skills`,
-  `.firehorse/manifest.json` at schema version 2, and an interviewed `DESIGN.md`.
+  `.firehorse/manifest.json` at schema version 3, and an interviewed `DESIGN.md`.
   Run it once per repo, before the others.
-- `index` — indexes the repo into `codebase-memory-mcp` and supermemory, writes
+- `index` indexes the repo into `codebase-memory-mcp` and claude-mem, writes
   `docs/codebase/ARCHITECTURE.md`, `STRUCTURE.md`, and `CONVENTIONS.md` from the
   graph, and records freshness in the manifest by commit ancestry. It never
   writes `DESIGN.md` (D-165).
@@ -110,9 +107,9 @@ and a workflow is the only carrier Firehorse uses for standing preferences
 - `fix-bug` — builds the failing feedback loop, enumerates the failing symbol's
   callers before hypothesising, and reports regression evidence from both sides
   of the fix.
-- `memory` — opens the self-hosted supermemory store as an interactive graph,
-  starting the local proxy when it is not already running and handing back the
-  URL. Local-only by design; the runbook is `docs/MEMORY.md`.
+- `memory` resolves the claude-mem worker's port, confirms it answers, and
+  hands back claude-mem's own viewer URL (D-186). The runbook is
+  `docs/MEMORY.md`.
 - `ship` — runs the release sequence behind a green gate: review, PR, merge,
   changelog entry, tag, release, and one closing comment per resolved issue.
 - `triage` — re-triages the whole open tracker, judging each issue's group, kind,
@@ -165,8 +162,8 @@ to `.claude/commands/` rather than into the plugin.
 
 `.firehorse/manifest.json` records what setup and indexing have done in a repo.
 `packages/firehorse-core/src/setup/index.ts` owns its Zod schema at
-`schemaVersion: 2`: `setup.mattPocockSkills` (version and timestamp),
-`index` (`commit`, `at`, `graph`, `supermemory`), `anchors` (`context`,
+`schemaVersion: 3`: `setup.mattPocockSkills` (version and timestamp),
+`index` (`commit`, `at`, `graph`, `memory`), `anchors` (`context`,
 `agents`, `design`, `adr`, and `codebase`), and `upstreams.checkedAt`. The same module computes index staleness
 from git facts a caller supplies — `computeFirehorseIndexStaleness` never shells
 out itself.
@@ -185,20 +182,23 @@ before anything in the workspace is built, so it must not import from it.
 
 ## Memory
 
-Memory is self-hosted supermemory, reached through `npx supermemory` rather than
-an MCP shim (D-162, D-163). A local server on 6767, local embeddings, and Ollama
-for extraction keep it offline.
+Memory is claude-mem: a loopback worker with a SQLite store under
+`~/.claude-mem`, installed as a declared plugin dependency (D-183). The store is
+local, and compression runs through the local `claude` binary on the session's
+own plan, so no party the session did not already involve sees the content.
 
-Two halves reach it. The supermemory plugin's four REST hooks capture each
-session and inject what they judge relevant; they are a declared dependency, so
-Claude Code installs them with Firehorse. The `firehorse-recall` skill
-(`definitions/skills/firehorse-recall.md`) wraps `npx supermemory search|add`
-for deliberate recall, invoked explicitly and never as a reflex (D-164).
+Two halves reach it. claude-mem's hooks capture each session and inject a costed
+index at session start, including a `PreToolUse` gate that denies a `Read` on a
+file with prior observations and returns a timeline instead. The
+`firehorse-recall` skill (`definitions/skills/firehorse-recall.md`) is the
+deliberate half, invoked explicitly and never as a reflex (D-164). It carries no
+search ladder of its own: claude-mem ships the MCP tools and the `mem-search`
+skill that documents them (D-185).
 
-The server itself is not a repo artifact — it is machine setup, and
-[`MEMORY.md`](./MEMORY.md) is its runbook. The `index` and `map` workflows read
-`SUPERMEMORY_API_URL` and record `index.supermemory: false` when the server is
-absent, so they run without it.
+The worker is not a repo artifact. It is machine setup, and
+[`MEMORY.md`](./MEMORY.md) is its runbook. The `index` workflow records
+`index.memory` from reading the store back, so a pass that did not run leaves
+the field absent rather than claiming success.
 
 ## What is intentionally not here
 

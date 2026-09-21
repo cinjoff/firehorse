@@ -1,12 +1,16 @@
 # Memory
 
-Firehorse recalls past sessions from a self-hosted supermemory server that runs
-entirely on your machine (D-162). Two halves reach it: the supermemory plugin's
-hooks capture and inject automatically, and the `firehorse-recall` skill queries
-it on purpose (D-163).
+Firehorse recalls past sessions from [claude-mem](https://docs.claude-mem.ai),
+a background worker that keeps a SQLite store under `~/.claude-mem` (D-183).
+Two halves reach it: claude-mem's hooks capture each session and inject a costed
+index at session start, and the `firehorse-recall` skill queries it on purpose
+(D-185).
 
-Nothing leaves the machine. Embeddings run locally and extraction runs against
-a local Ollama model.
+The store is local. The compression that fills it is not. Every observation is
+written by a model call, and this repo routes that call through the local
+`claude` binary on the plan the session already runs on, so transcript content
+reaches Anthropic under your own account. [What leaves the
+machine](#what-leaves-the-machine) is the honest version of that sentence.
 
 This page is a runbook first and a reference second. To set it up, start at
 [Bring it up](#bring-it-up). To understand a specific behaviour, jump to
@@ -16,299 +20,342 @@ This page is a runbook first and a reference second. To set it up, start at
 
 ### Before you start
 
-You need Node with `npx`, and [Ollama](https://ollama.com) running on
-`localhost:11434`. Supermemory's server needs an OpenAI-compatible endpoint for
-summaries, chunking, and memory extraction; embeddings need no key and no
-endpoint.
+You need Node 20 or higher and a `claude` binary already signed in, because the
+compression provider this repo chose calls it. claude-mem's installer pulls Bun
+and uv itself when they are missing; uv is there for the Python that backs
+Chroma's embedding service.
 
-### 1. Install the server
+### 1. Install the plugin
 
-The `supermemory` npm package is a launcher only. It fetches the native binary
-from `https://supermemory.ai/install`:
+Firehorse declares claude-mem as a dependency in both
+`.claude-plugin/marketplace.json` and
+`packages/firehorse-claude/.claude-plugin/plugin.json`, so
+`/plugin install firehorse` already pulls it. To install it on its own:
 
-```sh
-npx -y supermemory@latest local install
+```text
+/plugin marketplace add thedotmack/claude-mem
+/plugin install claude-mem
 ```
 
-The binary lands at `~/.supermemory/bin/supermemory-server`, wrapped by
-`~/.local/bin/supermemory-server`.
+Then restart Claude Code.
 
-### 2. Install the extraction model
+Take the marketplace route rather than `npx claude-mem install`. The interactive
+installer pre-selects CMEM Pro, the hosted observer at cmem.ai, and the
+marketplace route runs no picker (D-183).
 
-**The model must support tool calling.** A model that does not still returns
-HTTP 200 and produces no memories — see
-[Extraction fails silently](#extraction-fails-silently).
+### 2. Set the provider
 
-```sh
-ollama pull gpt-oss:20b
-```
-
-### 3. Configure the server
-
-Write `~/.supermemory/env`:
-
-```sh
-OPENAI_BASE_URL=http://localhost:11434/v1
-OPENAI_API_KEY=ollama
-OPENAI_MODEL=gpt-oss:20b
-SUPERMEMORY_DATA_DIR=$HOME/.supermemory/data
-```
-
-```sh
-chmod 600 ~/.supermemory/env
-```
-
-### 4. Start the server and keep the key
-
-```sh
-supermemory-server
-```
-
-It binds **6767** and prints an API key on first boot. Keep that key — the rest
-of the setup uses it, and it persists across restarts.
-
-To run it under launchd so it survives reboots, write
-`~/Library/LaunchAgents/ai.supermemory.server.plist` with `RunAtLoad` and
-`KeepAlive` pointing at `~/.local/bin/supermemory-server`, then:
-
-```sh
-launchctl load ~/Library/LaunchAgents/ai.supermemory.server.plist
-```
-
-Run it under launchd if you want memory to be reliable. The plugin hooks fail
-soft, so with the server down a session looks completely normal while capturing
-and recalling nothing.
-
-### 5. Pin the model in memory
-
-Skip this and ingest deadlocks on a cold model — see
-[Documents never finish indexing](#documents-never-finish-indexing).
-
-```sh
-curl -s http://localhost:11434/api/generate \
-  -d '{"model":"gpt-oss:20b","keep_alive":-1}'
-```
-
-`ollama ps` should then report `Forever` in its `UNTIL` column. Re-run this after
-every Ollama restart; the pin does not survive one, and
-`launchctl setenv OLLAMA_KEEP_ALIVE` did not reach Ollama.app when tested.
-
-### 6. Set the environment
-
-The plugin and the CLI read different variable names for the same key.
-
-| Variable | Read by |
-|---|---|
-| `SUPERMEMORY_API_URL` | plugin hooks and CLI |
-| `SUPERMEMORY_CC_API_KEY` | plugin hooks |
-| `SUPERMEMORY_API_KEY` | CLI |
-| `SUPERMEMORY_MCP_URL` | the plugin's MCP proxy only — see [The plugin's dead MCP registration](#the-plugins-dead-mcp-registration) |
-
-Set all four in your shell profile. Then set the two URLs a second time, in the
-`env` block of `~/.claude/settings.json`:
+Write these two keys into `~/.claude-mem/settings.json`:
 
 ```json
 {
-  "env": {
-    "SUPERMEMORY_API_URL": "http://localhost:6767",
-    "SUPERMEMORY_MCP_URL": "http://localhost:6767/mcp"
-  }
+  "CLAUDE_MEM_PROVIDER": "claude",
+  "CLAUDE_MEM_CLAUDE_AUTH_METHOD": "cli"
 }
 ```
 
-Claude Code launched from an application sources no shell profile. Without this,
-the hooks fall back to the hosted service and say nothing about it.
+That is the Anthropic-plan provider: compression runs on the subscription the
+session already bills to, and claude-mem never talks to cmem.ai. The model it
+compresses with is `CLAUDE_MEM_MODEL`, `claude-haiku-4-5-20251001` on this
+machine.
 
-Keep the key out of `settings.json`. Put it in
-`~/.supermemory-claude/credentials.json`, which the plugin reads directly:
+**`CLAUDE_MEM_CLAUDE_AUTH_METHOD` does not do what its name suggests.** In
+13.25.2 the validator accepts `subscription`, `api-key`, `gateway` and `cli`,
+and no code branches on any of them. What actually selects the auth path is
+`~/.claude-mem/.env`: an `ANTHROPIC_API_KEY` there means api-key, an
+`ANTHROPIC_BASE_URL` means gateway, and with neither set it falls through to the
+OAuth token in the system keychain, which is what this repo wants. Write the key
+for the next reader, then leave `.env` alone.
 
-```json
-{ "apiKey": "sm_..." }
-```
+### 3. Turn telemetry off
 
-```sh
-chmod 600 ~/.supermemory-claude/credentials.json
-```
-
-### 7. Install the plugin
-
-Claude Code installs the supermemory plugin alongside Firehorse — it is a
-declared dependency in both manifests. To install it on its own:
-
-```text
-/plugin marketplace add supermemoryai/claude-supermemory
-/plugin install supermemory@supermemory-plugins
-```
-
-Its four hooks are REST and honour `SUPERMEMORY_API_URL`, so capture and recall
-run fully local.
-
-Supermemory's public documentation is also available over MCP. It carries no
-user data:
+claude-mem's PostHog analytics are on by default, and its error tracking sends
+redacted error messages and stack traces. D-184 turns both off. Any one of these
+is enough, and they are checked in that order:
 
 ```sh
-claude mcp add --scope user --transport http \
-  supermemory-docs https://supermemory.ai/docs/mcp
+DO_NOT_TRACK=1
+CLAUDE_MEM_TELEMETRY=0
+CLAUDE_MEM_TELEMETRY_ERRORS=0   # error text only, leaves the counters on
 ```
+
+Or, once:
+
+```sh
+npx claude-mem telemetry disable
+```
+
+`npx claude-mem telemetry status` reports the current state and which of the
+four layers decided it.
+
+Cloud sync stays off (D-184). It is off by default, and enabling it uploads
+observation narratives and full prompt text to a cmem.ai account.
+
+**Not applied here yet.** On 2026-09-21 this machine had no
+`~/.claude-mem/telemetry.json`, no telemetry key in `~/.claude-mem/settings.json`,
+and no `DO_NOT_TRACK` in the session environment, so telemetry was still at its
+default, which is on. Ticket
+[#292](https://github.com/cinjoff/firehorse/issues/292) ships the installer
+change that sets it.
+
+**Chroma's own beacon is already off.** `CLAUDE_MEM_CHROMA_ENABLED` is `true`
+and `CLAUDE_MEM_CHROMA_MODE` is `local`, so Chroma runs on `127.0.0.1:8000` as
+the vector-search backend. Chroma ships its own `ANONYMIZED_TELEMETRY` beacon,
+and claude-mem sets it to `false` in the environment it hands the `uvx`
+preflight. Nothing to do here.
+
+### 4. Restart Claude Code
+
+The hooks are registered at session start, so nothing in the three steps above
+takes effect in a session that was already running.
 
 ## Verify it
 
-Write a document, wait, then search for it. Extraction is asynchronous, so a
-successful write proves nothing on its own.
+Ask the worker first. It answers on loopback, on the port in
+`CLAUDE_MEM_WORKER_PORT`, which is `37777` here:
 
 ```sh
-export SUPERMEMORY_API_URL=http://localhost:6767
-export SUPERMEMORY_API_KEY=sm_...
-
-npx supermemory add "The firehorse drift check writes upstreams.lock.json." \
-  --tag <your tag> --title "drift check"
-npx supermemory docs get <returned id>     # wait for status: done
-npx supermemory search "drift check" --tag <your tag> --limit 5 --json
+curl -sS http://127.0.0.1:37777/api/health
 ```
 
-Resolve `<your tag>` with `npx supermemory tags list` — see
-[Container tags](#container-tags).
+A healthy worker answers with its own version, its pid, and the provider it
+resolved:
 
-A one-chunk document takes about 80 seconds end to end with the model resident.
+```json
+{"status":"ok","version":"10.6.2","pid":19843,"initialized":true,"mcpReady":true,
+ "ai":{"provider":"claude","authMethod":"Claude Code CLI (subscription billing)"}}
+```
+
+Check `version` against the plugin you installed. They disagreed here, and
+[the running worker is not the installed
+version](#the-running-worker-is-not-the-installed-version) says what that means.
+
+Then confirm this repo's history is addressable. `GET /api/projects` lists every
+project key the store holds, and `firehorse` should be one of them:
+
+```sh
+curl -sS http://127.0.0.1:37777/api/projects
+```
+
+Last, run a search from inside a session. `search(query="<something you know
+happened>", project="firehorse", limit=5)` returning a row with a plausible date
+proves the MCP tools are registered and reading the same store the worker serves.
 
 ## Troubleshooting
 
-### Extraction fails silently
+### The running worker is not the installed version
 
-`POST /v3/documents` returns `queued` in milliseconds and extracts in the
-background, so a model that cannot do the job still returns 200 and produces
-nothing. Check the server log:
+Three copies of claude-mem sit in the plugin cache on this machine:
 
-```
-memory agent failed (110ms): registry.ollama.ai/library/llama3:latest does not
-support tools
-```
+| Path | Version | State |
+|---|---|---|
+| `~/.claude/plugins/cache/thedotmack/claude-mem/13.25.2` | 13.25.2 | installed, no orphan marker |
+| `~/.claude/plugins/cache/thedotmack/claude-mem/10.6.2` | 10.6.2 | `.orphaned_at`, dated 2026-09-11 |
+| `~/.claude/plugins/cache/firehorse/claude-mem/13.2.0` | 13.2.0 | `.orphaned_at`, dated 2026-09-11 |
 
-The document finalized as `1 chunks, 0 memories` and the API never said so. Use
-a tool-calling model, and always confirm a write by reading the document back.
+The worker answering on 37777 is the orphaned one. `/api/health` reports
+`"version":"10.6.2"` and a `workerPath` under the `10.6.2` directory, pid 19843,
+started 2026-09-10 and up about ten days. Nothing restarted it when 13.25.2 was
+installed, so an orphaned build keeps serving a store that a newer plugin's
+hooks and MCP tools are writing to and reading from.
 
-### Documents never finish indexing
+Treat a version mismatch between `/api/health` and the installed plugin as the
+first suspect whenever behaviour does not match the docs, because the docs
+describe the version you installed and not the one that is running. Restarting
+the worker is the fix and is deliberately not a command on this page; take it
+knowingly, because an in-flight compression dies with the process.
 
-A document that re-embeds repeatedly and never reaches the memory agent is stuck
-on a cold model. Loading 13 GB takes longer than the server's 30-second budget
-for its `maintain-container-description` step; when that step times out, the
-ingest workflow rolls back and retries the document. It can loop there
-indefinitely.
+### A `Read` is denied with a timeline instead of a file
 
-Pin the model as in [step 5](#5-pin-the-model-in-memory). Pinned, the same
-document finished in 80 seconds with five correct memories.
+Working as designed. See [the file read gate](#the-file-read-gate). The deny
+decision is shown to you, so you can allow the read when the timeline is not
+what you needed.
 
 ### A session recalls nothing
 
-Check the server first — `curl -s -o /dev/null -w '%{http_code}'
-http://localhost:6767/v3/documents -H "Authorization: Bearer $SUPERMEMORY_API_KEY"`.
-The hooks fail soft, so a dead server is invisible from inside a session.
+Check the worker before anything else, with the `/api/health` call above. The
+hooks fail soft, so a worker that is down leaves a session looking completely
+normal while capturing and recalling nothing.
 
-If the server is up, check that Claude Code sees `SUPERMEMORY_API_URL`. Launched
-from an application it reads `~/.claude/settings.json`, not your shell profile.
+If the worker is up, check that the project key is the one you expect.
+`GET /api/projects` lists them, and a repo resolves to its parent repository's
+basename rather than the worktree's, per [project scoping across
+worktrees](#project-scoping-across-worktrees).
 
-### `/mcp` shows supermemory as failed
+### A `CAPTURE_BROKEN` file appears in `~/.claude-mem`
 
-Expected. See
-[The plugin's dead MCP registration](#the-plugins-dead-mcp-registration).
+A hook received an empty stdin payload and wrote a marker rather than failing
+silently. The one on this machine is dated 2026-05-15 and reads:
+
+```
+[bun-runner] empty stdin payload received — issue #2188
+  payload byte length: 0
+  payload type: null (no data event or stream error)
+```
+
+It names an upstream issue and the script that was invoked. It records a
+capture that did not happen; it does not stop later captures.
 
 ## How it works
 
-### The server
+### The worker
 
-`supermemory-server` binds **6767**, not the 8787 the `supermemory local`
-launcher advertises as its `--port` default. Its configuration is
-`~/.supermemory/env` and its data is an encrypted store under
-`~/.supermemory/data`.
+claude-mem runs one background worker per machine, bound to `127.0.0.1` on
+`CLAUDE_MEM_WORKER_PORT`. Its data directory is `CLAUDE_MEM_DATA_DIR`,
+`~/.claude-mem` here, holding `claude-mem.db` plus a Chroma directory, logs,
+and per-session observer state.
 
-Embeddings run locally (`Xenova/bge-base-en-v1.5`, 768d, no key). Summaries,
-chunking, and memory extraction go to the OpenAI-compatible endpoint.
+**The worker API has no request authentication, and its loopback bind is the
+only defence.** This is verified rather than inferred: `GET /api/health`,
+`GET /api/projects`, and `GET /api/version` on `127.0.0.1:37777` all answered
+with no credentials of any kind. Anything that can reach the port can read the
+store and write to it. Do not forward the port, and do not bind the worker to an
+interface other than loopback.
 
-### Container tags
+### What leaves the machine
 
-The plugin derives a per-repo container as
-`repo_<sanitized repo name>__<sha256(normalized git remote)[0:16]>`, taken from
-`git rev-parse --git-common-dir`, so every worktree of a repo shares one
-container. This repo's is `repo_firehorse__cb4653b1d26a8449`.
+The store is a local SQLite file, and search runs against it. Compression does
+not. Each observation is produced by a model call, and under
+`CLAUDE_MEM_PROVIDER=claude` with `CLAUDE_MEM_CLAUDE_AUTH_METHOD=cli` that call
+goes through the local `claude` binary, billed to the plan the session already
+runs on. `/api/health` names it: `"authMethod":"Claude Code CLI (subscription
+billing)"`. No third party is added, because the session was already talking to
+Anthropic.
 
-Resolve a tag with `npx supermemory tags list` and match on the repo-name
-prefix. Do not recompute the hash.
+Be clear about what that means in practice. The worker re-sends tool
+observations for compression out of band, on its own schedule, for sessions that
+may already be over. So content from a session you finished this morning can be
+sent this afternoon, from a process you are not watching. The plan absorbs the
+cost, but the content still moves.
+
+To hold something back entirely, wrap it in `<private>` tags. Claude can use the
+content in the current session, and it is not stored as an observation. That is
+claude-mem's documented mechanism for it, and it is the one to reach for with
+credentials, customer data, or anything you would not want compressed into a
+durable note.
+
+### Project scoping across worktrees
+
+**Writes split per worktree. Reads do not.** Those are different answers and the
+difference matters, so do not collapse them.
+
+13.25.2 detects a worktree by reading the `.git` file, resolving its `gitdir:`
+line, and matching the result against `.git/worktrees/<name>`. When that matches
+it returns three things:
+
+```js
+{ primary: `${parentProjectName}/${basename(cwd)}`,
+  parent:  parentProjectName,
+  allProjects: [parentProjectName, primary] }
+```
+
+In this worktree `.git` reads
+`gitdir: /Users/konstantin/.superset/projects/firehorse/.git/worktrees/emphasized-drill`,
+so `primary` is **`firehorse/emphasized-drill`** and `parent` is **`firehorse`**.
+
+New observations are written under `primary`, so each worktree accumulates its
+own project. The SessionStart hook injects across `allProjects`, joined and sent
+as `?projects=firehorse,firehorse/emphasized-drill`, and the file-context hook
+and transcript watcher do the same. So a worktree session still *reads* the
+parent repository's history, including the 3,087 observations under `firehorse`
+spanning 2026-05-14 to 2026-09-11.
+
+That split is why D-187 adopts the existing store as-is: nothing needs migrating,
+because the parent key is already on every read path.
+
+Two consequences worth planning around:
+
+- **`firehorse-recall` writes to `firehorse`, not to `primary`.** The save
+  endpoint takes the project explicitly, and a deliberate note belongs to the
+  repository rather than to whichever worktree happened to be open. The skill
+  hardcodes the parent key for that reason.
+- **Worktree directory names here are generated, not chosen.** This workspace is
+  `emphasized-drill`; the next one will be another random word pair. Every new
+  workspace therefore mints a fresh, meaningless project key that only its own
+  sessions write to. They stay readable through the parent, but the project list
+  grows names that mean nothing to a reader.
+
+Older claude-mem keyed a worktree as the bare parent name. The worker running on
+this machine is 10.6.2 and behaves that way, which is why the store currently
+shows 16 clean repo names and no worktree paths. Expect
+`firehorse/<worktree>` entries to appear once the installed 13.25.2 is the
+version actually running.
+
+### The file read gate
+
+claude-mem registers a `PreToolUse` hook on `Read` that **denies** the read when
+the file has prior observations, and returns a timeline of past work on it plus
+an escalation ladder. It changes what reading a file means in this repo, so it
+is worth understanding before it surprises you.
+
+The gate lets a read through when the file is under 1,500 bytes, when the
+project matches `CLAUDE_MEM_EXCLUDED_PROJECTS`, or when the file has no
+observations. Otherwise the denial message offers four options, cheapest first:
+proceed on the timeline titles alone, `get_observations([IDs])` at roughly 300
+tokens each, `smart_outline` or `smart_unfold` at roughly 1k to 2k, or the full
+read. The timeline's first line is the current date and time, which is what
+makes "these observations are four months old, read the file" a decision you can
+take.
+
+Upstream's own numbers: a timeline costs about 370 tokens against 5k to 50k for
+a typical source file. Those are claude-mem's figures, not measurements taken
+here.
+
+To turn the gate off, remove the entry with the `Read` matcher from
+`hooks.PreToolUse` in `~/.claude/settings.json`. For a single file, allow the
+denied read when it is presented to you.
 
 ### Deliberate recall
 
-`firehorse-recall`
-(`packages/firehorse-core/definitions/skills/firehorse-recall.md`) wraps the CLI
-for explicit recall, per D-163. It searches wide and shallow first and fetches
-full documents only for the hits you chose.
+claude-mem's MCP tools are the recall surface, and Firehorse writes none of them
+(D-185). The ladder is `search` for the index, `timeline` for what surrounded a
+hit, `get_observations` for full detail on the hits you chose, and
+`get_tool_uses` when a summary is not evidence enough. For code there are
+`smart_search`, `smart_outline`, and `smart_unfold`.
 
-The supermemory plugin is a declared dependency in both manifests and baselined
-in `upstreams.lock.json`, so the drift check watches its version.
+Upstream's `mem-search` skill documents how to spend a token budget across them,
+and it ships with the version you installed, so it cannot drift from the tools it
+describes. `firehorse-recall`
+(`packages/firehorse-core/definitions/skills/firehorse-recall.md`) deliberately
+does not restate it. What that skill keeps is the repo-specific half: when to
+reach for memory, that the repo wins a disagreement with it, reporting recall
+with age attached, and the write path.
 
-Supermemory publishes two skills of its own — `supermemory-cli` in
-[supermemoryai/skills](https://github.com/supermemoryai/skills) and an
-SDK-integration skill in
-[supermemoryai/supermemory](https://github.com/supermemoryai/supermemory/tree/main/skills/supermemory).
-Neither repository ships a marketplace manifest, so neither can be declared as a
-dependency. `firehorse-recall` links them rather than copying them.
+Writes go to the worker:
 
-### The plugin's dead MCP registration
-
-The plugin ships a `.mcp.json` registering a stdio proxy hardcoded to
-`https://mcp.supermemory.ai/mcp`. It reads `SUPERMEMORY_MCP_URL` — a different
-variable from the `SUPERMEMORY_API_URL` the hooks use — and the self-hosted
-binary exposes no MCP endpoint to point it at. With a local key it returns:
-
-```
-plugin:supermemory:supermemory - Failed to connect
-  -32000: Supermemory MCP 401: {"error":"Invalid or expired token"}
+```sh
+curl -sS -X POST "http://127.0.0.1:37777/api/memory/save" \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"<the fact>","title":"<short title>","project":"firehorse"}'
 ```
 
-Measured cost: one failed stdio spawn per session, ~0.3s, no tools registered
-and so no token cost. `disabledMcpjsonServers` does not switch it off — tested
-with `supermemory`, `plugin:supermemory:supermemory`, and
-`supermemory:supermemory`, and all three still connected and failed. That key
-governs project `.mcp.json` servers; Claude Code has no equivalent for one
-server provided by a plugin.
+The body takes `text`, plus optional `title`, `project`, and `metadata`. Because
+`project` is explicit, a note written from any worktree lands on the repo's own
+history.
 
-The real cost is not the noise. Left alone, the proxy sends the local API key in
-an `Authorization` header to `mcp.supermemory.ai` at every session start.
-`SUPERMEMORY_MCP_URL=http://localhost:6767/mcp` keeps it on this machine; the
-server has no such endpoint, so the proxy fails locally instead. The residue is
-then one red line in `/mcp` and a `context-gatherer` agent that cannot run.
+claude-mem is a declared dependency in both manifests and baselined in
+`upstreams.lock.json`, so the drift check watches its version.
 
-That is tolerable, so D-162 stands. It would not be if the proxy were the only
-way to reach memory — but the hooks and the CLI both speak REST and both honour
-`SUPERMEMORY_API_URL`, so nothing depends on it.
+### The old stores
 
-### Why gpt-oss:20b
+`~/.claude-mem` is reused as-is, at 2.6 GB (D-187). Nothing was reset for the
+cutover.
 
-Four models were measured on the same one-chunk document:
+supermemory's stores are kept and frozen, not deleted: `~/.supermemory/data` at
+532 MB and `~/.supermemory-claude/credentials.json` at 972 KB. The revisit date is
+**2026-12-20**, by which point either something wanted them or nothing did.
 
-| Model | Result |
-|---|---|
-| `llama3` | fails immediately — no tool support |
-| `llama3.1:8b` | 147s, 0 memories |
-| `qwen3:8b` | over 300s, never finished; reasoning output dominates |
-| `gpt-oss:20b`, cold | stuck in a retry loop |
-| `gpt-oss:20b`, resident | 80s, 5 correct memories |
-
-It is the only one that produced correct memories. Extraction is asynchronous,
-so its latency costs nothing interactive, but it costs 14 GB of resident memory.
-
-Memories extracted from a session transcript are measurably less accurate than
-memories extracted from a written fact — one capture claimed this repo uses
-Turborepo, which it does not. The same model got every claim right on a plain
-factual document. Where a memory and the repo disagree, the repo wins.
-
-### claude-mem
-
-Both `claude-mem@thedotmack` and `claude-mem@firehorse` are disabled, not
-uninstalled. Their 2.6 GB store under `~/.claude-mem` is untouched. No migration
-(D-162); re-indexing selected history stays optional and separate.
+Extraction is a compression step, and it compresses wrongly sometimes. A capture
+in this store claimed the repo uses Turborepo, which it does not. Where a memory
+and the repo disagree, the repo wins.
 
 ## Provenance
 
-Tickets [#54](https://github.com/cinjoff/firehorse/issues/54),
-[#55](https://github.com/cinjoff/firehorse/issues/55), and
-[#56](https://github.com/cinjoff/firehorse/issues/56) produced this setup. Every
-number and error string above was observed, not assumed.
+The wayfinder map
+[#282](https://github.com/cinjoff/firehorse/issues/282) and tickets
+[#283](https://github.com/cinjoff/firehorse/issues/283) through
+[#292](https://github.com/cinjoff/firehorse/issues/292) produced this setup;
+D-183 through D-187 record what it decided. Every number, path, and response
+body above was observed on 2026-09-21, not assumed, except the two token figures
+in [the file read gate](#the-file-read-gate), which are upstream's and are
+labelled where they appear.

@@ -87,14 +87,13 @@ claude plugin validate packages/firehorse-claude
 
 ## Version sites
 
-Seven fields carry the version, and a release is only coherent when all seven agree.
+Six fields carry the version, and a release is only coherent when all six agree.
 
 | File                                                   | Field                |
 | ------------------------------------------------------ | -------------------- |
 | `package.json`                                         | `version`            |
 | `packages/firehorse-core/package.json`                 | `version`            |
 | `packages/firehorse-claude/package.json`               | `version`            |
-| `packages/firehorse-graph/package.json`                | `version`            |
 | `packages/firehorse-claude/.claude-plugin/plugin.json` | `version`            |
 | `.claude-plugin/marketplace.json`                      | `version`            |
 | `.claude-plugin/marketplace.json`                      | `plugins[0].version` |
@@ -151,7 +150,7 @@ grep -rn '"version"' package.json packages/*/package.json \
    → Done when: the entry describes effects, and names no definition file.
 
 8. **Bump every version site** to the same number in one commit, confirmed with the `grep` under [Version sites](#version-sites).
-   → Done when: all seven fields read the same version.
+   → Done when: all six fields read the same version.
 
 9. **Tag the merge commit twice.** `git tag -a v<version>` carries the repo; `claude plugin tag packages/firehorse-claude --push` carries the plugin. Run the second with `--dry-run` first and read back the name and version it reports.
    → Done when: both tags point at the merge commit and are pushed.

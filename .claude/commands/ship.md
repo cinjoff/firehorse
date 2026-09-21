@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "ship"
 firehorseSource: "packages/firehorse-core/definitions/workflows/ship.md"
-firehorseSourceSha256: "e3b76104498e5d33aca4841e34162017d14e06d64443210b03c37a5a65ce3308"
+firehorseSourceSha256: "49c965f42c53849baba7f4d878dca4128fe4cd8041360ba68b7299829a1d485d"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/ship.md
 Definition ID: ship
 Definition kind: workflow
-Source SHA-256: e3b76104498e5d33aca4841e34162017d14e06d64443210b03c37a5a65ce3308
+Source SHA-256: 49c965f42c53849baba7f4d878dca4128fe4cd8041360ba68b7299829a1d485d
 -->
 
 # Ship
@@ -86,14 +86,13 @@ claude plugin validate packages/firehorse-claude
 
 ## Version sites
 
-Seven fields carry the version, and a release is only coherent when all seven agree.
+Six fields carry the version, and a release is only coherent when all six agree.
 
 | File                                                   | Field                |
 | ------------------------------------------------------ | -------------------- |
 | `package.json`                                         | `version`            |
 | `packages/firehorse-core/package.json`                 | `version`            |
 | `packages/firehorse-claude/package.json`               | `version`            |
-| `packages/firehorse-graph/package.json`                | `version`            |
 | `packages/firehorse-claude/.claude-plugin/plugin.json` | `version`            |
 | `.claude-plugin/marketplace.json`                      | `version`            |
 | `.claude-plugin/marketplace.json`                      | `plugins[0].version` |
@@ -150,7 +149,7 @@ grep -rn '"version"' package.json packages/*/package.json \
    → Done when: the entry describes effects, and names no definition file.
 
 8. **Bump every version site** to the same number in one commit, confirmed with the `grep` under [Version sites](#version-sites).
-   → Done when: all seven fields read the same version.
+   → Done when: all six fields read the same version.
 
 9. **Tag the merge commit twice.** `git tag -a v<version>` carries the repo; `claude plugin tag packages/firehorse-claude --push` carries the plugin. Run the second with `--dry-run` first and read back the name and version it reports.
    → Done when: both tags point at the merge commit and are pushed.

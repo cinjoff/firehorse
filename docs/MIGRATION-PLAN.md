@@ -148,12 +148,12 @@ populated `upstreamSkills` list.
 
 | Workflow | What it adds | Orchestrates |
 | --- | --- | --- |
-| `/map` | Pre-fills the wayfinder map's `## Notes` with standing preferences — codebase graph, ADRs, `CONTEXT.md`, `DESIGN.md`, supermemory | `wayfinder` |
+| `/map` | Pre-fills the wayfinder map's `## Notes` with standing preferences — codebase graph, ADRs, `CONTEXT.md`, `DESIGN.md`, memory | `wayfinder` |
 | `/build` | Graph query for the affected seam; prototype when UI and the shape is uncertain; impeccable when UI; verification evidence | `implement`, `tdd`, `prototype`, `impeccable` |
 | `/fix-bug` | Graph trace of callers before hypothesising; regression evidence | `diagnosing-bugs` |
 | `/ship` | PR, merge, changelog, tag, release, issue closure | — |
 | `/new-project` | Repo, tracker, labels, setup, manifest, `DESIGN.md` interview, then calls `/index` | `setup-matt-pocock-skills` |
-| `/index` | Indexes into codebase-memory-mcp and supermemory; writes derivable anchors; records freshness | `wayfinder` (narrative pass) |
+| `/index` | Indexes into codebase-memory-mcp and claude-mem; writes derivable anchors; records freshness | `wayfinder` (narrative pass) |
 | `/upstreams-check` | Drift and impact report | — |
 
 Dropped: `create-plan` (wayfinder covers it), `review-code`, `diagnose-fix`,
@@ -229,7 +229,15 @@ publish straight to the tracker instead.
 
 ## Phase 7 — Memory
 
-Last, deliberately (D-167): the surface supermemory serves is settled by now.
+**Superseded (2026-09-21).** The engine is claude-mem, not supermemory. D-183
+through D-187 carry the decision and map [#282][map-282] carries the work. The
+phase below is kept as written, because it is the record of what was planned
+and the reasoning for its position in the sequence still holds. For how memory
+is actually set up now, read [`MEMORY.md`](./MEMORY.md).
+
+[map-282]: https://github.com/cinjoff/firehorse/issues/282
+
+Last, deliberately (D-167): the surface memory serves is settled by now.
 
 1. `npx supermemory local`. Note the API key printed on first boot.
    **Verify the port** — the self-hosting docs say `6767`, the CLI's own

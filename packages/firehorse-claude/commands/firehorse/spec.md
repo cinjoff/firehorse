@@ -5,7 +5,7 @@ firehorseGenerated: true
 firehorseKind: "workflow"
 firehorseId: "spec"
 firehorseSource: "packages/firehorse-core/definitions/workflows/spec.md"
-firehorseSourceSha256: "6c0ff0f285140ed7f5462dd257205f78a071a86342d146772f4375685d050698"
+firehorseSourceSha256: "22ccea2479e7b7871e38107c6c61c25a2ed146e29b4f9baab7367ef8bce57e34"
 firehorseSchemaVersion: 1
 ---
 
@@ -15,7 +15,7 @@ Edit the canonical definition and run pnpm definitions:write instead.
 Source: packages/firehorse-core/definitions/workflows/spec.md
 Definition ID: spec
 Definition kind: workflow
-Source SHA-256: 6c0ff0f285140ed7f5462dd257205f78a071a86342d146772f4375685d050698
+Source SHA-256: 22ccea2479e7b7871e38107c6c61c25a2ed146e29b4f9baab7367ef8bce57e34
 -->
 
 # Spec
@@ -94,6 +94,7 @@ You drive the sequence. The completeness gate and the seam confirmation are this
 - `Decisions so far` gists and links. A spec written from those one-liners alone loses the reasoning that makes a decision survive contact with a slice. Read the closed tickets.
 - A prototype's artifact often encodes a decision more precisely than prose can. `to-spec` allows inlining the decision-rich part of it: take the state shape or the schema, not the working demo.
 - A map whose destination was a decision rather than a change needs no spec at all. Say so and stop; not every map ends in code.
+- Where claude-mem's file read gate answers a `Read` with its ladder, the timeline titles and `get_observations` usually settle it, and code structure comes from the graph. A spec needs the seams and the architecture, not function bodies, whether or not the gate is there to enforce it.
 - A stale graph answers confidently. `index_status` behind HEAD means the seams describe an older tree, so re-index or mark everything the run found.
 
 ## Procedure

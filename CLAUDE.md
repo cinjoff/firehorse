@@ -8,15 +8,14 @@ that are genuinely Claude-flavored.
 
 - **firehorse** — lightweight, cross-provider agentic skills framework.
 - pnpm monorepo, TypeScript, ESM-first, Node 20+.
-- Status: scaffolding, plus the supermemory graph app.
+- Status: eight commands and three skills ship in the Claude plugin. The core
+  library is still scaffolding.
 
 ## Packages
 
 - `packages/firehorse-core` — TS core library (`firehorse`).
 - `packages/firehorse-claude` — **this is the Claude plugin**. Manifest at
   `.claude-plugin/plugin.json`; commands/, agents/, skills/, hooks/ dirs.
-- `packages/firehorse-graph` — local Vite + React app for exploring a
-  self-hosted supermemory store as a graph. Private; Vite owns its build.
 
 The repo-level `.claude-plugin/marketplace.json` exposes the plugin so users
 can `/plugin marketplace add cinjoff/firehorse`.
@@ -76,7 +75,8 @@ Single-context: one `CONTEXT.md` at the repo root, no `docs/adr/` yet. See
   current position and open work, then `docs/MIGRATION-PLAN.md` (the settled
   plan), `docs/DECISIONS.md` (binding decisions — don't relitigate),
   `docs/PROJECT.md` (vision and scope).
-- **Memory:** `docs/MEMORY.md` is the runbook for the self-hosted supermemory
-  server and the `firehorse-recall` skill. Recall is local-only by design.
+- **Memory:** `docs/MEMORY.md` is the runbook for claude-mem and the
+  `firehorse-recall` skill. The store is local; compression runs through the
+  local `claude` binary on the session's own plan (D-183).
 - `docs/prds/` stages the six parked PRDs (D-169). Treat as read-only — moving
   them into the tracker is a separate effort.

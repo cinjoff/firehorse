@@ -8,7 +8,7 @@ notes live in `CLAUDE.md` and defer here for the substance.
 
 A thin layer over installed agent skills, for anyone building software (D-170),
 packaged as a Claude Code plugin (D-155) and shipped as a pnpm monorepo with
-three packages:
+two packages:
 
 - **`packages/firehorse-core`** — TypeScript core library, private and unpublished.
   Canonical definitions, the projection generator, the manifest schema, and the
@@ -16,9 +16,6 @@ three packages:
 - **`packages/firehorse-claude`** — Claude Code plugin. `.claude-plugin/plugin.json`
   manifest plus `commands/`, `skills/`, `hooks/` directories. Discovered via the
   repo-level `.claude-plugin/marketplace.json`.
-- **`packages/firehorse-graph`** — private local app that opens a self-hosted
-  supermemory store as a graph, launched by `/firehorse:memory`. A browser app
-  rather than a library, so Vite owns its build and nothing imports from it.
 
 Firehorse depends on upstream plugins and vendors nothing (D-156).
 
@@ -50,8 +47,7 @@ Firehorse depends on upstream plugins and vendors nothing (D-156).
 firehorse/
 ├── packages/
 │   ├── firehorse-core/      Core TS lib + canonical definition sources
-│   ├── firehorse-claude/    Claude plugin (consumed via marketplace)
-│   └── firehorse-graph/     Local supermemory graph app (private, Vite)
+│   └── firehorse-claude/    Claude plugin (consumed via marketplace)
 ├── .claude-plugin/
 │   └── marketplace.json     Repo-level Claude marketplace for Firehorse
 └── docs/ARCHITECTURE.md
@@ -67,8 +63,9 @@ Before starting work, read:
 - `docs/DECISIONS.md` — binding decisions, append-only. Don't relitigate.
 - `docs/PROJECT.md` — vision, scope, success criteria.
 - `docs/agents/` — tracker, domain, and label conventions the skills read.
-- `docs/MEMORY.md` — the self-hosted supermemory runbook. Read it before
-  changing anything that touches recall, and when a session recalls nothing.
+- `docs/MEMORY.md`, the claude-mem runbook. Read it before changing anything
+  that touches recall, when a session recalls nothing, and before you assume a
+  denied `Read` is a bug.
 - `docs/EVALUATION-FRAMEWORK.md` — how a new tool, skill, or workflow earns its
   way in, and the session-retro loop that finds most of them. Read it before
   proposing or trialling anything from outside this repo.
@@ -79,6 +76,26 @@ shipped workflows read it from there rather than assuming it (D-174). The
 wayfinder map and its child tickets hold current position and granular work
 items, so neither lives in the repo. `docs/` is hand-written and intentionally lightweight — no `gsd-tools`,
 no plugin-cache symlinks. Keep it that way.
+
+## When a Read is denied
+
+claude-mem may install a `PreToolUse` gate that denies `Read` on a file over
+1,500 bytes that has prior observations, and hands back a timeline of past work
+on it plus four options. The gate is optional. It does not fire on a fresh
+machine, on a project with no observations, or once the `Read` matcher is
+removed, so nothing below is a requirement, only the order to prefer when the
+ladder is on offer. Cheapest rung first:
+
+1. Semantic priming, where the timeline titles already answer the question.
+2. `get_observations([ids])` for detail from past work on the file.
+3. `smart_outline(path)` for the current structure of the code, or
+   `smart_unfold(path, symbol)` for one symbol of it.
+4. The full read, where the file has moved on since the observations or you are
+   about to edit it.
+
+A denied `Read` is not an error and not a bug. Don't retry it verbatim, and
+don't shell out to `cat` or `sed` to defeat the gate. `docs/MEMORY.md` documents
+the gate's configuration and how to turn it off.
 
 ## Commands
 

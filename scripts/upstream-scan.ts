@@ -67,8 +67,8 @@ const FIREHORSE = {
   what_it_is:
     "A cross-provider agentic skills framework. A pnpm TypeScript monorepo whose real product is " +
     "workflow definitions projected into provider distributions, currently a Claude Code plugin. It " +
-    "tracks vendored upstream skills with a lockfile and a drift check, and ships a local graph app " +
-    "over a self-hosted supermemory store.",
+    "tracks vendored upstream skills with a lockfile and a drift check, and reaches cross-session " +
+    "memory through claude-mem.",
   existing_capabilities: [
     "definition format: schema, parser, validator, projector, manifest merge",
     "upstream lockfile and drift check against third-party skill definitions",

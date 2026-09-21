@@ -432,16 +432,26 @@ async function runDefinitions(cwd: string, mode: "--check" | "--write"): Promise
       {
         cwd,
         encoding: "utf8",
+        // Kill a child that outlives the describe budget. Without this the
+        // callback never fires, the promise never settles, and vitest cannot
+        // tear the worker down, so a slow spawn turns a 30s timeout into an
+        // unbounded hang. Each spawn resolves upstream skills against
+        // ~/.claude/plugins/, which is 481 MB once claude-mem is installed.
+        timeout: 25_000,
+        killSignal: "SIGKILL",
         env: {
           ...process.env,
           FORCE_COLOR: "0",
         },
       },
       (error, stdout, stderr) => {
+        // A timeout kill leaves `code` undefined, so reporting 0 here would
+        // turn a killed run into a passing assertion. Surface it instead.
+        const killed = Boolean(error && (error as { killed?: boolean }).killed);
         resolve({
-          exitCode: typeof error?.code === "number" ? error.code : 0,
+          exitCode: typeof error?.code === "number" ? error.code : killed ? 124 : 0,
           stdout,
-          stderr,
+          stderr: killed ? `${stderr}\ntimed out after 25s and was killed` : stderr,
         });
       },
     );
