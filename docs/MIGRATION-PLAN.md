@@ -148,12 +148,12 @@ populated `upstreamSkills` list.
 
 | Workflow | What it adds | Orchestrates |
 | --- | --- | --- |
-| `/map` | Pre-fills the wayfinder map's `## Notes` with standing preferences — codebase graph, ADRs, `CONTEXT.md`, `DESIGN.md`, supermemory | `wayfinder` |
+| `/map` | Pre-fills the wayfinder map's `## Notes` with standing preferences — codebase graph, ADRs, `CONTEXT.md`, `DESIGN.md`, memory | `wayfinder` |
 | `/build` | Graph query for the affected seam; prototype when UI and the shape is uncertain; impeccable when UI; verification evidence | `implement`, `tdd`, `prototype`, `impeccable` |
 | `/fix-bug` | Graph trace of callers before hypothesising; regression evidence | `diagnosing-bugs` |
 | `/ship` | PR, merge, changelog, tag, release, issue closure | — |
 | `/new-project` | Repo, tracker, labels, setup, manifest, `DESIGN.md` interview, then calls `/index` | `setup-matt-pocock-skills` |
-| `/index` | Indexes into codebase-memory-mcp and supermemory; writes derivable anchors; records freshness | `wayfinder` (narrative pass) |
+| `/index` | Indexes into codebase-memory-mcp and claude-mem; writes derivable anchors; records freshness | `wayfinder` (narrative pass) |
 | `/upstreams-check` | Drift and impact report | — |
 
 Dropped: `create-plan` (wayfinder covers it), `review-code`, `diagnose-fix`,
