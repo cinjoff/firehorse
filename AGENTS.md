@@ -30,6 +30,9 @@ Firehorse depends on upstream plugins and vendors nothing (D-156).
   generated mirrors (Claude commands and skills) must come from canonical
   definitions and checked provenance. Do not add a runtime, prompt loader, provider transport,
   autonomous execution loop, or hook until that work is explicitly scoped.
+  The one scoped exception is the optional Superset orchestrator in
+  `packages/firehorse-orchestrator` (D-188): route-scoped, off unless Superset
+  is set up, and never a dependency of `firehorse-core` or `firehorse-claude`.
 - **A definition never names a vendor SDK.** It declares capabilities from the
   `requires` / `optional` vocabulary in `definitions/types.ts`; anything a
   definition needs that only one provider offers is an extension-prefixed

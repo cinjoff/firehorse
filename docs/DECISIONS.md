@@ -3418,3 +3418,86 @@ branch name plus `gh issue view` supply that without going stale.
 - Keep a file anyway for the workflow-crashed-mid-run case — rejected: a file
   written only at a successful `Handoff` step never represents a crashed run, so
   the case it was meant to cover does not arise.
+
+## D-188 — One optional orchestrator runtime is admissible, and it lives in its own package
+
+**Date:** 2026-09-27
+**Decision:** Firehorse scopes in exactly one runtime: an optional orchestrator
+in which a `@statelyai/agent` machine owns the route (`map` → `spec` →
+`tickets` → `build` → `ship`, D-181) and drives each step as a Claude session
+created through Superset's CLI or MCP. It is on only when Superset is set up, and
+never on the default path. A user without Superset keeps today's handoff blocks
+unchanged (D-170). This answers
+[#302](https://github.com/cinjoff/firehorse/issues/302) on the map
+[#297](https://github.com/cinjoff/firehorse/issues/297).
+**Scope:**
+
+- **Where it lives.** A new package, `packages/firehorse-orchestrator`,
+  published to npm as experimental with its own bin. It alone carries the
+  exact pins and the Node `>=22.18` floor, in its own `engines`.
+  `firehorse-core` and `firehorse-claude` stay on Node 20 and take no new
+  dependency. The plugin may detect the orchestrator and point at it. It never
+  requires it.
+- **What it may do.** Create and resume Superset sessions, read the outcome
+  signals #299 identified (git, the tracker, and a linted outcome line), and fire
+  only events the current state allows. Code evaluates the guards. Jev picks among
+  the legal events only as far as #192 and #198 allow, and without Jev the
+  machine falls back to code or to the person.
+- **What it may not do.** Call `claude -p` or the Agent SDK. Act as a
+  general-purpose engine for arbitrary definitions or a provider transport. Store
+  session position in the repo (D-182). Run on any path a non-Superset user
+  reaches.
+
+**Amends and supersedes:**
+
+- **`AGENTS.md` hard rule.** The "no runtime … autonomous execution loop"
+  rule gains a single named exception for this package. Every other runtime,
+  prompt loader and provider transport stays barred.
+- **D-25, superseded in part.** A definition's `## Handoff` and its
+  `→ Done when:` postconditions get a structured form the orchestrator
+  interprets:
+  - Handoff becomes states, events and guards.
+  - Done-when becomes machine-checked guards.
+
+  Every other section (Purpose, Inputs, Procedure prose, Safety Gates) remains a
+  declarative authoring contract. #303 decides whether that structured form is the
+  machine's source or is checked against a hand-written machine.
+
+- **D-138, amended.** Its "not a generalized workflow execution engine" clause
+  still binds, with this one route-scoped orchestrator carved out. Its
+  setup-runtime half is unchanged.
+- **Left standing:** D-147 (session-audit helpers), D-154 (the deleted adapter
+  trees are not revived; this package is new and Superset-specific), D-170
+  and D-182.
+
+**Rationale:** The route already exists as prose in every `## Handoff`, and
+nothing enforces it (#301 counted 67 transitions, 49 of them decidable in code).
+The research on `docs/research/deterministic-workflows/` found that in-session
+hooks can enforce guards within a step, but not the sequencing between steps
+across `/clear`. That is the part an external machine owns. Superset keeps every
+step on interactive subscription limits, which rules out `claude -p`. A
+separate package contains the alpha XState v6 pin and the Node 22 floor, so the
+cost falls only on users who opt in.
+**Consequence:** Handoff and Done-when stop being free prose. Validation (D-180)
+will have to parse them, which also fixes the unverified-route problem for users
+who never run the orchestrator. The 21 ambiguous routes and 4 unreached workflows
+from #301 become blocking, and #260 owns them. A published package means an npm
+release line of its own, separate from the plugin's version sites.
+**Alternatives considered:**
+
+- Keep the bar, and enforce only in-session through a parsed transition table,
+  `Stop` guards and `PreToolUse` denies — rejected as the whole answer: those
+  guard a single step and cannot drive the next one. They remain complementary.
+- Require candidate moves 1–5 to ship and fall short before this is admissible
+  — rejected: the route between sessions is a gap they cannot close by
+  construction, so the precondition would only delay the same decision.
+- A `bin/` inside `firehorse-claude` — rejected: every plugin user would carry
+  the XState v6 alpha and the Node 22 floor, which strains D-170.
+- A user-side script under `docs/` — rejected: nothing to pin, test or
+  version, and a runtime Firehorse describes but does not own.
+- Keep the package private until the prototype (#307) proves it — rejected:
+  D-170 means a Superset user elsewhere should be able to run it, so it ships
+  with an experimental marker instead.
+- Leave D-25 fully standing, with the machine only consuming definitions —
+  rejected by the user: a machine checked against prose that nothing parses
+  leaves the guards unenforced, which is the gap this effort exists to close.
