@@ -32,13 +32,17 @@ event set is the `onDone` guards: code, readable in one place. This needs no `ag
 1. **Guards must read only what arrived in an event.** The `@statelyai/agent` version read the
    tracker live from inside its guards, and a resume threw `AgentReplayDivergenceError`.
    Here, the host gathers the evidence (frontier, fog, gate) and sends it as the `SESSION_DONE`
-   payload, and guards read only `context`. **For the spec: the outcome line plus the host's
+   payload, and guards read only `context`. **Ruled (Q4): the outcome line plus the host's
    confirmation becomes the event payload. Nothing reaches a guard any other way.**
 2. **A run starts once.** `input` is passed only on the first wake. Every later wake restores
    the persisted snapshot.
 3. **`map/ticket/step` is not unique enough.** Build retries collided on one key. The port
-   adds the attempt number (`#n`), which is the proposed answer to Q1 and not yet ruled.
+   adds the attempt number (`#n`). **Ruled (Q1): a retry is a new session keyed
+   `map/ticket/step#n`, never a follow-up typed into the old one.**
 4. **Build has no slice.** After `tickets`, build runs once. The real route loops
-   `build → ship` per slice. That is a missing state, not a missing guard.
-5. **Graduating fog is modelled as its own session.** It may belong inside the map session
-   that resolved the last ticket.
+   `build → ship` per slice. That is a missing state, not a missing guard. **Ruled (Q2): a slice
+   loop. `tickets` reports the slice list as evidence, and slices run in blocking-edge order,
+   tracer bullet first. A red slice waits on a person without halting independent slices.**
+5. **Graduating fog is modelled as its own session.** **Ruled (Q3): it happens inside the map
+   session that resolved the last ticket, as wayfinder does. Jev's `GRADUATE_FOG` re-enters the
+   map step, and there is no separate graduate session.**
