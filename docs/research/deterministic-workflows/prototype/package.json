@@ -1,0 +1,12 @@
+{
+  "name": "firehorse-route-prototype",
+  "private": true,
+  "description": "Throwaway prototype for #307: the map → spec → tickets → build → ship route as a @statelyai/agent machine with scripted steps. Not a workspace package.",
+  "type": "module",
+  "engines": { "node": ">=22.18.0" },
+  "scripts": { "start": "node route.mjs" },
+  "dependencies": {
+    "@statelyai/agent": "2.0.0-alpha.25",
+    "xstate": "6.0.0-alpha.60"
+  }
+}
