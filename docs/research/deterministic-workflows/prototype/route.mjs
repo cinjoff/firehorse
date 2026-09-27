@@ -1,15 +1,12 @@
-// Throwaway prototype for #307. The Firehorse route as a @statelyai/agent machine.
+// Throwaway prototype for #307. The Firehorse route as a plain XState v5 machine.
 //
 // No model and no Superset. Every session is scripted, and so is every Jev pick.
 // The point is to react to the shape: the states, where code decides, where Jev
-// decides, where a person decides, and what the event log says afterwards.
+// decides, where a person decides, and what the log says afterwards.
 //
 // Run: npm install && node route.mjs [happy|red-gate|fog-jev|fog-low]
 
-import { getInteraction, runAgent, setupAgent } from "@statelyai/agent";
-import { createInMemoryEventLogStore } from "@statelyai/agent/log";
-import { lintAgentMachine } from "@statelyai/agent/testing";
-import { createAsyncLogic } from "xstate";
+import { assign, createActor, fromPromise, setup } from "xstate";
 
 // The #305 threshold: a Jev pick below it is treated as "None of these."
 const JEV_THRESHOLD = 0.8;
@@ -18,44 +15,39 @@ const MAX_BUILD_ATTEMPTS = 2;
 
 // ── The machine ──────────────────────────────────────────────────────────────
 //
-// Guards read only `context`, and `context` changes only through events.
-// Everything a guard needs (the frontier, the fog, the gate result) arrives as
-// the SESSION_DONE payload, gathered by the host from the tracker and a re-run
-// gate. That is what keeps `replay` deterministic. The first version read the
-// tracker live from inside the guards, and resuming threw
-// AgentReplayDivergenceError, because the world had moved since the log was written.
+// Guards read only `context`, and `context` changes only through events. Every
+// fact a guard needs (the frontier, the fog, the gate result) arrives as the
+// SESSION_DONE payload, which the host gathers from the tracker and a re-run gate.
+// That keeps a persisted snapshot and a replayed log in agreement with each other.
+// The @statelyai/agent version of this prototype read the tracker from inside its
+// guards, and resuming threw a replay divergence.
 
-const agent = setupAgent({
-  models: { jev: "typesafe-ai/jev" },
-  events: {
-    SESSION_DONE: {}, // payload: { evidence }. This is the outcome line (#303), confirmed by the host
-    SESSION_FAILED: {},
-    GRADUATE_FOG: {}, // the legal events Jev or a person may pick
-    SPEC_IT: {},
-    NONE_OF_THESE: {},
-    RETRY_BUILD: {},
-    ABANDON: {},
+export const routeMachine = setup({
+  actors: {
+    // Superset: start (or find) the session for this step. Real version: `superset agents create`.
+    startSession: fromPromise(async () => {
+      throw new Error("provide startSession");
+    }),
+    // Jev: return { type, p } for one of the legal events. Real version: a Jev Choice call.
+    decide: fromPromise(async () => {
+      throw new Error("provide decide");
+    }),
   },
-  isIdle: (s) => s.hasTag("awaiting-session") || s.hasTag("awaiting-human"),
-});
-
-// One step = start a Superset session, then wait for it to report back.
-// Short-lived host (#304): the process may exit in any `*Wait` state.
-const session = (step, next) => ({
-  invoke: {
-    src: "startSession",
-    input: ({ context }) => ({ step, ticket: context.ticket, mapId: context.mapId }),
-    onDone: { target: next },
-    onError: { target: "failed" },
+  guards: {
+    frontierOpen: ({ context }) => context.evidence.frontier.length > 0,
+    allBlocked: ({ context }) => context.evidence.blocked > 0,
+    wayClear: ({ context }) => context.evidence.fog === 0,
+    gateGreen: ({ context }) => context.evidence.gate === "green",
+    canRetryBuild: ({ context }) => context.buildAttempts < MAX_BUILD_ATTEMPTS,
+    // The decision model proposes; code decides. A pick is taken only when
+    // it is confident enough AND it is one of the events this state accepts.
+    jevPicked: ({ event }, type) => event.output.type === type && event.output.p >= JEV_THRESHOLD,
   },
-});
-
-const done = (target) => ({
-  SESSION_DONE: ({ event }) => ({ target, context: { evidence: event.evidence } }),
-  SESSION_FAILED: { target: "failed" },
-});
-
-export const routeMachine = agent.createMachine({
+  actions: {
+    takeEvidence: assign({ evidence: ({ event }) => event.evidence }),
+    nextBuildAttempt: assign({ buildAttempts: ({ context }) => context.buildAttempts + 1 }),
+  },
+}).createMachine({
   id: "firehorse-route",
   context: ({ input }) => ({
     mapId: input.mapId,
@@ -67,123 +59,126 @@ export const routeMachine = agent.createMachine({
   states: {
     // ── map: resolve one ticket per session until nothing is left to decide.
     mapChoose: {
-      type: "choice",
       // Code: the frontier query first, then the two ways a map can be done.
-      choice: ({ context: { evidence } }) =>
-        evidence.frontier.length > 0
-          ? { target: "mapSession", context: { ticket: evidence.frontier[0] } }
-          : evidence.blocked > 0
-            ? { target: "mapBlocked" }
-            : evidence.fog === 0
-              ? { target: "specSession", context: { ticket: null } } // the way is clear
-              : // No children, but fog remains. #301 found no handoff covers this,
-                // so it is a judgement: a Jev seam.
-                { target: "mapFogJudgement", context: { ticket: null } },
+      always: [
+        {
+          guard: "frontierOpen",
+          target: "mapSession",
+          actions: assign({ ticket: ({ context }) => context.evidence.frontier[0] }),
+        },
+        { guard: "allBlocked", target: "mapBlocked" },
+        { guard: "wayClear", target: "specSession", actions: assign({ ticket: null }) },
+        // No children, but fog remains. #301 found no handoff covers this, so it
+        // is a judgement: the Jev seam.
+        { target: "mapFogJudgement", actions: assign({ ticket: null }) },
+      ],
     },
     mapSession: session("map", "mapWait"),
-    mapWait: { tags: ["awaiting-session"], on: done("mapChoose") },
+    mapWait: waitFor("mapChoose"),
     mapBlocked: {
       tags: ["awaiting-human"],
-      meta: {
-        interaction: {
-          label: "Every child of the map is blocked. Unblock one, or stop.",
-          events: { ABANDON: { label: "Stop the run" } },
-        },
-      },
-      on: { ABANDON: { target: "abandoned" } },
+      meta: { label: "Every child of the map is blocked. Unblock one, or stop." },
+      on: { ABANDON: "abandoned" },
     },
     mapFogJudgement: {
       invoke: {
-        src: "agent.decide",
+        src: "decide",
         input: () => ({
-          model: "jev",
           name: "fogOrSpec",
-          prompt:
+          question:
             "The map has no open tickets, but its Not yet specified section still has entries. " +
             "Is any of it sharp enough to ticket now, or is the way clear enough to spec?",
-          allowedEvents: ["GRADUATE_FOG", "SPEC_IT", "NONE_OF_THESE"],
+          options: ["GRADUATE_FOG", "SPEC_IT", "NONE_OF_THESE"],
         }),
-        onError: { target: "mapFogHuman" },
-      },
-      on: {
-        GRADUATE_FOG: { target: "mapGraduateSession" },
-        SPEC_IT: { target: "specSession" },
-        NONE_OF_THESE: { target: "mapFogHuman" },
+        onDone: [
+          { guard: { type: "jevPicked", params: "GRADUATE_FOG" }, target: "mapGraduateSession" },
+          { guard: { type: "jevPicked", params: "SPEC_IT" }, target: "specSession" },
+          // Below the threshold, "None of these.", or anything else: a person picks.
+          { target: "mapFogHuman" },
+        ],
+        onError: "mapFogHuman", // no Jev key, or Jev unreachable
       },
     },
-    // #305: below the threshold, on "None", or with no key, the person picks from today's ▶ Next block.
+    // #305: the person picks from today's ▶ Next block.
     mapFogHuman: {
       tags: ["awaiting-human"],
       meta: {
-        interaction: {
-          label: "Jev was not confident. The map has no open tickets but still has fog:",
-          events: {
-            GRADUATE_FOG: { label: "/firehorse:map <map> · one more decision surfaced" },
-            SPEC_IT: { label: "/firehorse:spec <map> · the way is clear" },
-          },
+        label: "Jev was not confident. The map has no open tickets but still has fog.",
+        options: {
+          GRADUATE_FOG: "/firehorse:map <map> · one more decision surfaced",
+          SPEC_IT: "/firehorse:spec <map> · the way is clear",
         },
       },
-      on: { GRADUATE_FOG: { target: "mapGraduateSession" }, SPEC_IT: { target: "specSession" } },
+      on: { GRADUATE_FOG: "mapGraduateSession", SPEC_IT: "specSession" },
     },
     mapGraduateSession: session("map-graduate", "mapGraduateWait"),
-    mapGraduateWait: { tags: ["awaiting-session"], on: done("mapChoose") },
+    mapGraduateWait: waitFor("mapChoose"),
 
     // ── spec and tickets: one session each, no judgement in between.
     specSession: session("spec", "specWait"),
-    specWait: { tags: ["awaiting-session"], on: done("ticketsSession") },
+    specWait: waitFor("ticketsSession"),
     ticketsSession: session("tickets", "ticketsWait"),
-    ticketsWait: {
-      tags: ["awaiting-session"],
-      on: {
-        SESSION_DONE: ({ context, event }) => ({
-          target: "buildSession",
-          context: { evidence: event.evidence, buildAttempts: context.buildAttempts + 1 },
-        }),
-        SESSION_FAILED: { target: "failed" },
-      },
-    },
+    ticketsWait: waitFor("buildSession", "nextBuildAttempt"),
 
     // ── build: the host re-runs the gate after each session; a red gate may retry, then a person decides.
     buildSession: session("build", "buildWait"),
-    buildWait: { tags: ["awaiting-session"], on: done("gateCheck") },
+    buildWait: waitFor("gateCheck"),
     gateCheck: {
-      type: "choice",
-      choice: ({ context }) =>
-        context.evidence.gate === "green"
-          ? { target: "shipSession" }
-          : context.buildAttempts < MAX_BUILD_ATTEMPTS
-            ? { target: "buildSession", context: { buildAttempts: context.buildAttempts + 1 } }
-            : { target: "gateRedHuman" },
+      always: [
+        { guard: "gateGreen", target: "shipSession" },
+        { guard: "canRetryBuild", target: "buildSession", actions: "nextBuildAttempt" },
+        { target: "gateRedHuman" },
+      ],
     },
     gateRedHuman: {
       tags: ["awaiting-human"],
       meta: {
-        interaction: {
-          label: `The gate stayed red after ${MAX_BUILD_ATTEMPTS} build sessions.`,
-          events: {
-            RETRY_BUILD: { label: "Run one more build session" },
-            ABANDON: { label: "Stop the run" },
-          },
-        },
+        label: `The gate stayed red after ${MAX_BUILD_ATTEMPTS} build sessions.`,
+        options: { RETRY_BUILD: "Run one more build session", ABANDON: "Stop the run" },
       },
       on: {
-        RETRY_BUILD: ({ context }) => ({
-          target: "buildSession",
-          context: { buildAttempts: context.buildAttempts + 1 },
-        }),
-        ABANDON: { target: "abandoned" },
+        RETRY_BUILD: { target: "buildSession", actions: "nextBuildAttempt" },
+        ABANDON: "abandoned",
       },
     },
 
     // ── ship
     shipSession: session("ship", "shipWait"),
-    shipWait: { tags: ["awaiting-session"], on: done("shipped") },
+    shipWait: waitFor("shipped"),
 
     shipped: { type: "final" },
     abandoned: { type: "final" },
     failed: { type: "final" },
   },
 });
+
+// One step = start a Superset session, then wait for it to report back.
+function session(step, next) {
+  return {
+    invoke: {
+      src: "startSession",
+      input: ({ context }) => ({
+        step,
+        ticket: context.ticket,
+        mapId: context.mapId,
+        attempt: context.buildAttempts,
+      }),
+      onDone: next,
+      onError: "failed",
+    },
+  };
+}
+
+// Short-lived host (#304): the process may exit in any wait state. SESSION_DONE wakes it.
+function waitFor(next, ...actions) {
+  return {
+    tags: ["awaiting-session"],
+    on: {
+      SESSION_DONE: { target: next, actions: ["takeEvidence", ...actions] },
+      SESSION_FAILED: "failed",
+    },
+  };
+}
 
 // ── The world ────────────────────────────────────────────────────────────────
 // Stand-ins for the tracker and the gate. The host reads them after each
@@ -220,89 +215,90 @@ const scenarios = {
   },
   "fog-jev": {
     world: { frontier: [{ id: 301 }], fog: [310], gateRuns: ["green"] },
-    jev: [
-      { pick: "GRADUATE_FOG", p: 0.91 },
-      { pick: "SPEC_IT", p: 0.88 },
-    ],
+    jev: [{ type: "GRADUATE_FOG", p: 0.91 }],
   },
   "fog-low": {
     world: { frontier: [], fog: [310], gateRuns: ["green"] },
-    jev: [{ pick: "SPEC_IT", p: 0.62 }],
+    jev: [{ type: "SPEC_IT", p: 0.62 }],
     human: ["SPEC_IT"],
   },
 };
 
 // ── Host ─────────────────────────────────────────────────────────────────────
 // Plays Superset (a session that finishes), Jev (a scored pick) and the person.
-// Every loop iteration is a fresh runAgent call against the same store, as the
-// short-lived host (#304) would make after being woken.
+// Every wake is a fresh process in real life: restore the persisted snapshot,
+// send one event, run until the next wait, persist, exit.
 
 async function play(name) {
   const scenario = scenarios[name];
   const world = createWorld(scenario.world);
   const jevScript = [...(scenario.jev ?? [])];
   const humanScript = [...(scenario.human ?? [])];
-  const sessions = new Map(); // idempotency key (#304: map/ticket/step) → Superset session
+  const sessions = new Map(); // idempotency key → Superset session
   const lines = []; // roughly what #304 writes as one tracker comment per transition
 
-  const actors = {
-    startSession: createAsyncLogic({
-      run: async ({ input }) => {
-        const key = `${input.mapId}/${input.ticket ?? "-"}/${input.step}`;
+  const machine = routeMachine.provide({
+    actors: {
+      startSession: fromPromise(async ({ input }) => {
+        // #304's key, with the attempt number (prototype finding 3).
+        const key = `${input.mapId}/${input.ticket ?? "-"}/${input.step}#${input.attempt}`;
         if (!sessions.has(key)) sessions.set(key, `superset-${sessions.size + 1}`);
         lines.push(`  start ${sessions.get(key)}  ${key}`);
-        return { sessionId: sessions.get(key), key };
-      },
-    }),
-  };
-
-  // The Jev adapter. Code owns the threshold, so a low-probability pick becomes "None".
-  const executors = {
-    decide: async (request) => {
-      const { pick, p } = jevScript.shift() ?? { pick: "NONE_OF_THESE", p: 1 };
-      const taken = p >= JEV_THRESHOLD ? pick : "NONE_OF_THESE";
-      lines.push(`  jev   ${request.name}: ${pick} @ ${p} → ${taken}`);
-      return { event: { type: taken } };
+        return { sessionId: sessions.get(key) };
+      }),
+      decide: fromPromise(async ({ input }) => {
+        const pick = jevScript.shift();
+        if (!pick) throw new Error("no Jev key"); // → onError → the person
+        lines.push(`  jev   ${input.name}: ${pick.type} @ ${pick.p}`);
+        return pick;
+      }),
     },
-  };
+  });
 
-  const store = createInMemoryEventLogStore();
-  const threadId = `map-297-${name}`;
-  let event;
+  let persisted = null; // what the real host keeps between wakes (#304: rebuilt from the tracker log)
+  let event = null;
   for (let wake = 0; wake < 40; wake++) {
-    const run = await runAgent(routeMachine, {
-      // Input only starts a run. Every later wake resumes it from the store's log.
-      ...(wake === 0 ? { input: { mapId: 297, evidence: world.evidence() } } : {}),
-      actors,
-      executors,
-      store,
-      threadId,
-      event,
-    });
-    const snap = run.snapshot;
+    const actor = persisted
+      ? createActor(machine, { snapshot: persisted })
+      : createActor(machine, { input: { mapId: 297, evidence: world.evidence() } });
+    actor.start();
+    if (event) {
+      // A person's pick or a session report is only sent if this state accepts it.
+      if (!actor.getSnapshot().can(event)) throw new Error(`illegal ${event.type} in ${actor.getSnapshot().value}`);
+      actor.send(event);
+    }
+    const snap = await settle(actor);
+    persisted = JSON.parse(JSON.stringify(actor.getPersistedSnapshot()));
+    actor.stop();
     lines.push(`        → ${snap.value}`);
-    if (run.status === "done") break;
+    if (snap.status === "done") break;
     if (snap.hasTag("awaiting-session")) {
-      // In real life the host exits here, and the outcome hook wakes it later.
+      // The host exits here in real life, and the outcome hook wakes it later.
       const step = snap.value === "mapGraduateWait" ? "map-graduate" : snap.value.replace("Wait", "");
       world.apply(step, snap.context.ticket);
       event = { type: "SESSION_DONE", evidence: world.evidence() };
       lines.push(`  done  ${step}  evidence ${JSON.stringify(event.evidence)}`);
     } else if (snap.hasTag("awaiting-human")) {
-      const interaction = getInteraction(snap);
+      const meta = Object.values(snap.getMeta())[0];
       const choice = humanScript.shift() ?? "ABANDON";
-      lines.push(`  wait  "${interaction.label}"`);
-      lines.push(`        offers [${interaction.events.map((e) => e.type).join(" | ")}], person picks ${choice}`);
+      lines.push(`  wait  "${meta.label}"`);
+      lines.push(`        offers [${Object.keys(meta.options ?? {}).join(" | ")}], person picks ${choice}`);
       event = { type: choice };
-    } else {
-      throw new Error(`idle in ${snap.value} with nothing to wake it`);
     }
   }
-  const log = await store.read(threadId);
-  console.log(`\n■ ${name}  (${log.length} entries in the replayable event log)`);
+  console.log(`\n■ ${name}`);
   console.log(lines.join("\n"));
 }
 
-console.log("lintAgentMachine:", JSON.stringify(lintAgentMachine(routeMachine)));
+// Run until the machine is waiting on a session, a person, or is done.
+function settle(actor) {
+  return new Promise((resolve) => {
+    const check = (s) =>
+      (s.status === "done" || s.hasTag("awaiting-session") || s.hasTag("awaiting-human")) && resolve(s);
+    actor.subscribe(check);
+    check(actor.getSnapshot());
+  });
+}
+
 const which = process.argv[2] ? [process.argv[2]] : Object.keys(scenarios);
 for (const name of which) await play(name);

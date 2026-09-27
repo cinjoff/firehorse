@@ -3423,7 +3423,7 @@ branch name plus `gh issue view` supply that without going stale.
 
 **Date:** 2026-09-27
 **Decision:** Firehorse scopes in exactly one runtime: an optional orchestrator
-in which a `@statelyai/agent` machine owns the route (`map` → `spec` →
+in which a plain `xstate` v5 machine owns the route (`map` → `spec` →
 `tickets` → `build` → `ship`, D-181) and drives each step as a Claude session
 created through Superset's CLI or MCP. It is on only when Superset is set up, and
 never on the default path. A user without Superset keeps today's handoff blocks
@@ -3434,9 +3434,8 @@ unchanged (D-170). This answers
 
 - **Where it lives.** A new package, `packages/firehorse-orchestrator`,
   published to npm as experimental with its own bin. It alone carries the
-  exact pins and the Node `>=22.18` floor, in its own `engines`.
-  `firehorse-core` and `firehorse-claude` stay on Node 20 and take no new
-  dependency. The plugin may detect the orchestrator and point at it. It never
+  exact `xstate` pin, and stays on Node 20 like the rest of the repo.
+  `firehorse-core` and `firehorse-claude` take no new dependency. The plugin may detect the orchestrator and point at it. It never
   requires it.
 - **What it may do.** Create and resume Superset sessions, read the outcome
   signals #299 identified (git, the tracker, and a linted outcome line), and fire
@@ -3476,8 +3475,8 @@ The research on `docs/research/deterministic-workflows/` found that in-session
 hooks can enforce guards within a step, but not the sequencing between steps
 across `/clear`. That is the part an external machine owns. Superset keeps every
 step on interactive subscription limits, which rules out `claude -p`. A
-separate package contains the alpha XState v6 pin and the Node 22 floor, so the
-cost falls only on users who opt in.
+separate package keeps the `xstate` dependency and the runtime away from users
+who do not opt in.
 **Consequence:** Handoff and Done-when stop being free prose. Validation (D-180)
 will have to parse them, which also fixes the unverified-route problem for users
 who never run the orchestrator. The 21 ambiguous routes and 4 unreached workflows
@@ -3492,7 +3491,14 @@ release line of its own, separate from the plugin's version sites.
   — rejected: the route between sessions is a gap they cannot close by
   construction, so the precondition would only delay the same decision.
 - A `bin/` inside `firehorse-claude` — rejected: every plugin user would carry
-  the XState v6 alpha and the Node 22 floor, which strains D-170.
+  the orchestrator's dependency and runtime, which strains D-170.
+- `@statelyai/agent` v2 as the machine — chosen first, then rejected by the
+  user in favour of plain `xstate`: it is an alpha on a prerelease XState v6
+  with a Node `>=22.18` floor, and its features cover model calls rather than
+  long-running sessions (#300). Its patterns carry over to v5 without it: the
+  model picks one legal event and `snapshot.can` checks it, sessions are
+  invoked actors resumed by an event, and a scripted host runs the route with
+  no model.
 - A user-side script under `docs/` — rejected: nothing to pin, test or
   version, and a runtime Firehorse describes but does not own.
 - Keep the package private until the prototype (#307) proves it — rejected:
